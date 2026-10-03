@@ -746,24 +746,6 @@ table {
 }
 </style>
 
-<style id="student-photo-system-css">
-.student-photo-picker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8fbfd;border:1px dashed #cbd8e2;border-radius:10px;padding:8px}
-.student-photo-picker button{min-height:38px;padding:7px 11px;font-size:12px}
-.student-photo-preview-wrap{display:flex;align-items:center;gap:7px;min-width:0}
-.student-photo-preview{width:58px;height:58px;object-fit:cover;border-radius:12px;border:2px solid #d8e2ea;background:#eef3f7;box-shadow:0 3px 9px rgba(0,0,0,.08)}
-.student-photo-preview-wrap span{font-size:10px;color:#6b7b88}
-.student-photo-avatar{width:92px;height:92px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.16);background:#edf2f6}
-.student-photo-avatar.small{width:62px;height:62px;border-width:3px}
-.student-photo-placeholder{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:#edf2f6;border:3px solid #dce5ec;font-size:36px}
-.student-photo-placeholder.small{width:62px;height:62px;font-size:25px}
-.parent-student-photo-head{display:flex;align-items:center;gap:14px;margin:0 0 12px;padding:14px;background:#fff;border:1px solid #e1e8ef;border-radius:16px}
-.student-search-photo{width:64px;height:64px;object-fit:cover;border-radius:14px;border:2px solid #dce5ec;background:#eef3f7}
-@media(max-width:480px){
-  .student-photo-picker{align-items:flex-start;flex-direction:column}
-  .student-photo-preview{width:64px;height:64px}
-  .student-photo-avatar{width:78px;height:78px}
-}
-</style>
 <style id="professional-modules-css">
 /* ===== Professional Modules: Student Profile / Dashboard / Attendance / Audit ===== */
 .pro-module { font-family: inherit; }
@@ -1399,7 +1381,6 @@ table td,table th { line-height:1.55; }
 <!-- Firebase Cloud Storage (Realtime Database) -->
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
-
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyAUrzKmFBtpQyd5fig8RugixGBEALm5b7k",
@@ -1413,7 +1394,6 @@ table td,table th { line-height:1.55; }
   };
 
   let firebaseDB = null;
-
   // طبقة حماية مجانية داخل التطبيق: تمنع الحفظ غير السليم وتحد من محاولات الدخول المتكررة.
   // هذه الطبقة لا تستبدل Firebase Authentication ولا تجعل قاعدة البيانات خاصة بالخادم.
   const APP_SECURITY = {
@@ -2491,18 +2471,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <input type="text" id="student1Input" placeholder="اسم الطالب الأول">
             </div>
             <div class="form-group">
-                <label>صورة الطالب</label>
-                <div class="student-photo-picker">
-                    <input type="file" id="student1PhotoInput" accept="image/*" style="display:none" onchange="previewStudentPhoto(1,this)">
-                    <button type="button" onclick="document.getElementById('student1PhotoInput').click()" style="background:#2980b9">📷 اختيار صورة</button>
-                    <button type="button" onclick="deleteStudentPhoto(1)" style="background:#c0392b">🗑️ حذف الصورة</button>
-                    <div class="student-photo-preview-wrap">
-                        <img id="student1PhotoPreview" class="student-photo-preview" alt="صورة الطالب" style="display:none">
-                        <span id="student1PhotoHint">الصورة تُضغط تلقائياً قبل الرفع</span>
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
                 <label>كود المتابعة لولي الأمر</label>
                 <input type="text" id="code1Input" placeholder="يُولد تلقائياً بواسطة النظام" readonly autocomplete="off" tabindex="-1" style="background:#eef2f5;cursor:not-allowed;font-weight:800;letter-spacing:1px;">
             </div>
@@ -2525,18 +2493,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <div class="form-group" style="margin-top: 5px;">
                 <label>اسم الطالب الثاني</label>
                 <input type="text" id="student2Input" placeholder="اسم الطالب الثاني">
-            </div>
-            <div class="form-group">
-                <label>صورة الطالب</label>
-                <div class="student-photo-picker">
-                    <input type="file" id="student2PhotoInput" accept="image/*" style="display:none" onchange="previewStudentPhoto(2,this)">
-                    <button type="button" onclick="deleteStudentPhoto(2)" style="background:#c0392b">🗑️ حذف الصورة</button>
-                    <button type="button" onclick="document.getElementById('student2PhotoInput').click()" style="background:#2980b9">📷 اختيار صورة</button>
-                    <div class="student-photo-preview-wrap">
-                        <img id="student2PhotoPreview" class="student-photo-preview" alt="صورة الطالب" style="display:none">
-                        <span id="student2PhotoHint">الصورة تُضغط تلقائياً قبل الرفع</span>
-                    </div>
-                </div>
             </div>
             <div class="form-group">
                 <label>كود المتابعة لولي الأمر</label>
@@ -3107,7 +3063,7 @@ function getStudentById(studentId) {
         if (storedStudentId !== String(studentId)) continue;
         const name=String(desk['student'+slot]||'').trim();
         if(!name) return null;
-        return {student:{id:desk['student'+slot+'Id'],name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',photoUrl:desk['student'+slot+'PhotoUrl']||'',photoPath:desk['student'+slot+'PhotoPath']||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
+        return {student:{id:desk['student'+slot+'Id'],name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
       }
     }
   }
@@ -3150,7 +3106,7 @@ function findStudentBySecretCode(code) {
       const desk=cls.desks[deskIndex]; if(!desk)continue;
       for(const slot of [1,2]){
         if(String(desk['code'+slot]??'').trim()===normalized && String(desk['student'+slot]||'').trim()){
-          return {student:{id:desk['student'+slot+'Id']||desk.id,name:desk['student'+slot],code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',photoUrl:desk['student'+slot+'PhotoUrl']||'',photoPath:desk['student'+slot+'PhotoPath']||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex,deskIndex};
+          return {student:{id:desk['student'+slot+'Id']||desk.id,name:desk['student'+slot],code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex,deskIndex};
         }
       }
     }
@@ -5667,8 +5623,7 @@ function acknowledgeAnnouncement(id) {
                         deskNumber: d.deskNumber,
                         seat: 'المقعد الأول (يمين)',
                         itemKey: itemKey,
-                        code: d.code1,
-                        photoUrl: d.student1PhotoUrl || ''
+                        code: d.code1
                     };
                     break;
                 }
@@ -5683,8 +5638,7 @@ function acknowledgeAnnouncement(id) {
                         deskNumber: d.deskNumber,
                         seat: 'المقعد الثاني (يسار)',
                         itemKey: itemKey,
-                        code: d.code2,
-                        photoUrl: d.student2PhotoUrl || ''
+                        code: d.code2
                     };
                     break;
                 }
@@ -5710,19 +5664,11 @@ function acknowledgeAnnouncement(id) {
         if (lastFoundSearchResult) {
             const codeDisplay = lastFoundSearchResult.code || 'غير محدد';
 
-            const searchPhoto = lastFoundSearchResult.photoUrl
-                ? `<img class="student-search-photo" src="${escapeStudentPhotoAttr(lastFoundSearchResult.photoUrl)}" alt="صورة الطالب">`
-                : `<div class="student-photo-placeholder small">👨‍🎓</div>`;
             contentDiv.innerHTML = `
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                    ${searchPhoto}
-                    <div>
-                        <p style="margin:0 0 4px"><strong>اسم الطالب:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.name)}</p>
-                        <p style="margin:0"><strong>الصف:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.className)}</p>
-                    </div>
-                </div>
-                <p><strong>رقم الرحلة:</strong> #${escapeGlobalSearchHTML(lastFoundSearchResult.deskNumber)} (${escapeGlobalSearchHTML(lastFoundSearchResult.seat)})</p>
-                <p><strong>كود المتابعة:</strong> ${escapeGlobalSearchHTML(codeDisplay)}</p>
+                <p><strong>اسم الطالب:</strong> ${lastFoundSearchResult.name}</p>
+                <p><strong>الصف:</strong> ${lastFoundSearchResult.className}</p>
+                <p><strong>رقم الرحلة:</strong> #${lastFoundSearchResult.deskNumber} (${lastFoundSearchResult.seat})</p>
+                <p><strong>كود المتابعة:</strong> ${codeDisplay}</p>
             `;
 
             extraActions.style.display = 'flex';
@@ -6459,14 +6405,12 @@ function acknowledgeAnnouncement(id) {
         return getStoredAttendanceStatus(cls, date, key);
     }
 
-    function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='', photoUrl='') {
+    function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
         if (!hasStudent) return `<div class="seat seat-empty ${extraClass}">فارغ</div>`;
         const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : '');
         const label = status === 'absent' ? '<span class="trip-status-label">غائب</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز</span>' : '');
         const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
-        const safePhoto=escapeStudentPhotoAttr(photoUrl);
-        const photo=safePhoto ? `<img src="${safePhoto}" alt="" style="width:42px;height:42px;object-fit:cover;border-radius:50%;border:2px solid rgba(0,0,0,.12);display:block;margin:0 auto 4px;" onerror="this.style.display='none'">` : '';
-        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}${photo}<span class="trip-student-name">${name}</span></div>`;
+        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
 
     function renderDesks() {
@@ -6506,8 +6450,8 @@ function acknowledgeAnnouncement(id) {
                     deskEl.innerHTML = `
                         <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                         <div class="desk-seats">
-                            ${isStudent1MyChild ? renderTripStudentSeat(currentUser.name, true, status1, '', deskData.gender1, deskData.student1PhotoUrl || '') : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
-                            ${isStudent2MyChild ? renderTripStudentSeat(currentUser.name, true, status2, '', deskData.gender2, deskData.student2PhotoUrl || '') : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
+                            ${isStudent1MyChild ? renderTripStudentSeat(currentUser.name, true, status1, '', deskData.gender1) : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
+                            ${isStudent2MyChild ? renderTripStudentSeat(currentUser.name, true, status2, '', deskData.gender2) : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
                         </div>
                     `;
                 }
@@ -6518,11 +6462,11 @@ function acknowledgeAnnouncement(id) {
                     <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                     <div class="desk-seats">
                         <div class="${sep1 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1, deskData.student1PhotoUrl || '')}
+                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1)}
                           ${sep1 && hasS1 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                         <div class="${sep2 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2, deskData.student2PhotoUrl || '')}
+                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2)}
                           ${sep2 && hasS2 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                     </div>
@@ -6537,140 +6481,6 @@ function acknowledgeAnnouncement(id) {
             if (remainder === 0) rightContainer.appendChild(deskEl);
             else if (remainder === 1) centerContainer.appendChild(deskEl);
             else leftContainer.appendChild(deskEl);
-        });
-    }
-
-
-    const studentPhotoDeletePending = {1:false, 2:false};
-
-    function escapeStudentPhotoAttr(value){
-        return String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    function setStudentPhotoPreview(slot, url){
-        const img=document.getElementById(`student${slot}PhotoPreview`);
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(!img) return;
-        if(url){
-            img.src=url;
-            img.style.display='block';
-            if(hint) hint.textContent='الصورة الحالية محفوظة — يمكنك اختيار صورة جديدة';
-        }else{
-            img.removeAttribute('src');
-            img.style.display='none';
-            if(hint) hint.textContent='الصورة تُضغط تلقائياً إلى أقل من 25KB';
-        }
-    }
-
-    function deleteStudentPhoto(slot){
-        const input=document.getElementById(`student${slot}PhotoInput`);
-        if(input) input.value='';
-        studentPhotoDeletePending[slot]=true;
-        setStudentPhotoPreview(slot,'');
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(hint) hint.textContent='سيتم حذف الصورة عند الضغط على تحديث وحفظ';
-    }
-
-    function previewStudentPhoto(slot, input){
-        const file=input?.files?.[0];
-        if(!file){ return; }
-        if(!file.type || !file.type.startsWith('image/')){
-            alert('اختر ملف صورة فقط.');
-            input.value='';
-            return;
-        }
-        const maxBytes=12*1024*1024;
-        if(file.size>maxBytes){
-            alert('الصورة الأصلية كبيرة جداً. اختر صورة أقل من 12 ميغابايت.');
-            input.value='';
-            return;
-        }
-        studentPhotoDeletePending[slot]=false;
-        const url=URL.createObjectURL(file);
-        const img=document.getElementById(`student${slot}PhotoPreview`);
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(img){
-            img.src=url;
-            img.style.display='block';
-            if(hint) hint.textContent='جاهزة للضغط والحفظ (أقل من 25KB)';
-            img.onload=()=>URL.revokeObjectURL(url);
-        }
-    }
-
-    function canvasToBlob(canvas, quality){
-        return new Promise((resolve,reject)=>{
-            canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('تعذر إنشاء صورة JPEG')), 'image/jpeg', quality);
-        });
-    }
-
-    async function loadPhotoImage(file){
-        if(window.createImageBitmap){
-            try { return await createImageBitmap(file); } catch(e) {}
-        }
-        return await new Promise((resolve,reject)=>{
-            const reader=new FileReader();
-            reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الصورة'));
-            reader.onload=()=>{
-                const img=new Image();
-                img.onload=()=>resolve(img);
-                img.onerror=()=>reject(new Error('تعذر فتح الصورة'));
-                img.src=String(reader.result||'');
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function compressStudentPhoto(file){
-        if(!file) return null;
-        const source=await loadPhotoImage(file);
-        const sourceW=Number(source.width||source.naturalWidth||0);
-        const sourceH=Number(source.height||source.naturalHeight||0);
-        if(!sourceW || !sourceH) throw new Error('أبعاد الصورة غير صالحة.');
-
-        const TARGET=25*1024;
-        let maxSide=240;
-        let lastBlob=null;
-        for(let sizeStep=0; sizeStep<7; sizeStep++){
-            const scale=Math.min(1,maxSide/Math.max(sourceW,sourceH));
-            const w=Math.max(64,Math.round(sourceW*scale));
-            const h=Math.max(64,Math.round(sourceH*scale));
-            const canvas=document.createElement('canvas');
-            canvas.width=w; canvas.height=h;
-            const ctx=canvas.getContext('2d',{alpha:false});
-            if(!ctx) throw new Error('المتصفح لا يدعم معالجة الصور.');
-            ctx.fillStyle='#ffffff';
-            ctx.fillRect(0,0,w,h);
-            ctx.drawImage(source,0,0,w,h);
-
-            for(const quality of [0.72,0.62,0.54,0.46,0.38,0.32,0.27,0.22,0.18,0.15]){
-                const blob=await canvasToBlob(canvas,quality);
-                lastBlob=blob;
-                if(blob.size<=TARGET){
-                    if(source && typeof source.close==='function') source.close();
-                    return blob;
-                }
-            }
-            maxSide=Math.max(64,Math.floor(maxSide*0.82));
-        }
-        if(source && typeof source.close==='function') source.close();
-        if(lastBlob && lastBlob.size<=TARGET) return lastBlob;
-        throw new Error('تعذر ضغط الصورة إلى أقل من 25KB. اختر صورة أبسط أو أقل تفاصيل.');
-    }
-
-    async function uploadSelectedStudentPhoto(slot, studentId, input){
-        const file=input?.files?.[0];
-        if(!file) return '';
-        const blob=await compressStudentPhoto(file);
-        if(!blob) throw new Error('تعذر ضغط صورة الطالب.');
-        return await new Promise((resolve,reject)=>{
-            const reader=new FileReader();
-            reader.onload=()=>{
-                const data=String(reader.result||'');
-                if(!data) return reject(new Error('تعذر قراءة الصورة بعد الضغط.'));
-                resolve(data);
-            };
-            reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الصورة بعد الضغط.'));
-            reader.readAsDataURL(blob);
         });
     }
 
@@ -6705,17 +6515,11 @@ function acknowledgeAnnouncement(id) {
 
         document.getElementById('modalDeskTitle').innerText = `إدارة الرحلة رقم ${desk.deskNumber}`;
         document.getElementById('student1Input').value = desk.student1 || '';
-        document.getElementById('student1PhotoInput').value = '';
-        studentPhotoDeletePending[1]=false;
-        setStudentPhotoPreview(1, desk.student1PhotoUrl || '');
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('phone1Input').value = desk.phone1 || '';
         const g1=document.getElementById('gender1Input'); if(g1) g1.value = desk.gender1 || '';
         document.getElementById('address1Input').value = desk.address1 || '';
         document.getElementById('student2Input').value = desk.student2 || '';
-        document.getElementById('student2PhotoInput').value = '';
-        studentPhotoDeletePending[2]=false;
-        setStudentPhotoPreview(2, desk.student2PhotoUrl || '');
         document.getElementById('code2Input').value = desk.code2 || '';
         document.getElementById('phone2Input').value = desk.phone2 || '';
         const g2=document.getElementById('gender2Input'); if(g2) g2.value = desk.gender2 || '';
@@ -6726,45 +6530,52 @@ function acknowledgeAnnouncement(id) {
         document.getElementById('deskModal').style.display = 'flex';
     }
 
-    async function saveDeskStudents() {
+    function saveDeskStudents() {
         if(currentUser.role !== 'admin') return;
         if(!requireAdminSensitiveAction('إضافة أو حذف أو تعديل بيانات طالب')) return;
 
-        const modal=document.getElementById('deskModal');
-        const classIndex=modal?.dataset.classIndex!==undefined ? parseInt(modal.dataset.classIndex,10) : currentClassIndex;
-        const deskIndex=modal?.dataset.deskIndex!==undefined ? parseInt(modal.dataset.deskIndex,10) : currentDeskIndex;
-        const cls=schoolData[classIndex];
-        if(!cls || !Array.isArray(cls.desks) || !cls.desks[deskIndex]){
+        const modal = document.getElementById('deskModal');
+        const classIndex = modal && modal.dataset.classIndex !== undefined
+            ? parseInt(modal.dataset.classIndex, 10) : currentClassIndex;
+        const deskIndex = modal && modal.dataset.deskIndex !== undefined
+            ? parseInt(modal.dataset.deskIndex, 10) : currentDeskIndex;
+
+        const cls = schoolData[classIndex];
+        if (!cls || !Array.isArray(cls.desks) || !cls.desks[deskIndex]) {
             alert('تعذر حفظ الطالب: الرحلة المحددة غير موجودة. أغلق النافذة وافتح الرحلة من جديد.');
             return;
         }
-        currentClassIndex=classIndex;
-        currentDeskIndex=deskIndex;
-        const desk=cls.desks[deskIndex];
-        const originalDesk=JSON.parse(JSON.stringify(desk));
-        const oldStudent1=String(desk.student1||'').trim();
-        const oldStudent2=String(desk.student2||'').trim();
-        const newStudent1=document.getElementById('student1Input').value.trim();
-        const newStudent2=document.getElementById('student2Input').value.trim();
-        const photoInput1=document.getElementById('student1PhotoInput');
-        const photoInput2=document.getElementById('student2PhotoInput');
 
-        const normalizeStudentNameForDuplicate=(value)=>String(value||'').trim().toLocaleLowerCase('ar')
-            .replace(/[\u064B-\u065F\u0670]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
+        currentClassIndex = classIndex;
+        currentDeskIndex = deskIndex;
+
+        const desk = cls.desks[deskIndex];
+        const oldStudent1 = String(desk.student1 || '').trim();
+        const oldStudent2 = String(desk.student2 || '').trim();
+        const newStudent1 = document.getElementById('student1Input').value.trim();
+        const newStudent2 = document.getElementById('student2Input').value.trim();
+
+        // منع تسجيل الطالب نفسه مرتين، مع إظهار مكان التسجيل الحالي للمدير.
+        const normalizeStudentNameForDuplicate = (value) => String(value || '')
+            .trim().toLocaleLowerCase('ar')
+            .replace(/[\u064B-\u065F\u0670]/g,'')
+            .replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
             .replace(/[^\u0621-\u064A0-9]+/g,'');
-        const duplicateNames=[];
-        for(const candidate of [newStudent1,newStudent2].filter(Boolean)){
-            const normalizedCandidate=normalizeStudentNameForDuplicate(candidate);
-            for(let ci=0;ci<(schoolData||[]).length;ci++){
+        const duplicateNames = [];
+        const candidateNames = [newStudent1, newStudent2].filter(Boolean);
+        for (const candidate of candidateNames) {
+            const normalizedCandidate = normalizeStudentNameForDuplicate(candidate);
+            if(!normalizedCandidate) continue;
+            for(let ci=0; ci<(schoolData||[]).length; ci++){
                 const otherCls=schoolData[ci];
-                for(let di=0;di<(otherCls?.desks||[]).length;di++){
+                for(let di=0; di<(otherCls?.desks||[]).length; di++){
                     const otherDesk=otherCls.desks[di];
                     for(const otherSlot of [1,2]){
-                        const sameCurrent=ci===classIndex && di===deskIndex && ((otherSlot===1&&candidate===oldStudent1)||(otherSlot===2&&candidate===oldStudent2));
-                        if(sameCurrent) continue;
+                        if(ci===classIndex && di===deskIndex && ((otherSlot===1&&candidate===oldStudent1)||(otherSlot===2&&candidate===oldStudent2))) continue;
                         const otherName=String(otherDesk?.[`student${otherSlot}`]||'').trim();
-                        if(otherName && normalizeStudentNameForDuplicate(otherName)===normalizedCandidate){
-                            duplicateNames.push({candidate,name:otherName,className:otherCls?.name||`الصف ${ci+1}`,deskNumber:otherDesk?.deskNumber??(di+1),side:otherSlot===1?'يمين':'يسار'});
+                        if(!otherName) continue;
+                        if(normalizeStudentNameForDuplicate(otherName)===normalizedCandidate){
+                            duplicateNames.push({candidate, name:otherName, className:otherCls?.name||`الصف ${ci+1}`, deskNumber:otherDesk?.deskNumber ?? (di+1), side:otherSlot===1?'يمين':'يسار'});
                         }
                     }
                 }
@@ -6776,91 +6587,40 @@ function acknowledgeAnnouncement(id) {
         }
         if(duplicateNames.length){
             const d=duplicateNames[0];
-            alert(`⚠️ الطالب «${d.candidate}» مسجل مسبقاً في النظام.\n\nمكان التسجيل: ${d.className} — الرحلة رقم ${d.deskNumber} — المقعد ${d.side}.\n\nلم يتم الحفظ لمنع تسجيل الطالب مرتين.`);
+            alert(`⚠️ الطالب «${d.candidate}» مسجل مسبقاً في النظام.\n\nمكان التسجيل: ${d.className} — الرحلة رقم ${d.deskNumber} — المقعد ${d.side}.\n\nلم يتم الحفظ لمنع تسجيل الطالب مرتين. استخدم الاسم الرباعي أو أضف اللقب للطالب ثم حاول مرة أخرى.`);
             return;
         }
 
-        // نجهز البيانات محلياً أولاً، ولا نرسلها للحفظ إلا بعد نجاح معالجة الصور.
-        desk.student1=newStudent1;
-        desk.phone1=document.getElementById('phone1Input').value.trim();
-        desk.gender1=document.getElementById('gender1Input')?.value||'';
-        desk.address1=document.getElementById('address1Input').value.trim();
-        desk.student2=newStudent2;
-        desk.phone2=document.getElementById('phone2Input').value.trim();
-        desk.gender2=document.getElementById('gender2Input')?.value||'';
-        desk.address2=document.getElementById('address2Input').value.trim();
+        desk.student1 = newStudent1;
+        desk.phone1 = document.getElementById('phone1Input').value.trim();
+        desk.gender1 = document.getElementById('gender1Input')?.value || '';
+        desk.address1 = document.getElementById('address1Input').value.trim();
+        desk.student2 = newStudent2;
+        desk.phone2 = document.getElementById('phone2Input').value.trim();
+        desk.gender2 = document.getElementById('gender2Input')?.value || '';
+        desk.address2 = document.getElementById('address2Input').value.trim();
+        if (newStudent1 && newStudent1 !== oldStudent1) desk.student1Id = createStableId('student');
+        if (newStudent2 && newStudent2 !== oldStudent2) desk.student2Id = createStableId('student');
+        if (!newStudent1) desk.student1Id = '';
+        if (!newStudent2) desk.student2Id = '';
 
-        if(newStudent1 && newStudent1!==oldStudent1) desk.student1Id=createStableId('student');
-        if(newStudent2 && newStudent2!==oldStudent2) desk.student2Id=createStableId('student');
-        if(!newStudent1) desk.student1Id='';
-        if(!newStudent2) desk.student2Id='';
-        if(!newStudent1) desk.code1='';
-        else if(newStudent1!==oldStudent1 || !String(desk.code1||'').trim()) desk.code1=generateUniqueSystemCode();
-        if(!newStudent2) desk.code2='';
-        else if(newStudent2!==oldStudent2 || !String(desk.code2||'').trim()) desk.code2=generateUniqueSystemCode();
-
-        try{
-            if(photoInput1?.files?.length && newStudent1){
-                desk.student1PhotoUrl=await uploadSelectedStudentPhoto(1,desk.student1Id,photoInput1);
-                desk.student1PhotoPath='';
-            }else if(!newStudent1 || studentPhotoDeletePending[1] || newStudent1!==oldStudent1){
-                desk.student1PhotoUrl='';
-                desk.student1PhotoPath='';
-            }
-            if(photoInput2?.files?.length && newStudent2){
-                desk.student2PhotoUrl=await uploadSelectedStudentPhoto(2,desk.student2Id,photoInput2);
-                desk.student2PhotoPath='';
-            }else if(!newStudent2 || studentPhotoDeletePending[2] || newStudent2!==oldStudent2){
-                desk.student2PhotoUrl='';
-                desk.student2PhotoPath='';
-            }
-        }catch(photoError){
-            Object.keys(desk).forEach(k=>delete desk[k]);
-            Object.assign(desk,originalDesk);
-            console.error('Student photo save failed:',photoError);
-            alert('تعذر حفظ صورة الطالب. لم يتم تغيير بيانات الرحلة.\n\nالسبب: '+(photoError?.message||photoError));
-            return;
+        /* لا نأخذ قيمة الكود من أي input */
+        if (!newStudent1) {
+            desk.code1 = '';
+        } else if (newStudent1 !== oldStudent1 || !String(desk.code1 || '').trim()) {
+            desk.code1 = generateUniqueSystemCode();
         }
 
-        document.getElementById('code1Input').value=desk.code1||'';
-        document.getElementById('code2Input').value=desk.code2||'';
-        studentPhotoDeletePending[1]=false;
-        studentPhotoDeletePending[2]=false;
+        if (!newStudent2) {
+            desk.code2 = '';
+        } else if (newStudent2 !== oldStudent2 || !String(desk.code2 || '').trim()) {
+            desk.code2 = generateUniqueSystemCode();
+        }
 
-        // نحفظ محلياً أولاً، ثم نرفع نفس النسخة إلى Firebase وننتظر نجاح الرفع.
-        // هذا يمنع بقاء الطالب الجديد على هذا الجهاز فقط بينما الجهاز الآخر
-        // يقرأ النسخة القديمة من Realtime Database.
+        document.getElementById('code1Input').value = desk.code1 || '';
+        document.getElementById('code2Input').value = desk.code2 || '';
+
         saveData();
-        clearTimeout(cloudSaveTimer);
-        clearTimeout(cloudSaveConfirmTimer);
-        cloudSavePending=false;
-        cloudSaveExpectedRevision='';
-
-        if(window.FirebaseCloud?.enabled && navigator.onLine){
-            try{
-                updateCloudStatus('جاري مزامنة الطالب الجديد مع Firebase... ⬆️','#9a6700');
-                const cloudPayload=getCloudPayload();
-                cloudPayload.updatedAt=new Date().toISOString();
-                cloudPayload.resetGeneration=String(factoryResetGeneration||'0');
-                await window.FirebaseCloud.saveForGeneration(cloudPayload,factoryResetGeneration);
-                lastAppliedCloudUpdatedAt=String(cloudPayload.updatedAt);
-                cloudSaveExpectedRevision=String(cloudPayload.updatedAt);
-                APP_SECURITY.lastGoodCloudUpdatedAt=String(cloudPayload.updatedAt);
-                APP_SECURITY.lastGoodCloudSnapshot=cloudPayload;
-                clearOfflineCloudQueue();
-                updateCloudStatus('تم حفظ الطالب ومزامنته مع Firebase ✓','#16803c');
-            }catch(cloudError){
-                // لا نلغي بيانات الطالب المحلية؛ نضعها في طابور المزامنة لإعادة الرفع.
-                cloudSavePending=true;
-                persistOfflineCloudQueue(getCloudPayload());
-                updateCloudStatus('تم حفظ الطالب على الجهاز، وسيتم رفعه إلى Firebase تلقائياً عند نجاح الاتصال.','#9a6700');
-                console.error('Student cloud sync failed:',cloudError);
-            }
-        }else{
-            persistOfflineCloudQueue(getCloudPayload());
-            updateCloudStatus('تم حفظ الطالب على الجهاز — سيُرفع إلى Firebase عند عودة الإنترنت ✓','#9a6700');
-        }
-
         closeModal('deskModal');
         renderDesks();
         renderClassesNav();
@@ -6944,7 +6704,7 @@ function acknowledgeAnnouncement(id) {
 
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
         const copySlotFields=(from,to,fromSlot,toSlot)=>{
-            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
                 const value=from?.[`${f}${fromSlot}`];
                 to[`${f}${toSlot}`]=value===undefined || value===null ? (f==='separated'?false:'') : value;
             });
@@ -6958,7 +6718,7 @@ function acknowledgeAnnouncement(id) {
             copySlotFields(temp,sourceDesk,1,source.slot);
         }else{
             copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
-            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
                 sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
             });
         }
@@ -7027,7 +6787,7 @@ function acknowledgeAnnouncement(id) {
 \
 الطلاب الذين رفعت عنهم علامة الصح لن يتم نقلهم.\
 هل أنت متأكد؟`))return;
-        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
+        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
             let targetDi=empty;
@@ -7041,7 +6801,7 @@ function acknowledgeAnnouncement(id) {
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:item.source.name,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
         }
         // إبقاء أرقام الرحلات مرتبة بعد إضافة رحلات جديدة.
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
@@ -7140,7 +6900,7 @@ function acknowledgeAnnouncement(id) {
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
         if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟`))return;
         const sourceSlot=student.slot;
-        const fields=['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath'];
+        const fields=['student','code','phone','gender','address','studentId'];
         fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
@@ -8415,10 +8175,6 @@ function acknowledgeAnnouncement(id) {
         modal.innerHTML=`<div class="modal-content parent-portal" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:#f5f8fb;border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)">
           <div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>
           ${todayMessage}
-          <div class="parent-student-photo-head">
-            ${f.student.photoUrl ? `<img class="student-photo-avatar" src="${escapeStudentPhotoAttr(f.student.photoUrl)}" alt="صورة الطالب">` : `<div class="student-photo-placeholder">👨‍🎓</div>`}
-            <div><div style="font-size:12px;color:#71808e">الطالب المرتبط بالكود</div><strong style="font-size:22px">${escapeGlobalSearchHTML(studentName)}</strong></div>
-          </div>
           <div class="parent-stats">
             <div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div>
             <div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(f.classObj.name||'-')}</b></div>
@@ -9531,12 +9287,9 @@ window.addEventListener('unhandledrejection', function (event) {
     return `
       <div class="pro-panel pro-module">
         <div class="pro-student-head">
-          <div style="display:flex;align-items:center;gap:12px;">
-            ${s.photoUrl ? `<img class="student-photo-avatar" src="${escapeHTML(s.photoUrl)}" alt="صورة الطالب">` : `<div class="student-photo-placeholder">👨‍🎓</div>`}
-            <div>
-              <div class="pro-student-name">${escapeHTML(s.name)}</div>
-              <div style="opacity:.7">${escapeHTML(c.name||'')} ${c.section?'- '+escapeHTML(c.section):''}</div>
-            </div>
+          <div>
+            <div class="pro-student-name">${escapeHTML(s.name)}</div>
+            <div style="opacity:.7">${escapeHTML(c.name||'')} ${c.section?'- '+escapeHTML(c.section):''}</div>
           </div>
           <div class="pro-toolbar">
             <button type="button" onclick="ProfessionalModules.openAttendance('${s.id}')">📅 تسجيل حالة</button>
