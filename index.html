@@ -3411,9 +3411,26 @@ function acknowledgeAnnouncement(id) {
                 return false;
             }
 
+            // أي طابور لا يملك baseRevision هو طابور قديم من النسخ السابقة للنظام.
+            // لا نعرف على أي نسخة Firebase بُني، لذلك يمنع منعاً باتاً من الكتابة فوق السحابة.
+            // نعتمد Firebase ونحذف هذا الطابور القديم.
+            if (!baseRevision) {
+                clearOfflineCloudQueue();
+                cloudSavePending = false;
+                cloudSaveExpectedRevision = '';
+                if (cloud) {
+                    applyCloudPayloadToLocal(cloud, {silent:true});
+                    lastAppliedCloudUpdatedAt = cloudRevision;
+                    APP_SECURITY.lastGoodCloudUpdatedAt = cloudRevision;
+                    APP_SECURITY.lastGoodCloudSnapshot = cloud;
+                }
+                updateCloudStatus('تم اعتماد Firebase وحذف نسخة محلية قديمة غير موثقة ✓', '#16803c');
+                return false;
+            }
+
             // إذا تغيّرت Firebase منذ آخر مزامنة للجهاز، فالنسخة السحابية أحدث.
             // نرفض الكتابة الكاملة للنسخة المحلية حتى لا تمحو تغييرات جهاز آخر.
-            const sameBase = !baseRevision || !cloudRevision || baseRevision === cloudRevision;
+            const sameBase = !cloudRevision || baseRevision === cloudRevision;
             if (!sameBase) {
                 clearOfflineCloudQueue();
                 cloudSavePending = false;
@@ -3521,6 +3538,8 @@ function acknowledgeAnnouncement(id) {
                     await window.FirebaseCloud.save(payload);
                 }
 
+                // الحفظ المباشر نجح، لذلك أي طابور قديم لم يعد له معنى.
+                clearOfflineCloudQueue();
                 lastAppliedCloudUpdatedAt = String(payload.updatedAt);
                 cloudSaveExpectedRevision = String(payload.updatedAt);
                 APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
@@ -3572,6 +3591,8 @@ function acknowledgeAnnouncement(id) {
             }
             const rawCloud = await window.FirebaseCloud.load();
             firebaseOnline = true;
+            // لا نسمح لبيانات الجهاز المحلية أن تسبق Firebase عند بدء التشغيل.
+            // سيتم التعامل مع طابور الأوفلاين فقط بعد قراءة نسخة Firebase الحالية.
             // اقرأ علامة آخر ترسيت عام قبل قبول أي بيانات سحابية.
             if (typeof window.FirebaseCloud.getFactoryResetControl === 'function') {
                 const control = await window.FirebaseCloud.getFactoryResetControl();
@@ -3645,6 +3666,7 @@ function acknowledgeAnnouncement(id) {
                 // إذا كان هناك تعديل حقيقي تم أثناء انقطاع الإنترنت، نرفعه فقط إذا
                 // كانت Firebase ما تزال على نفس النسخة التي كان الجهاز متزامناً معها.
                 if (localStorage.getItem('schoolOfflinePending') === '1') {
+                    // flushOfflineCloudQueue يتحقق من baseRevision؛ الطوابير القديمة أو المتعارضة تُلغى.
                     await flushOfflineCloudQueue(cloud);
                 }
             } else {
