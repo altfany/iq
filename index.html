@@ -6826,7 +6826,41 @@ function acknowledgeAnnouncement(id) {
         document.getElementById('code2Input').value=desk.code2||'';
         studentPhotoDeletePending[1]=false;
         studentPhotoDeletePending[2]=false;
+
+        // نحفظ محلياً أولاً، ثم نرفع نفس النسخة إلى Firebase وننتظر نجاح الرفع.
+        // هذا يمنع بقاء الطالب الجديد على هذا الجهاز فقط بينما الجهاز الآخر
+        // يقرأ النسخة القديمة من Realtime Database.
         saveData();
+        clearTimeout(cloudSaveTimer);
+        clearTimeout(cloudSaveConfirmTimer);
+        cloudSavePending=false;
+        cloudSaveExpectedRevision='';
+
+        if(window.FirebaseCloud?.enabled && navigator.onLine){
+            try{
+                updateCloudStatus('جاري مزامنة الطالب الجديد مع Firebase... ⬆️','#9a6700');
+                const cloudPayload=getCloudPayload();
+                cloudPayload.updatedAt=new Date().toISOString();
+                cloudPayload.resetGeneration=String(factoryResetGeneration||'0');
+                await window.FirebaseCloud.saveForGeneration(cloudPayload,factoryResetGeneration);
+                lastAppliedCloudUpdatedAt=String(cloudPayload.updatedAt);
+                cloudSaveExpectedRevision=String(cloudPayload.updatedAt);
+                APP_SECURITY.lastGoodCloudUpdatedAt=String(cloudPayload.updatedAt);
+                APP_SECURITY.lastGoodCloudSnapshot=cloudPayload;
+                clearOfflineCloudQueue();
+                updateCloudStatus('تم حفظ الطالب ومزامنته مع Firebase ✓','#16803c');
+            }catch(cloudError){
+                // لا نلغي بيانات الطالب المحلية؛ نضعها في طابور المزامنة لإعادة الرفع.
+                cloudSavePending=true;
+                persistOfflineCloudQueue(getCloudPayload());
+                updateCloudStatus('تم حفظ الطالب على الجهاز، وسيتم رفعه إلى Firebase تلقائياً عند نجاح الاتصال.','#9a6700');
+                console.error('Student cloud sync failed:',cloudError);
+            }
+        }else{
+            persistOfflineCloudQueue(getCloudPayload());
+            updateCloudStatus('تم حفظ الطالب على الجهاز — سيُرفع إلى Firebase عند عودة الإنترنت ✓','#9a6700');
+        }
+
         closeModal('deskModal');
         renderDesks();
         renderClassesNav();
