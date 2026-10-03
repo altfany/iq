@@ -2530,8 +2530,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <label>صورة الطالب</label>
                 <div class="student-photo-picker">
                     <input type="file" id="student2PhotoInput" accept="image/*" style="display:none" onchange="previewStudentPhoto(2,this)">
-                    <button type="button" onclick="document.getElementById('student2PhotoInput').click()" style="background:#2980b9">📷 اختيار صورة</button>
                     <button type="button" onclick="deleteStudentPhoto(2)" style="background:#c0392b">🗑️ حذف الصورة</button>
+                    <button type="button" onclick="document.getElementById('student2PhotoInput').click()" style="background:#2980b9">📷 اختيار صورة</button>
                     <div class="student-photo-preview-wrap">
                         <img id="student2PhotoPreview" class="student-photo-preview" alt="صورة الطالب" style="display:none">
                         <span id="student2PhotoHint">الصورة تُضغط تلقائياً قبل الرفع</span>
@@ -6464,9 +6464,9 @@ function acknowledgeAnnouncement(id) {
         const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : '');
         const label = status === 'absent' ? '<span class="trip-status-label">غائب</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز</span>' : '');
         const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
-        const safePhoto = photoUrl ? escapeStudentPhotoAttr(photoUrl) : '';
-        const photo = safePhoto ? `<img src="${safePhoto}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.9);display:block;margin:0 auto 3px;">` : `<span style="display:block;font-size:20px;line-height:30px;">👨‍🎓</span>`;
-        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}${photo}<span class="trip-student-name">${escapeGlobalSearchHTML(name)}</span></div>`;
+        const safePhoto=escapeStudentPhotoAttr(photoUrl);
+        const photo=safePhoto ? `<img src="${safePhoto}" alt="" style="width:42px;height:42px;object-fit:cover;border-radius:50%;border:2px solid rgba(0,0,0,.12);display:block;margin:0 auto 4px;" onerror="this.style.display='none'">` : '';
+        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}${photo}<span class="trip-student-name">${name}</span></div>`;
     }
 
     function renderDesks() {
@@ -6541,19 +6541,10 @@ function acknowledgeAnnouncement(id) {
     }
 
 
-    function escapeStudentPhotoAttr(value){
-        return String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
     const studentPhotoDeletePending = {1:false, 2:false};
 
-    function deleteStudentPhoto(slot){
-        studentPhotoDeletePending[slot]=true;
-        const input=document.getElementById(`student${slot}PhotoInput`);
-        if(input) input.value='';
-        setStudentPhotoPreview(slot, '');
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(hint) hint.textContent='تم تحديد الصورة للحذف — اضغط تحديث وحفظ لتأكيد الحذف';
+    function escapeStudentPhotoAttr(value){
+        return String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     function setStudentPhotoPreview(slot, url){
@@ -6567,129 +6558,117 @@ function acknowledgeAnnouncement(id) {
         }else{
             img.removeAttribute('src');
             img.style.display='none';
-            if(hint) hint.textContent='الصورة تُضغط تلقائياً قبل الرفع';
+            if(hint) hint.textContent='الصورة تُضغط تلقائياً إلى أقل من 25KB';
         }
+    }
+
+    function deleteStudentPhoto(slot){
+        const input=document.getElementById(`student${slot}PhotoInput`);
+        if(input) input.value='';
+        studentPhotoDeletePending[slot]=true;
+        setStudentPhotoPreview(slot,'');
+        const hint=document.getElementById(`student${slot}PhotoHint`);
+        if(hint) hint.textContent='سيتم حذف الصورة عند الضغط على تحديث وحفظ';
     }
 
     function previewStudentPhoto(slot, input){
         const file=input?.files?.[0];
         if(!file){ return; }
-        studentPhotoDeletePending[slot]=false;
         if(!file.type || !file.type.startsWith('image/')){
             alert('اختر ملف صورة فقط.');
             input.value='';
             return;
         }
-        const maxBytes=8*1024*1024;
+        const maxBytes=12*1024*1024;
         if(file.size>maxBytes){
-            alert('الصورة الأصلية كبيرة جداً. اختر صورة أقل من 8 ميغابايت.');
+            alert('الصورة الأصلية كبيرة جداً. اختر صورة أقل من 12 ميغابايت.');
             input.value='';
             return;
         }
+        studentPhotoDeletePending[slot]=false;
         const url=URL.createObjectURL(file);
         const img=document.getElementById(`student${slot}PhotoPreview`);
         const hint=document.getElementById(`student${slot}PhotoHint`);
         if(img){
             img.src=url;
             img.style.display='block';
-            if(hint) hint.textContent='جاهزة للضغط والرفع إلى Firebase';
+            if(hint) hint.textContent='جاهزة للضغط والحفظ (أقل من 25KB)';
             img.onload=()=>URL.revokeObjectURL(url);
         }
     }
 
+    function canvasToBlob(canvas, quality){
+        return new Promise((resolve,reject)=>{
+            canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('تعذر إنشاء صورة JPEG')), 'image/jpeg', quality);
+        });
+    }
+
+    async function loadPhotoImage(file){
+        if(window.createImageBitmap){
+            try { return await createImageBitmap(file); } catch(e) {}
+        }
+        return await new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الصورة'));
+            reader.onload=()=>{
+                const img=new Image();
+                img.onload=()=>resolve(img);
+                img.onerror=()=>reject(new Error('تعذر فتح الصورة'));
+                img.src=String(reader.result||'');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     async function compressStudentPhoto(file){
-        if(!file) throw new Error('لم يتم اختيار صورة.');
-        if(file.size > 8 * 1024 * 1024) throw new Error('حجم الصورة الأصلية كبير جداً. اختر صورة أقل من 8 MB.');
+        if(!file) return null;
+        const source=await loadPhotoImage(file);
+        const sourceW=Number(source.width||source.naturalWidth||0);
+        const sourceH=Number(source.height||source.naturalHeight||0);
+        if(!sourceW || !sourceH) throw new Error('أبعاد الصورة غير صالحة.');
 
-        const targetBytes = 25 * 1024;
-        const maxSide = 240;
-        let bitmap = null;
-        try {
-            if(window.createImageBitmap) bitmap = await createImageBitmap(file);
-        } catch(_) {}
+        const TARGET=25*1024;
+        let maxSide=240;
+        let lastBlob=null;
+        for(let sizeStep=0; sizeStep<7; sizeStep++){
+            const scale=Math.min(1,maxSide/Math.max(sourceW,sourceH));
+            const w=Math.max(64,Math.round(sourceW*scale));
+            const h=Math.max(64,Math.round(sourceH*scale));
+            const canvas=document.createElement('canvas');
+            canvas.width=w; canvas.height=h;
+            const ctx=canvas.getContext('2d',{alpha:false});
+            if(!ctx) throw new Error('المتصفح لا يدعم معالجة الصور.');
+            ctx.fillStyle='#ffffff';
+            ctx.fillRect(0,0,w,h);
+            ctx.drawImage(source,0,0,w,h);
 
-        let img = null;
-        if(!bitmap){
-            img = await new Promise((resolve,reject)=>{
-                const objectUrl = URL.createObjectURL(file);
-                const image = new Image();
-                image.onload = ()=>{ URL.revokeObjectURL(objectUrl); resolve(image); };
-                image.onerror = ()=>{ URL.revokeObjectURL(objectUrl); reject(new Error('تعذر قراءة الصورة.')); };
-                image.src = objectUrl;
-            });
-        }
-
-        const srcW = bitmap ? bitmap.width : img.naturalWidth;
-        const srcH = bitmap ? bitmap.height : img.naturalHeight;
-        if(!srcW || !srcH) throw new Error('أبعاد الصورة غير صالحة.');
-
-        const scale = Math.min(1, maxSide / Math.max(srcW, srcH));
-        const width = Math.max(1, Math.round(srcW * scale));
-        const height = Math.max(1, Math.round(srcH * scale));
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d', {alpha:false});
-        if(!ctx) throw new Error('تعذر تجهيز الصورة.');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0,0,width,height);
-        ctx.drawImage(bitmap || img, 0, 0, width, height);
-        if(bitmap) bitmap.close?.();
-
-        // نبدأ بجودة جيدة ثم ننزل تدريجياً حتى نصل لأقل من 25 KB.
-        const qualities = [0.70,0.64,0.58,0.52,0.46,0.40,0.35,0.30,0.26,0.22,0.18,0.15];
-        let bestBlob = null;
-
-        for(const q of qualities){
-            const blob = await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',q));
-            if(!blob) continue;
-            bestBlob = blob;
-            if(blob.size <= targetBytes) break;
-        }
-
-        // إذا بقيت الصورة أكبر من 25 KB، نصغّر الأبعاد تدريجياً ونكرر الضغط.
-        if(!bestBlob || bestBlob.size > targetBytes){
-            let w = width, h = height;
-            for(let step=0; step<5 && (!bestBlob || bestBlob.size > targetBytes); step++){
-                w = Math.max(96, Math.round(w * 0.88));
-                h = Math.max(96, Math.round(h * 0.88));
-                canvas.width = w;
-                canvas.height = h;
-                const c = canvas.getContext('2d', {alpha:false});
-                c.imageSmoothingEnabled = true;
-                c.imageSmoothingQuality = 'high';
-                c.fillStyle = '#fff';
-                c.fillRect(0,0,w,h);
-                c.drawImage(bitmap || img,0,0,w,h);
-                const blob = await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.18));
-                if(blob) bestBlob = blob;
+            for(const quality of [0.72,0.62,0.54,0.46,0.38,0.32,0.27,0.22,0.18,0.15]){
+                const blob=await canvasToBlob(canvas,quality);
+                lastBlob=blob;
+                if(blob.size<=TARGET){
+                    if(source && typeof source.close==='function') source.close();
+                    return blob;
+                }
             }
+            maxSide=Math.max(64,Math.floor(maxSide*0.82));
         }
-
-        if(!bestBlob) throw new Error('تعذر ضغط الصورة.');
-
-        // المحاولة النهائية: إذا كانت أكبر من 25 KB نرفضها بدلاً من تخزينها بحجم أكبر.
-        if(bestBlob.size > targetBytes){
-            throw new Error('تعذر ضغط الصورة إلى أقل من 25 KB. اختر صورة أبسط أو أقل تفاصيل.');
-        }
-
-        return bestBlob;
+        if(source && typeof source.close==='function') source.close();
+        if(lastBlob && lastBlob.size<=TARGET) return lastBlob;
+        throw new Error('تعذر ضغط الصورة إلى أقل من 25KB. اختر صورة أبسط أو أقل تفاصيل.');
     }
 
     async function uploadSelectedStudentPhoto(slot, studentId, input){
         const file=input?.files?.[0];
         if(!file) return '';
-        if(!navigator.onLine){
-            throw new Error('حفظ صورة الطالب يحتاج اتصالاً بالإنترنت. باقي بيانات النظام تبقى محفوظة أوف لاين.');
-        }
         const blob=await compressStudentPhoto(file);
         if(!blob) throw new Error('تعذر ضغط صورة الطالب.');
         return await new Promise((resolve,reject)=>{
             const reader=new FileReader();
-            reader.onload=()=>resolve(String(reader.result||''));
+            reader.onload=()=>{
+                const data=String(reader.result||'');
+                if(!data) return reject(new Error('تعذر قراءة الصورة بعد الضغط.'));
+                resolve(data);
+            };
             reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الصورة بعد الضغط.'));
             reader.readAsDataURL(blob);
         });
@@ -6726,9 +6705,8 @@ function acknowledgeAnnouncement(id) {
 
         document.getElementById('modalDeskTitle').innerText = `إدارة الرحلة رقم ${desk.deskNumber}`;
         document.getElementById('student1Input').value = desk.student1 || '';
-        studentPhotoDeletePending[1]=false;
-        studentPhotoDeletePending[2]=false;
         document.getElementById('student1PhotoInput').value = '';
+        studentPhotoDeletePending[1]=false;
         setStudentPhotoPreview(1, desk.student1PhotoUrl || '');
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('phone1Input').value = desk.phone1 || '';
@@ -6736,6 +6714,7 @@ function acknowledgeAnnouncement(id) {
         document.getElementById('address1Input').value = desk.address1 || '';
         document.getElementById('student2Input').value = desk.student2 || '';
         document.getElementById('student2PhotoInput').value = '';
+        studentPhotoDeletePending[2]=false;
         setStudentPhotoPreview(2, desk.student2PhotoUrl || '');
         document.getElementById('code2Input').value = desk.code2 || '';
         document.getElementById('phone2Input').value = desk.phone2 || '';
@@ -6751,52 +6730,41 @@ function acknowledgeAnnouncement(id) {
         if(currentUser.role !== 'admin') return;
         if(!requireAdminSensitiveAction('إضافة أو حذف أو تعديل بيانات طالب')) return;
 
-        const modal = document.getElementById('deskModal');
-        const classIndex = modal && modal.dataset.classIndex !== undefined
-            ? parseInt(modal.dataset.classIndex, 10) : currentClassIndex;
-        const deskIndex = modal && modal.dataset.deskIndex !== undefined
-            ? parseInt(modal.dataset.deskIndex, 10) : currentDeskIndex;
-
-        const cls = schoolData[classIndex];
-        if (!cls || !Array.isArray(cls.desks) || !cls.desks[deskIndex]) {
+        const modal=document.getElementById('deskModal');
+        const classIndex=modal?.dataset.classIndex!==undefined ? parseInt(modal.dataset.classIndex,10) : currentClassIndex;
+        const deskIndex=modal?.dataset.deskIndex!==undefined ? parseInt(modal.dataset.deskIndex,10) : currentDeskIndex;
+        const cls=schoolData[classIndex];
+        if(!cls || !Array.isArray(cls.desks) || !cls.desks[deskIndex]){
             alert('تعذر حفظ الطالب: الرحلة المحددة غير موجودة. أغلق النافذة وافتح الرحلة من جديد.');
             return;
         }
+        currentClassIndex=classIndex;
+        currentDeskIndex=deskIndex;
+        const desk=cls.desks[deskIndex];
+        const originalDesk=JSON.parse(JSON.stringify(desk));
+        const oldStudent1=String(desk.student1||'').trim();
+        const oldStudent2=String(desk.student2||'').trim();
+        const newStudent1=document.getElementById('student1Input').value.trim();
+        const newStudent2=document.getElementById('student2Input').value.trim();
+        const photoInput1=document.getElementById('student1PhotoInput');
+        const photoInput2=document.getElementById('student2PhotoInput');
 
-        currentClassIndex = classIndex;
-        currentDeskIndex = deskIndex;
-
-        const desk = cls.desks[deskIndex];
-        const oldStudent1 = String(desk.student1 || '').trim();
-        const oldStudent2 = String(desk.student2 || '').trim();
-        const oldStudent1Id = String(desk.student1Id || '').trim();
-        const oldStudent2Id = String(desk.student2Id || '').trim();
-        const newStudent1 = document.getElementById('student1Input').value.trim();
-        const newStudent2 = document.getElementById('student2Input').value.trim();
-        const photoInput1 = document.getElementById('student1PhotoInput');
-        const photoInput2 = document.getElementById('student2PhotoInput');
-
-        // منع تسجيل الطالب نفسه مرتين، مع إظهار مكان التسجيل الحالي للمدير.
-        const normalizeStudentNameForDuplicate = (value) => String(value || '')
-            .trim().toLocaleLowerCase('ar')
-            .replace(/[\u064B-\u065F\u0670]/g,'')
-            .replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
+        const normalizeStudentNameForDuplicate=(value)=>String(value||'').trim().toLocaleLowerCase('ar')
+            .replace(/[\u064B-\u065F\u0670]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
             .replace(/[^\u0621-\u064A0-9]+/g,'');
-        const duplicateNames = [];
-        const candidateNames = [newStudent1, newStudent2].filter(Boolean);
-        for (const candidate of candidateNames) {
-            const normalizedCandidate = normalizeStudentNameForDuplicate(candidate);
-            if(!normalizedCandidate) continue;
-            for(let ci=0; ci<(schoolData||[]).length; ci++){
+        const duplicateNames=[];
+        for(const candidate of [newStudent1,newStudent2].filter(Boolean)){
+            const normalizedCandidate=normalizeStudentNameForDuplicate(candidate);
+            for(let ci=0;ci<(schoolData||[]).length;ci++){
                 const otherCls=schoolData[ci];
-                for(let di=0; di<(otherCls?.desks||[]).length; di++){
+                for(let di=0;di<(otherCls?.desks||[]).length;di++){
                     const otherDesk=otherCls.desks[di];
                     for(const otherSlot of [1,2]){
-                        if(ci===classIndex && di===deskIndex && ((otherSlot===1&&candidate===oldStudent1)||(otherSlot===2&&candidate===oldStudent2))) continue;
+                        const sameCurrent=ci===classIndex && di===deskIndex && ((otherSlot===1&&candidate===oldStudent1)||(otherSlot===2&&candidate===oldStudent2));
+                        if(sameCurrent) continue;
                         const otherName=String(otherDesk?.[`student${otherSlot}`]||'').trim();
-                        if(!otherName) continue;
-                        if(normalizeStudentNameForDuplicate(otherName)===normalizedCandidate){
-                            duplicateNames.push({candidate, name:otherName, className:otherCls?.name||`الصف ${ci+1}`, deskNumber:otherDesk?.deskNumber ?? (di+1), side:otherSlot===1?'يمين':'يسار'});
+                        if(otherName && normalizeStudentNameForDuplicate(otherName)===normalizedCandidate){
+                            duplicateNames.push({candidate,name:otherName,className:otherCls?.name||`الصف ${ci+1}`,deskNumber:otherDesk?.deskNumber??(di+1),side:otherSlot===1?'يمين':'يسار'});
                         }
                     }
                 }
@@ -6808,46 +6776,30 @@ function acknowledgeAnnouncement(id) {
         }
         if(duplicateNames.length){
             const d=duplicateNames[0];
-            alert(`⚠️ الطالب «${d.candidate}» مسجل مسبقاً في النظام.\n\nمكان التسجيل: ${d.className} — الرحلة رقم ${d.deskNumber} — المقعد ${d.side}.\n\nلم يتم الحفظ لمنع تسجيل الطالب مرتين. استخدم الاسم الرباعي أو أضف اللقب للطالب ثم حاول مرة أخرى.`);
+            alert(`⚠️ الطالب «${d.candidate}» مسجل مسبقاً في النظام.\n\nمكان التسجيل: ${d.className} — الرحلة رقم ${d.deskNumber} — المقعد ${d.side}.\n\nلم يتم الحفظ لمنع تسجيل الطالب مرتين.`);
             return;
         }
 
-        desk.student1 = newStudent1;
-        desk.phone1 = document.getElementById('phone1Input').value.trim();
-        desk.gender1 = document.getElementById('gender1Input')?.value || '';
-        desk.address1 = document.getElementById('address1Input').value.trim();
-        desk.student2 = newStudent2;
-        desk.phone2 = document.getElementById('phone2Input').value.trim();
-        desk.gender2 = document.getElementById('gender2Input')?.value || '';
-        desk.address2 = document.getElementById('address2Input').value.trim();
-        if (newStudent1 && newStudent1 !== oldStudent1) desk.student1Id = createStableId('student');
-        if (newStudent2 && newStudent2 !== oldStudent2) desk.student2Id = createStableId('student');
-        if (!newStudent1) desk.student1Id = '';
-        if (!newStudent2) desk.student2Id = '';
+        // نجهز البيانات محلياً أولاً، ولا نرسلها للحفظ إلا بعد نجاح معالجة الصور.
+        desk.student1=newStudent1;
+        desk.phone1=document.getElementById('phone1Input').value.trim();
+        desk.gender1=document.getElementById('gender1Input')?.value||'';
+        desk.address1=document.getElementById('address1Input').value.trim();
+        desk.student2=newStudent2;
+        desk.phone2=document.getElementById('phone2Input').value.trim();
+        desk.gender2=document.getElementById('gender2Input')?.value||'';
+        desk.address2=document.getElementById('address2Input').value.trim();
 
-        /* لا نأخذ قيمة الكود من أي input */
-        if (!newStudent1) {
-            desk.code1 = '';
-        } else if (newStudent1 !== oldStudent1 || !String(desk.code1 || '').trim()) {
-            desk.code1 = generateUniqueSystemCode();
-        }
+        if(newStudent1 && newStudent1!==oldStudent1) desk.student1Id=createStableId('student');
+        if(newStudent2 && newStudent2!==oldStudent2) desk.student2Id=createStableId('student');
+        if(!newStudent1) desk.student1Id='';
+        if(!newStudent2) desk.student2Id='';
+        if(!newStudent1) desk.code1='';
+        else if(newStudent1!==oldStudent1 || !String(desk.code1||'').trim()) desk.code1=generateUniqueSystemCode();
+        if(!newStudent2) desk.code2='';
+        else if(newStudent2!==oldStudent2 || !String(desk.code2||'').trim()) desk.code2=generateUniqueSystemCode();
 
-        if (!newStudent2) {
-            desk.code2 = '';
-        } else if (newStudent2 !== oldStudent2 || !String(desk.code2 || '').trim()) {
-            desk.code2 = generateUniqueSystemCode();
-        }
-
-        // الصورة اختيارية. إذا اختار المدير صورة، تُضغط أولاً ثم تُحفظ داخل Realtime Database.
-        // الصورة القديمة تبقى كما هي إذا لم يختر صورة جديدة.
-        try {
-            // حذف ملف الصورة القديم فقط عندما يُحذف الطالب أو يُستبدل بطالب آخر.
-            if(oldStudent1Id && (!newStudent1 || newStudent1!==oldStudent1) && window.FirebaseCloud?.deleteStudentPhoto){
-                await window.FirebaseCloud.deleteStudentPhoto(oldStudent1Id);
-            }
-            if(oldStudent2Id && (!newStudent2 || newStudent2!==oldStudent2) && window.FirebaseCloud?.deleteStudentPhoto){
-                await window.FirebaseCloud.deleteStudentPhoto(oldStudent2Id);
-            }
+        try{
             if(photoInput1?.files?.length && newStudent1){
                 desk.student1PhotoUrl=await uploadSelectedStudentPhoto(1,desk.student1Id,photoInput1);
                 desk.student1PhotoPath='';
@@ -6855,7 +6807,6 @@ function acknowledgeAnnouncement(id) {
                 desk.student1PhotoUrl='';
                 desk.student1PhotoPath='';
             }
-
             if(photoInput2?.files?.length && newStudent2){
                 desk.student2PhotoUrl=await uploadSelectedStudentPhoto(2,desk.student2Id,photoInput2);
                 desk.student2PhotoPath='';
@@ -6863,15 +6814,18 @@ function acknowledgeAnnouncement(id) {
                 desk.student2PhotoUrl='';
                 desk.student2PhotoPath='';
             }
-        } catch(photoError) {
-            console.error('Student photo upload failed:',photoError);
-            alert('تعذر حفظ صورة الطالب داخل Realtime Database. لم يتم إكمال حفظ بيانات الرحلة حتى لا تُحفظ الصورة بشكل ناقص.\n\nالسبب: '+(photoError?.message||photoError));
+        }catch(photoError){
+            Object.keys(desk).forEach(k=>delete desk[k]);
+            Object.assign(desk,originalDesk);
+            console.error('Student photo save failed:',photoError);
+            alert('تعذر حفظ صورة الطالب. لم يتم تغيير بيانات الرحلة.\n\nالسبب: '+(photoError?.message||photoError));
             return;
         }
 
-        document.getElementById('code1Input').value = desk.code1 || '';
-        document.getElementById('code2Input').value = desk.code2 || '';
-
+        document.getElementById('code1Input').value=desk.code1||'';
+        document.getElementById('code2Input').value=desk.code2||'';
+        studentPhotoDeletePending[1]=false;
+        studentPhotoDeletePending[2]=false;
         saveData();
         closeModal('deskModal');
         renderDesks();
@@ -6956,9 +6910,9 @@ function acknowledgeAnnouncement(id) {
 
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
         const copySlotFields=(from,to,fromSlot,toSlot)=>{
-            ['student','code','phone','gender','address','studentId','photoUrl','photoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
-                const value = f==='photoUrl' ? from?.[`student${fromSlot}PhotoUrl`] : f==='photoPath' ? from?.[`student${fromSlot}PhotoPath`] : from?.[`${f}${fromSlot}`];
-                if(f==='photoUrl') to[`student${toSlot}PhotoUrl`]=value===undefined || value===null ? '' : value; else if(f==='photoPath') to[`student${toSlot}PhotoPath`]=value===undefined || value===null ? '' : value; else to[`${f}${toSlot}`]=value===undefined || value===null ? (f==='separated'?false:'') : value;
+            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+                const value=from?.[`${f}${fromSlot}`];
+                to[`${f}${toSlot}`]=value===undefined || value===null ? (f==='separated'?false:'') : value;
             });
         };
 
@@ -6970,8 +6924,8 @@ function acknowledgeAnnouncement(id) {
             copySlotFields(temp,sourceDesk,1,source.slot);
         }else{
             copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
-            ['student','code','phone','gender','address','studentId','photoUrl','photoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
-                if(f==='photoUrl') sourceDesk[`student${source.slot}PhotoUrl`]=''; else if(f==='photoPath') sourceDesk[`student${source.slot}PhotoPath`]=''; else sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
+            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+                sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
             });
         }
 
@@ -7039,7 +6993,7 @@ function acknowledgeAnnouncement(id) {
 \
 الطلاب الذين رفعت عنهم علامة الصح لن يتم نقلهم.\
 هل أنت متأكد؟`))return;
-        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
+        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
             let targetDi=empty;
@@ -7053,7 +7007,7 @@ function acknowledgeAnnouncement(id) {
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:item.source.name,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
+            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
         }
         // إبقاء أرقام الرحلات مرتبة بعد إضافة رحلات جديدة.
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
@@ -7152,7 +7106,7 @@ function acknowledgeAnnouncement(id) {
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
         if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟`))return;
         const sourceSlot=student.slot;
-        const fields=['student','code','phone','gender','address','studentId'];
+        const fields=['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath'];
         fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
