@@ -1395,12 +1395,12 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
 
   const firebaseConfig = {
     apiKey: "AIzaSyAUrzKmFBtpQyd5fig8RugixGBEALm5b7k",
-    authDomain: "school-30423.firebaseapp.com",
-    databaseURL: "https://school-30423-default-rtdb.firebaseio.com",
-    projectId: "school-30423",
-    storageBucket: "school-30423.firebasestorage.app",
-    messagingSenderId: "832600096689",
-    appId: "1:832600096689:web:e60ae91e5fc792e3c98790",
+    authDomain: "school-7d86c.firebaseapp.com",
+    databaseURL: "https://school-7d86c-default-rtdb.firebaseio.com",
+    projectId: "school-7d86c",
+    storageBucket: "school-7d86c.firebasestorage.app",
+    messagingSenderId: "204644660536",
+    appId: "1:204644660536:web:15b1e128ad99808f54fdcd",
     measurementId: "G-XDEW6HTZC1"
   };
 
@@ -1957,24 +1957,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 }
 </style>
 
-<style id="student-photo-system-css">
-.student-photo-picker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8fbfd;border:1px dashed #cbd8e2;border-radius:10px;padding:8px}
-.student-photo-picker button{min-height:38px;padding:7px 11px;font-size:12px}
-.student-photo-preview-wrap{display:flex;align-items:center;gap:7px;min-width:0}
-.student-photo-preview{width:58px;height:58px;object-fit:cover;border-radius:12px;border:2px solid #d8e2ea;background:#eef3f7;box-shadow:0 3px 9px rgba(0,0,0,.08)}
-.student-photo-preview-wrap span{font-size:10px;color:#6b7b88}
-.student-photo-avatar{width:92px;height:92px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.16);background:#edf2f6}
-.student-photo-avatar.small{width:62px;height:62px;border-width:3px}
-.student-photo-placeholder{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:#edf2f6;border:3px solid #dce5ec;font-size:36px}
-.student-photo-placeholder.small{width:62px;height:62px;font-size:25px}
-.parent-student-photo-head{display:flex;align-items:center;gap:14px;margin:0 0 12px;padding:14px;background:#fff;border:1px solid #e1e8ef;border-radius:16px}
-.student-search-photo{width:64px;height:64px;object-fit:cover;border-radius:14px;border:2px solid #dce5ec;background:#eef3f7}
-@media(max-width:480px){
-  .student-photo-picker{align-items:flex-start;flex-direction:column}
-  .student-photo-preview{width:64px;height:64px}
-  .student-photo-avatar{width:78px;height:78px}
-}
-</style>
 </head>
 <body>
 
@@ -2059,7 +2041,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <div>
                     <h3 id="currentClassName"></h3>
                     <p id="currentClassInfo" style="margin:2px 0 0 0;"></p>
-                    <button type="button" id="btnToggleTripStudentsView" onclick="toggleTripStudentsView()" style="margin-top:7px;background:#34495e;padding:7px 12px;font-size:11px;">🖼️ عرض الصور في الرحلات</button>
                 </div>
                 <div class="class-actions">
                     <button class="btn-supervisor" id="currentClassSupervisorBtn" onclick="openClassSupervisorModal()">👨‍🏫 مرشد الصف: غير محدد</button>
@@ -2500,15 +2481,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <label>اسم الطالب الأول</label>
                 <input type="text" id="student1Input" placeholder="اسم الطالب الأول">
             </div>
-            <div class="student-photo-picker">
-                <input type="file" id="student1PhotoInput" accept="image/*" style="display:none" onchange="previewStudentPhoto(1,this)">
-                <button type="button" onclick="document.getElementById('student1PhotoInput').click()" style="background:#2980b9">📷 اختيار صورة</button>
-                <button type="button" onclick="deleteStudentPhoto(1)" style="background:#c0392b">🗑 حذف الصورة</button>
-                <div class="student-photo-preview-wrap">
-                    <img id="student1PhotoPreview" class="student-photo-preview" alt="صورة الطالب" style="display:none">
-                    <span id="student1PhotoHint">الصورة تُضغط تلقائياً إلى أقل من 25KB</span>
-                </div>
-            </div>
             <div class="form-group">
                 <label>كود المتابعة لولي الأمر</label>
                 <input type="text" id="code1Input" placeholder="يُولد تلقائياً بواسطة النظام" readonly autocomplete="off" tabindex="-1" style="background:#eef2f5;cursor:not-allowed;font-weight:800;letter-spacing:1px;">
@@ -2532,15 +2504,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <div class="form-group" style="margin-top: 5px;">
                 <label>اسم الطالب الثاني</label>
                 <input type="text" id="student2Input" placeholder="اسم الطالب الثاني">
-            </div>
-            <div class="student-photo-picker">
-                <input type="file" id="student2PhotoInput" accept="image/*" style="display:none" onchange="previewStudentPhoto(2,this)">
-                <button type="button" onclick="document.getElementById('student2PhotoInput').click()" style="background:#2980b9">📷 اختيار صورة</button>
-                <button type="button" onclick="deleteStudentPhoto(2)" style="background:#c0392b">🗑 حذف الصورة</button>
-                <div class="student-photo-preview-wrap">
-                    <img id="student2PhotoPreview" class="student-photo-preview" alt="صورة الطالب" style="display:none">
-                    <span id="student2PhotoHint">الصورة تُضغط تلقائياً إلى أقل من 25KB</span>
-                </div>
             </div>
             <div class="form-group">
                 <label>كود المتابعة لولي الأمر</label>
@@ -5544,8 +5507,7 @@ function updateCloudStatus(text, color) {
                         deskNumber: d.deskNumber,
                         seat: 'المقعد الأول (يمين)',
                         itemKey: itemKey,
-                        code: d.code1,
-                        phone: d.phone1 || '', address: d.address1 || '', gender: d.gender1 || '', photoUrl: d.student1PhotoUrl || ''
+                        code: d.code1
                     };
                     break;
                 }
@@ -5560,8 +5522,7 @@ function updateCloudStatus(text, color) {
                         deskNumber: d.deskNumber,
                         seat: 'المقعد الثاني (يسار)',
                         itemKey: itemKey,
-                        code: d.code2,
-                        phone: d.phone2 || '', address: d.address2 || '', gender: d.gender2 || '', photoUrl: d.student2PhotoUrl || ''
+                        code: d.code2
                     };
                     break;
                 }
@@ -5586,15 +5547,12 @@ function updateCloudStatus(text, color) {
 
         if (lastFoundSearchResult) {
             const codeDisplay = lastFoundSearchResult.code || 'غير محدد';
-            const searchPhoto = lastFoundSearchResult.photoUrl ? `<img class="student-search-photo" src="${escapeStudentPhotoAttr(lastFoundSearchResult.photoUrl)}" alt="صورة الطالب">` : `<div class="student-photo-placeholder small">👨‍🎓</div>`;
-            const genderText = lastFoundSearchResult.gender==='male'?'ذكر':(lastFoundSearchResult.gender==='female'?'مؤنث':'غير محدد');
+
             contentDiv.innerHTML = `
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">${searchPhoto}<div><p style="margin:0 0 4px"><strong>اسم الطالب:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.name)}</p><p style="margin:0"><strong>الصف:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.className)}</p></div></div>
-                <p><strong>رقم الرحلة:</strong> #${escapeGlobalSearchHTML(lastFoundSearchResult.deskNumber)} (${escapeGlobalSearchHTML(lastFoundSearchResult.seat)})</p>
-                <p><strong>كود المتابعة:</strong> ${escapeGlobalSearchHTML(codeDisplay)}</p>
-                <p><strong>الجنس:</strong> ${genderText}</p>
-                <p><strong>هاتف ولي الأمر:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.phone || 'غير مسجل')}</p>
-                <p><strong>العنوان:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.address || 'غير مسجل')}</p>
+                <p><strong>اسم الطالب:</strong> ${lastFoundSearchResult.name}</p>
+                <p><strong>الصف:</strong> ${lastFoundSearchResult.className}</p>
+                <p><strong>رقم الرحلة:</strong> #${lastFoundSearchResult.deskNumber} (${lastFoundSearchResult.seat})</p>
+                <p><strong>كود المتابعة:</strong> ${codeDisplay}</p>
             `;
 
             extraActions.style.display = 'flex';
@@ -6331,158 +6289,12 @@ function updateCloudStatus(text, color) {
         return getStoredAttendanceStatus(cls, date, key);
     }
 
-    let showTripStudentPhotos = false;
-    const studentPhotoDeletePending = {1:false, 2:false};
-
-    function escapeStudentPhotoAttr(value){
-        return String(value||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    function setStudentPhotoPreview(slot, url){
-        const img=document.getElementById(`student${slot}PhotoPreview`);
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(!img) return;
-        if(url){
-            img.src=url;
-            img.style.display='block';
-            if(hint) hint.textContent='الصورة الحالية محفوظة — يمكنك اختيار صورة جديدة';
-        }else{
-            img.removeAttribute('src');
-            img.style.display='none';
-            if(hint) hint.textContent='الصورة تُضغط تلقائياً إلى أقل من 25KB';
-        }
-    }
-
-    function deleteStudentPhoto(slot){
-        const input=document.getElementById(`student${slot}PhotoInput`);
-        if(input) input.value='';
-        studentPhotoDeletePending[slot]=true;
-        setStudentPhotoPreview(slot,'');
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(hint) hint.textContent='سيتم حذف الصورة عند الضغط على تحديث وحفظ';
-    }
-
-    function previewStudentPhoto(slot, input){
-        const file=input?.files?.[0];
-        if(!file){ return; }
-        if(!file.type || !file.type.startsWith('image/')){
-            alert('اختر ملف صورة فقط.');
-            input.value='';
-            return;
-        }
-        const maxBytes=12*1024*1024;
-        if(file.size>maxBytes){
-            alert('الصورة الأصلية كبيرة جداً. اختر صورة أقل من 12 ميغابايت.');
-            input.value='';
-            return;
-        }
-        studentPhotoDeletePending[slot]=false;
-        const url=URL.createObjectURL(file);
-        const img=document.getElementById(`student${slot}PhotoPreview`);
-        const hint=document.getElementById(`student${slot}PhotoHint`);
-        if(img){
-            img.src=url;
-            img.style.display='block';
-            if(hint) hint.textContent='جاهزة للضغط والحفظ (أقل من 25KB)';
-            img.onload=()=>URL.revokeObjectURL(url);
-        }
-    }
-
-    function canvasToBlob(canvas, quality){
-        return new Promise((resolve,reject)=>{
-            canvas.toBlob(blob=>blob ? resolve(blob) : reject(new Error('تعذر إنشاء صورة JPEG')), 'image/jpeg', quality);
-        });
-    }
-
-    async function loadPhotoImage(file){
-        if(window.createImageBitmap){
-            try { return await createImageBitmap(file); } catch(e) {}
-        }
-        return await new Promise((resolve,reject)=>{
-            const reader=new FileReader();
-            reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الصورة'));
-            reader.onload=()=>{
-                const img=new Image();
-                img.onload=()=>resolve(img);
-                img.onerror=()=>reject(new Error('تعذر فتح الصورة'));
-                img.src=String(reader.result||'');
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function compressStudentPhoto(file){
-        if(!file) return null;
-        const source=await loadPhotoImage(file);
-        const sourceW=Number(source.width||source.naturalWidth||0);
-        const sourceH=Number(source.height||source.naturalHeight||0);
-        if(!sourceW || !sourceH) throw new Error('أبعاد الصورة غير صالحة.');
-
-        const TARGET=25*1024;
-        let maxSide=240;
-        let lastBlob=null;
-        for(let sizeStep=0; sizeStep<7; sizeStep++){
-            const scale=Math.min(1,maxSide/Math.max(sourceW,sourceH));
-            const w=Math.max(64,Math.round(sourceW*scale));
-            const h=Math.max(64,Math.round(sourceH*scale));
-            const canvas=document.createElement('canvas');
-            canvas.width=w; canvas.height=h;
-            const ctx=canvas.getContext('2d',{alpha:false});
-            if(!ctx) throw new Error('المتصفح لا يدعم معالجة الصور.');
-            ctx.fillStyle='#ffffff';
-            ctx.fillRect(0,0,w,h);
-            ctx.drawImage(source,0,0,w,h);
-
-            for(const quality of [0.72,0.62,0.54,0.46,0.38,0.32,0.27,0.22,0.18,0.15]){
-                const blob=await canvasToBlob(canvas,quality);
-                lastBlob=blob;
-                if(blob.size<=TARGET){
-                    if(source && typeof source.close==='function') source.close();
-                    return blob;
-                }
-            }
-            maxSide=Math.max(64,Math.floor(maxSide*0.82));
-        }
-        if(source && typeof source.close==='function') source.close();
-        if(lastBlob && lastBlob.size<=TARGET) return lastBlob;
-        throw new Error('تعذر ضغط الصورة إلى أقل من 25KB. اختر صورة أبسط أو أقل تفاصيل.');
-    }
-
-    async function uploadSelectedStudentPhoto(slot, studentId, input){
-        const file=input?.files?.[0];
-        if(!file) return '';
-        const blob=await compressStudentPhoto(file);
-        if(!blob) throw new Error('تعذر ضغط صورة الطالب.');
-        return await new Promise((resolve,reject)=>{
-            const reader=new FileReader();
-            reader.onload=()=>{
-                const data=String(reader.result||'');
-                if(!data) return reject(new Error('تعذر قراءة الصورة بعد الضغط.'));
-                resolve(data);
-            };
-            reader.onerror=()=>reject(reader.error||new Error('تعذر قراءة الصورة بعد الضغط.'));
-            reader.readAsDataURL(blob);
-        });
-    }
-
-
-    function toggleTripStudentsView(){
-        showTripStudentPhotos=!showTripStudentPhotos;
-        const btn=document.getElementById('btnToggleTripStudentsView');
-        if(btn) btn.innerHTML=showTripStudentPhotos?'👤 عرض أسماء الطلاب في الرحلات':'🖼️ عرض الصور في الرحلات';
-        renderDesks();
-    }
-
-    function renderTripStudentSeat(name,hasStudent,status,extraClass='',gender='',photoUrl=''){
-        if(!hasStudent)return `<div class="seat seat-empty ${extraClass}">فارغ</div>`;
-        const statusClass=status==='absent'?'student-status-absent':(status==='leave'?'student-status-leave':'');
-        const label=status==='absent'?'<span class="trip-status-label">غائب</span>':(status==='leave'?'<span class="trip-status-label">مجاز</span>':'');
-        const genderStyle=gender==='male'?'background:#d9ecff;border:2px solid #3498db;color:#145a86;':(gender==='female'?'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;':'');
-        const safePhoto=escapeStudentPhotoAttr(photoUrl);
-        let content='';
-        if(showTripStudentPhotos && safePhoto){ content=`<img src="${safePhoto}" alt="صورة الطالب" style="width:58px;height:58px;object-fit:cover;border-radius:50%;border:2px solid rgba(0,0,0,.12);display:block;margin:0 auto 3px;" onerror="this.style.display='none'">`; }
-        else { content=safePhoto && showTripStudentPhotos ? `<div class="student-photo-placeholder small" style="margin:auto">👨‍🎓</div>` : `<span class="trip-student-name">${escapeGlobalSearchHTML(name)}</span>`; }
-        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}${content}</div>`;
+    function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
+        if (!hasStudent) return `<div class="seat seat-empty ${extraClass}">فارغ</div>`;
+        const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : '');
+        const label = status === 'absent' ? '<span class="trip-status-label">غائب</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز</span>' : '');
+        const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
+        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
 
     function renderDesks() {
@@ -6522,8 +6334,8 @@ function updateCloudStatus(text, color) {
                     deskEl.innerHTML = `
                         <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                         <div class="desk-seats">
-                            ${isStudent1MyChild ? renderTripStudentSeat(currentUser.name, true, status1, '', deskData.gender1, deskData.student1PhotoUrl || '') : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
-                            ${isStudent2MyChild ? renderTripStudentSeat(currentUser.name, true, status2, '', deskData.gender2, deskData.student2PhotoUrl || '') : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
+                            ${isStudent1MyChild ? renderTripStudentSeat(currentUser.name, true, status1, '', deskData.gender1) : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
+                            ${isStudent2MyChild ? renderTripStudentSeat(currentUser.name, true, status2, '', deskData.gender2) : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
                         </div>
                     `;
                 }
@@ -6534,11 +6346,11 @@ function updateCloudStatus(text, color) {
                     <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                     <div class="desk-seats">
                         <div class="${sep1 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1, deskData.student1PhotoUrl || '')}
+                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1)}
                           ${sep1 && hasS1 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                         <div class="${sep2 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2, deskData.student2PhotoUrl || '')}
+                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2)}
                           ${sep2 && hasS2 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                     </div>
@@ -6587,17 +6399,11 @@ function updateCloudStatus(text, color) {
 
         document.getElementById('modalDeskTitle').innerText = `إدارة الرحلة رقم ${desk.deskNumber}`;
         document.getElementById('student1Input').value = desk.student1 || '';
-        const p1=document.getElementById('student1PhotoInput'); if(p1) p1.value='';
-        studentPhotoDeletePending[1]=false;
-        setStudentPhotoPreview(1,desk.student1PhotoUrl || '');
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('phone1Input').value = desk.phone1 || '';
         const g1=document.getElementById('gender1Input'); if(g1) g1.value = desk.gender1 || '';
         document.getElementById('address1Input').value = desk.address1 || '';
         document.getElementById('student2Input').value = desk.student2 || '';
-        const p2=document.getElementById('student2PhotoInput'); if(p2) p2.value='';
-        studentPhotoDeletePending[2]=false;
-        setStudentPhotoPreview(2,desk.student2PhotoUrl || '');
         document.getElementById('code2Input').value = desk.code2 || '';
         document.getElementById('phone2Input').value = desk.phone2 || '';
         const g2=document.getElementById('gender2Input'); if(g2) g2.value = desk.gender2 || '';
@@ -6608,7 +6414,7 @@ function updateCloudStatus(text, color) {
         document.getElementById('deskModal').style.display = 'flex';
     }
 
-    async function saveDeskStudents() {
+    function saveDeskStudents() {
         if(currentUser.role !== 'admin') return;
         if(!requireAdminSensitiveAction('إضافة أو حذف أو تعديل بيانات طالب')) return;
 
@@ -6632,9 +6438,6 @@ function updateCloudStatus(text, color) {
         const oldStudent2 = String(desk.student2 || '').trim();
         const newStudent1 = document.getElementById('student1Input').value.trim();
         const newStudent2 = document.getElementById('student2Input').value.trim();
-        const photoInput1=document.getElementById('student1PhotoInput');
-        const photoInput2=document.getElementById('student2PhotoInput');
-        const originalDesk=JSON.parse(JSON.stringify(desk));
 
         // منع تسجيل الطالب نفسه مرتين، مع إظهار مكان التسجيل الحالي للمدير.
         const normalizeStudentNameForDuplicate = (value) => String(value || '')
@@ -6698,26 +6501,6 @@ function updateCloudStatus(text, color) {
             desk.code2 = generateUniqueSystemCode();
         }
 
-        try {
-            if(photoInput1?.files?.length && newStudent1){
-                desk.student1PhotoUrl=await uploadSelectedStudentPhoto(1,desk.student1Id,photoInput1);
-                desk.student1PhotoPath='';
-            }else if(!newStudent1 || studentPhotoDeletePending[1] || newStudent1!==oldStudent1){
-                desk.student1PhotoUrl=''; desk.student1PhotoPath='';
-            }
-            if(photoInput2?.files?.length && newStudent2){
-                desk.student2PhotoUrl=await uploadSelectedStudentPhoto(2,desk.student2Id,photoInput2);
-                desk.student2PhotoPath='';
-            }else if(!newStudent2 || studentPhotoDeletePending[2] || newStudent2!==oldStudent2){
-                desk.student2PhotoUrl=''; desk.student2PhotoPath='';
-            }
-        }catch(photoError){
-            Object.keys(desk).forEach(k=>delete desk[k]); Object.assign(desk,originalDesk);
-            console.error('Student photo save failed:',photoError);
-            alert('تعذر حفظ صورة الطالب. لم يتم تغيير بيانات الرحلة.\n\nالسبب: '+(photoError?.message||photoError));
-            return;
-        }
-        studentPhotoDeletePending[1]=false; studentPhotoDeletePending[2]=false;
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('code2Input').value = desk.code2 || '';
 
@@ -6805,7 +6588,7 @@ function updateCloudStatus(text, color) {
 
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
         const copySlotFields=(from,to,fromSlot,toSlot)=>{
-            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
                 const value=from?.[`${f}${fromSlot}`];
                 to[`${f}${toSlot}`]=value===undefined || value===null ? (f==='separated'?false:'') : value;
             });
@@ -6819,7 +6602,7 @@ function updateCloudStatus(text, color) {
             copySlotFields(temp,sourceDesk,1,source.slot);
         }else{
             copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
-            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
                 sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
             });
         }
@@ -6888,7 +6671,7 @@ function updateCloudStatus(text, color) {
 \
 الطلاب الذين رفعت عنهم علامة الصح لن يتم نقلهم.\
 هل أنت متأكد؟`))return;
-        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
+        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
             let targetDi=empty;
@@ -6902,7 +6685,7 @@ function updateCloudStatus(text, color) {
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:item.source.name,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            ['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
         }
         // إبقاء أرقام الرحلات مرتبة بعد إضافة رحلات جديدة.
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
@@ -6962,8 +6745,6 @@ function updateCloudStatus(text, color) {
         desk[`address${slot}`]='';
         desk[`code${slot}`]='';
         desk[`student${slot}Id`]='';
-        desk[`student${slot}PhotoUrl`]='';
-        desk[`student${slot}PhotoPath`]='';
         desk[`separated${slot}`]=false;
         desk[`separationReason${slot}`]='';
         return oldName;
@@ -7003,7 +6784,7 @@ function updateCloudStatus(text, color) {
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
         if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟`))return;
         const sourceSlot=student.slot;
-        const fields=['student','code','phone','gender','address','studentId','studentPhotoUrl','studentPhotoPath'];
+        const fields=['student','code','phone','gender','address','studentId'];
         fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
