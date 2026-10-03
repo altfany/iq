@@ -1382,17 +1382,6 @@ table td,table th { line-height:1.55; }
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
 <script>
-/* CLOUD ONLY: يمنع النظام نهائياً من استخدام localStorage كمصدر بيانات. Firebase هو المصدر الوحيد. */
-const cloudOnlyStorage = {
-  getItem(){ return null; },
-  setItem(){},
-  removeItem(){},
-  clear(){},
-  key(){ return null; },
-  get length(){ return 0; }
-};
-try { window.cloudOnlyStorage.clear(); } catch (e) {}
-
   const firebaseConfig = {
     apiKey: "AIzaSyAUrzKmFBtpQyd5fig8RugixGBEALm5b7k",
     authDomain: "school-7d86c.firebaseapp.com",
@@ -2949,8 +2938,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 <script>
     const DEFAULT_ADMIN_LOGIN_CODE = '1234';
     let adminCredentials = { name: 'مدير النظام', password: DEFAULT_ADMIN_LOGIN_CODE };
-    let printManagerName = String(cloudOnlyStorage.getItem('printManagerName') || '').trim();
-    let printSchoolName = String(cloudOnlyStorage.getItem('printSchoolName') || '').trim();
+    let printManagerName = String(localStorage.getItem('printManagerName') || '').trim();
+    let printSchoolName = String(localStorage.getItem('printSchoolName') || '').trim();
     let assistantsData = [];
     let managerNotesData = [];
     let assistantActionNotificationsData = [];
@@ -2958,27 +2947,27 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 
     let guestSupervisorsData = [];
 
-    let schoolData = JSON.parse(cloudOnlyStorage.getItem('schoolData')) || [];
-    let teachersData = JSON.parse(cloudOnlyStorage.getItem('teachersData')) || [];
-    let teachersAbsenceData = JSON.parse(cloudOnlyStorage.getItem('teachersAbsenceData')) || {};
-    let announcementsData = JSON.parse(cloudOnlyStorage.getItem('announcementsData')) || [];
-    let complaintsData = JSON.parse(cloudOnlyStorage.getItem('complaintsData')) || [];
+    let schoolData = JSON.parse(localStorage.getItem('schoolData')) || [];
+    let teachersData = JSON.parse(localStorage.getItem('teachersData')) || [];
+    let teachersAbsenceData = JSON.parse(localStorage.getItem('teachersAbsenceData')) || {};
+    let announcementsData = JSON.parse(localStorage.getItem('announcementsData')) || [];
+    let complaintsData = JSON.parse(localStorage.getItem('complaintsData')) || [];
     if (!Array.isArray(complaintsData)) complaintsData = [];
-    let homeworkData = JSON.parse(cloudOnlyStorage.getItem('homeworkData')) || [];
+    let homeworkData = JSON.parse(localStorage.getItem('homeworkData')) || [];
     if (!Array.isArray(homeworkData)) homeworkData = [];
-    let subjectsData = JSON.parse(cloudOnlyStorage.getItem('subjectsData')) || [];
+    let subjectsData = JSON.parse(localStorage.getItem('subjectsData')) || [];
     if (!Array.isArray(subjectsData)) subjectsData = [];
-    let savedAdminCredentials = JSON.parse(cloudOnlyStorage.getItem('adminCredentials') || 'null');
+    let savedAdminCredentials = JSON.parse(localStorage.getItem('adminCredentials') || 'null');
     if (savedAdminCredentials && savedAdminCredentials.password) {
         adminCredentials = { name: savedAdminCredentials.name || 'مدير النظام', password: String(savedAdminCredentials.password).trim() };
     }
-    let savedManagerNotes = JSON.parse(cloudOnlyStorage.getItem('managerNotesData') || '[]');
+    let savedManagerNotes = JSON.parse(localStorage.getItem('managerNotesData') || '[]');
     managerNotesData = Array.isArray(savedManagerNotes) ? savedManagerNotes : [];
-    let savedAssistantActionNotifications = JSON.parse(cloudOnlyStorage.getItem('assistantActionNotificationsData') || '[]');
+    let savedAssistantActionNotifications = JSON.parse(localStorage.getItem('assistantActionNotificationsData') || '[]');
     assistantActionNotificationsData = Array.isArray(savedAssistantActionNotifications) ? savedAssistantActionNotifications : [];
-    let savedAssistants = JSON.parse(cloudOnlyStorage.getItem('assistantsData') || '[]');
+    let savedAssistants = JSON.parse(localStorage.getItem('assistantsData') || '[]');
     assistantsData = Array.isArray(savedAssistants) ? savedAssistants : [];
-    let savedGuestSupervisors = JSON.parse(cloudOnlyStorage.getItem('guestSupervisorsData') || '[]');
+    let savedGuestSupervisors = JSON.parse(localStorage.getItem('guestSupervisorsData') || '[]');
     guestSupervisorsData = Array.isArray(savedGuestSupervisors) ? savedGuestSupervisors : [];
     let currentAnnouncementTab = 'teachers';
     
@@ -2988,7 +2977,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let monitorNotesData = [];
     let monitorInventoryReportsData = [];
     let monitorMessagesData = [];
-    try { monitorsData = JSON.parse(cloudOnlyStorage.getItem('monitorsData') || '[]') || []; monitorNotesData = JSON.parse(cloudOnlyStorage.getItem('monitorNotesData') || '[]') || []; monitorInventoryReportsData = JSON.parse(cloudOnlyStorage.getItem('monitorInventoryReportsData') || '[]') || []; monitorMessagesData = JSON.parse(cloudOnlyStorage.getItem('monitorMessagesData') || '[]') || []; } catch(e) { monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[]; }
+    try { monitorsData = JSON.parse(localStorage.getItem('monitorsData') || '[]') || []; monitorNotesData = JSON.parse(localStorage.getItem('monitorNotesData') || '[]') || []; monitorInventoryReportsData = JSON.parse(localStorage.getItem('monitorInventoryReportsData') || '[]') || []; monitorMessagesData = JSON.parse(localStorage.getItem('monitorMessagesData') || '[]') || []; } catch(e) { monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[]; }
     let cloudReady = false;
     let firebaseOnline = false;
     let firebaseRetryTimer = null;
@@ -3296,10 +3285,27 @@ function acknowledgeAnnouncement(id) {
 
     function saveData() {
         pruneExpiredAnnouncementsData();
+        localStorage.setItem('schoolData', JSON.stringify(schoolData));
+        localStorage.setItem('teachersData', JSON.stringify(teachersData));
+        localStorage.setItem('teachersAbsenceData', JSON.stringify(teachersAbsenceData));
+        localStorage.setItem('announcementsData', JSON.stringify(announcementsData));
         pruneExpiredComplaintsData();
+        localStorage.setItem('complaintsData', JSON.stringify(complaintsData));
+        localStorage.setItem('homeworkData', JSON.stringify(homeworkData));
+        localStorage.setItem('subjectsData', JSON.stringify(subjectsData));
+        localStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
+        localStorage.setItem('printManagerName', JSON.stringify(printManagerName));
+        localStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
+        localStorage.setItem('assistantsData', JSON.stringify(assistantsData));
         pruneManagerNotesData();
         pruneAssistantActionNotificationsData();
-        // لا يوجد حفظ محلي. Firebase هو المصدر الوحيد للحقيقة.
+        localStorage.setItem('managerNotesData', JSON.stringify(managerNotesData));
+        localStorage.setItem('assistantActionNotificationsData', JSON.stringify(assistantActionNotificationsData));
+        localStorage.setItem('guestSupervisorsData', JSON.stringify(guestSupervisorsData));
+        localStorage.setItem('monitorsData', JSON.stringify(monitorsData));
+        localStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
+        localStorage.setItem('monitorInventoryReportsData', JSON.stringify(monitorInventoryReportsData));
+        localStorage.setItem('monitorMessagesData', JSON.stringify(monitorMessagesData));
         queueCloudSave();
     }
 
@@ -3342,27 +3348,57 @@ function acknowledgeAnnouncement(id) {
         return window.FirebaseCloud.save(payload);
     }
 
-    function getLastCloudRevision() {
-        return String(lastAppliedCloudUpdatedAt || APP_SECURITY.lastGoodCloudUpdatedAt || '').trim();
-    }
-
-    function revisionTime(value) {
-        const t = Date.parse(String(value || ''));
-        return Number.isFinite(t) ? t : 0;
-    }
-
-    function persistOfflineCloudQueue() {
-        // مع وضع CLOUD ONLY لا يتم تخزين أي Snapshot على الجهاز.
-        return false;
+    function persistOfflineCloudQueue(payload = null) {
+        try {
+            const snapshot = payload || getCloudPayload();
+            localStorage.setItem('schoolOfflinePendingCloud', JSON.stringify(snapshot));
+            localStorage.setItem('schoolOfflinePendingAt', new Date().toISOString());
+            localStorage.setItem('schoolOfflinePending', '1');
+        } catch (e) {
+            console.warn('Offline queue local save failed:', e);
+        }
     }
 
     function clearOfflineCloudQueue() {
-        return true;
+        try {
+            localStorage.removeItem('schoolOfflinePendingCloud');
+            localStorage.removeItem('schoolOfflinePendingAt');
+            localStorage.removeItem('schoolOfflinePending');
+        } catch (e) {}
     }
 
     async function flushOfflineCloudQueue() {
-        // لا يوجد طابور محلي في هذا الإصدار. عند عودة الإنترنت يتم جلب Firebase فقط.
-        return false;
+        if (!window.FirebaseCloud?.enabled || !navigator.onLine) return false;
+        let queued = null;
+        try {
+            const raw = localStorage.getItem('schoolOfflinePendingCloud');
+            if (raw) queued = JSON.parse(raw);
+        } catch (e) { queued = null; }
+        if (!queued) return false;
+        try {
+            updateCloudStatus('جاري رفع بيانات وضع الأوف لاين إلى Firebase... ⬆️', '#9a6700');
+            queued.updatedAt = new Date().toISOString();
+            queued.resetGeneration = String(factoryResetGeneration || queued.resetGeneration || '0');
+            if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
+                await window.FirebaseCloud.saveForGeneration(queued, factoryResetGeneration);
+            } else {
+                await window.FirebaseCloud.save(queued);
+            }
+            clearOfflineCloudQueue();
+            cloudSavePending = false;
+            cloudSaveExpectedRevision = String(queued.updatedAt || '');
+            firebaseOnline = true;
+            APP_SECURITY.lastGoodCloudUpdatedAt = String(queued.updatedAt || '');
+            APP_SECURITY.lastGoodCloudSnapshot = queued;
+            updateCloudStatus('تم رفع كل التعديلات المحفوظة أوف لاين إلى Firebase ✓', '#16803c');
+            return true;
+        } catch (e) {
+            firebaseOnline = false;
+            persistOfflineCloudQueue(queued);
+            updateCloudStatus('لا يزال الاتصال غير متاح — بياناتك محفوظة على الجهاز ✓', '#9a6700');
+            console.warn('Offline cloud flush failed:', e);
+            return false;
+        }
     }
 
     function setupOfflineSync() {
@@ -3370,26 +3406,37 @@ function acknowledgeAnnouncement(id) {
         window.__schoolOfflineSyncReady = true;
         window.addEventListener('offline', () => {
             firebaseOnline = false;
-            cloudReady = false;
-            updateCloudStatus('لا يوجد إنترنت — لن يتم حفظ أي بيانات محلياً.', '#9a6700');
+            updateCloudStatus('لا يوجد إنترنت — وضع الأوف لاين فعال، سيتم الحفظ تلقائياً على الجهاز 📱', '#9a6700');
         });
         window.addEventListener('online', async () => {
-            updateCloudStatus('عاد الإنترنت — جاري تحميل آخر نسخة من Firebase...', '#9a6700');
-            await initializeCloudData().catch(err => console.warn('Online Firebase refresh failed:', err));
+            firebaseOnline = true;
+            updateCloudStatus('عاد الإنترنت — جاري مزامنة البيانات... ☁️', '#9a6700');
+            clearTimeout(firebaseRetryTimer);
+            await flushOfflineCloudQueue();
+            initializeCloudData().catch(err => console.warn('Online Firebase refresh failed:', err));
         });
+        setInterval(() => {
+            if (navigator.onLine && localStorage.getItem('schoolOfflinePending') === '1') flushOfflineCloudQueue();
+        }, 5000);
     }
 
     function queueCloudSave(delay = 600) {
-        if (!window.FirebaseCloud || !window.FirebaseCloud.enabled || !cloudReady || !navigator.onLine) {
-            if (!navigator.onLine) updateCloudStatus('لا يوجد إنترنت — لن يتم حفظ التعديل محلياً.', '#9a6700');
-            return;
-        }
+        // localStorage هو طبقة الحفظ الأولى دائماً؛ Firebase مجرد مزامنة سحابية.
+        // لذلك حتى عند انقطاع الإنترنت لا نفقد أي تعديل.
+        if (!window.FirebaseCloud || !window.FirebaseCloud.enabled) return;
+        cloudSavePending = true;
         clearTimeout(cloudSaveTimer);
         clearTimeout(cloudSaveConfirmTimer);
-        cloudSavePending = true;
+        const offlineSnapshot = getCloudPayload();
+        persistOfflineCloudQueue(offlineSnapshot);
+        if (!navigator.onLine) {
+            updateCloudStatus('لا يوجد إنترنت — تم حفظ التعديل محلياً وسيُرفع عند عودة الإنترنت ✓', '#9a6700');
+            return;
+        }
         cloudSaveTimer = setTimeout(async () => {
             if (!cloudReady || !navigator.onLine) {
-                cloudSavePending = false;
+                persistOfflineCloudQueue(getCloudPayload());
+                updateCloudStatus('تم حفظ التعديل محلياً — بانتظار عودة الإنترنت ✓', '#9a6700');
                 return;
             }
             try {
@@ -3398,59 +3445,77 @@ function acknowledgeAnnouncement(id) {
                     cloudSavePending = false;
                     cloudSaveExpectedRevision = '';
                     updateCloudStatus('تم منع حفظ بيانات غير صالحة في Firebase', '#b42318');
+                    console.error('Cloud save blocked: invalid payload structure.');
                     return;
                 }
-                payload.updatedAt = new Date().toISOString();
+                const revision = String(payload.updatedAt || new Date().toISOString());
+                payload.updatedAt = revision;
                 payload.resetGeneration = String(factoryResetGeneration || '0');
+                // قبل الحفظ نتحقق من جيل الترسيت في Firebase. إذا كان جهاز آخر
+                // قد نفذ ترسيتاً عاماً، يمنع هذا الجهاز القديم من إعادة رفع بياناته.
                 if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
                     await window.FirebaseCloud.saveForGeneration(payload, factoryResetGeneration);
                 } else {
                     await window.FirebaseCloud.save(payload);
                 }
-                lastAppliedCloudUpdatedAt = String(payload.updatedAt);
-                cloudSaveExpectedRevision = String(payload.updatedAt);
-                APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
+                lastAppliedCloudUpdatedAt = revision;
+                cloudSaveExpectedRevision = revision;
+                // لا نرفع cloudSavePending=false هنا. ننتظر أول snapshot من Firebase
+                // يحمل نفس revision؛ وبذلك لا تستطيع نسخة أقدم إعادة البيانات المحذوفة.
+                APP_SECURITY.lastGoodCloudUpdatedAt = revision;
                 APP_SECURITY.lastGoodCloudSnapshot = payload;
-                cloudSavePending = false;
-                updateCloudStatus('تم الحفظ في Firebase ☁️', '#16803c');
+                updateCloudStatus('تم الحفظ في Firebase ☁️ — بانتظار تأكيد المزامنة', '#16803c');
+
+                // احتياط: إذا لم تصل إشارة listener بسبب انقطاع مؤقت، لا نبقى محجوبين للأبد.
+                cloudSaveConfirmTimer = setTimeout(() => {
+                    if (cloudSavePending && cloudSaveExpectedRevision === revision) {
+                        cloudSavePending = false;
+                        cloudSaveExpectedRevision = '';
+                        updateCloudStatus('تم الحفظ في Firebase ☁️', '#16803c');
+                    }
+                }, 5000);
             } catch (e) {
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
+                // لا نحذف التعديل عند فشل الشبكة: يحتفظ به طابور الأوف لاين حتى تعود الشبكة.
                 firebaseOnline = false;
-                updateCloudStatus('تعذر الحفظ في Firebase — لم يتم حفظ أي شيء على الجهاز.', '#b42318');
-                console.error('Cloud-only save failed:', e);
+                persistOfflineCloudQueue(getCloudPayload());
+                console.error('Cloud save failed:', e);
+                updateCloudStatus('تعذر الاتصال — التعديل محفوظ أوف لاين وسيُرفع تلقائياً ✓', '#9a6700');
             }
         }, delay);
     }
 
-function updateCloudStatus(text, color) {
+    function updateCloudStatus(text, color) {
         const el = document.getElementById('loginCloudStatus');
         if (el) { el.textContent = text; if (color) el.style.color = color; }
     }
 
     async function initializeCloudData() {
         setupOfflineSync();
-        cloudReady = false;
+        // النظام يصبح جاهزاً فوراً من البيانات المحلية. Firebase لا يمنع الدخول إطلاقاً.
+        ensureStableIds();
+        cloudReady = true;
         firebaseOnline = false;
         const loginBtn = document.getElementById('loginButton');
-        if (loginBtn) loginBtn.disabled = true;
-        updateCloudStatus('جاري تحميل بيانات Firebase — انتظر حتى تكتمل المزامنة...', '#666');
+        if (loginBtn) loginBtn.disabled = false;
+        toggleLoginFields();
+        updateCloudStatus('النظام جاهز — جارٍ الاتصال بـ Firebase بالخلفية...', '#666');
 
-        try {
+        const maxAttempts = 1;
+        let lastError = null;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            updateCloudStatus(attempt === 1 ? 'جاري تحميل بيانات ...' : `إعادة الاتصال بـ  (${attempt}/${maxAttempts})...`, '#666');
             if (!window.FirebaseCloud || !window.FirebaseCloud.enabled || typeof window.FirebaseCloud.load !== 'function') {
                 throw new Error('Firebase SDK غير متاح في الصفحة.');
             }
-            if (!navigator.onLine) throw new Error('لا يوجد اتصال بالإنترنت.');
-
             const rawCloud = await window.FirebaseCloud.load();
             firebaseOnline = true;
-
+            // اقرأ علامة آخر ترسيت عام قبل قبول أي بيانات سحابية.
             if (typeof window.FirebaseCloud.getFactoryResetControl === 'function') {
                 const control = await window.FirebaseCloud.getFactoryResetControl();
                 factoryResetGeneration = String(control?.generation || '0');
                 factoryResetControlReady = true;
             }
-
             const cloud = normalizeCloudPayload(rawCloud);
             if (cloud && String(cloud.resetGeneration || '0') !== String(factoryResetGeneration || '0')) {
                 console.warn('تم تجاهل بيانات Firebase من جيل قديم بعد ترسيت عام.');
@@ -3459,49 +3524,102 @@ function updateCloudStatus(text, color) {
                 startRealtimeCloudSync();
                 scheduleAutomaticBackup();
                 updateCloudStatus('تم تجاهل بيانات قديمة بعد الترسيت العام ✓', '#16803c');
-            } else if (cloud && (cloud.schoolData !== undefined || cloud.teachersData !== undefined)) {
-                if (!validateCloudPayload(cloud)) throw new Error('Firebase returned an invalid schoolSystem payload.');
+                return true;
+            }
+            if (cloud && (cloud.schoolData !== undefined || cloud.teachersData !== undefined)) {
+                if (!validateCloudPayload(cloud)) {
+                    console.warn('Firebase payload structure was repaired/normalized but is still incomplete.', rawCloud);
+                    throw new Error('Firebase returned an invalid schoolSystem payload.');
+                }
+                // إذا عدّل المستخدم بيانات محلياً أثناء انتظار Firebase، لا تستبدل
+                // تعديله بنسخة أقدم؛ ارفع النسخة المحلية إلى Firebase بدلاً من ذلك.
+                if (cloudSavePending) {
+                    await saveCurrentCloudPayload();
+                    cloudSavePending = false;
+                    updateCloudStatus('تمت مزامنة التعديلات المحلية مع Firebase ☁️', '#16803c');
+                    startRealtimeCloudSync();
+                    scheduleAutomaticBackup();
+                    return true;
+                }
                 APP_SECURITY.lastGoodCloudUpdatedAt = String(cloud.updatedAt || '');
                 APP_SECURITY.lastGoodCloudSnapshot = cloud;
-                applyCloudPayloadToLocal(cloud, {initial:true});
-                lastAppliedCloudUpdatedAt = String(cloud.updatedAt || '');
-                cloudReady = true;
-                startFactoryResetControlSync();
-                startRealtimeCloudSync();
-                scheduleAutomaticBackup();
-                updateCloudStatus('متصل بـ Firebase ☁️ — البيانات من السحابة فقط', '#16803c');
+                if (cloud.schoolData !== undefined) schoolData = normalizeSchoolDataValue(cloud.schoolData);
+                if (cloud.teachersData !== undefined) teachersData = Array.isArray(cloud.teachersData) ? cloud.teachersData : [];
+                if (cloud.teachersAbsenceData !== undefined) teachersAbsenceData = cloud.teachersAbsenceData || {};
+                if (cloud.announcementsData !== undefined) announcementsData = Array.isArray(cloud.announcementsData) ? cloud.announcementsData : [];
+                if (cloud.complaintsData !== undefined) complaintsData = Array.isArray(cloud.complaintsData) ? cloud.complaintsData : [];
+                pruneExpiredComplaintsData();
+        const announcementsPrunedInRealtime = pruneExpiredAnnouncementsData();
+                const announcementsPrunedOnLoad = pruneExpiredAnnouncementsData();
+                if (cloud.homeworkData !== undefined) homeworkData = Array.isArray(cloud.homeworkData) ? cloud.homeworkData : [];
+                if (cloud.subjectsData !== undefined) subjectsData = Array.isArray(cloud.subjectsData) ? cloud.subjectsData : [];
+                if (cloud.adminCode !== undefined && String(cloud.adminCode).trim()) adminCredentials.password = String(cloud.adminCode).trim();
+                if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
+                if (cloud.printManagerName !== undefined) printManagerName = String(cloud.printManagerName || '').trim();
+                if (cloud.printSchoolName !== undefined) printSchoolName = String(cloud.printSchoolName || '').trim();
+                if (cloud.assistantsData !== undefined) assistantsData = Array.isArray(cloud.assistantsData) ? cloud.assistantsData : [];
+                if (cloud.managerNotesData !== undefined) managerNotesData = Array.isArray(cloud.managerNotesData) ? cloud.managerNotesData : [];
+                if (cloud.assistantActionNotificationsData !== undefined) assistantActionNotificationsData = Array.isArray(cloud.assistantActionNotificationsData) ? cloud.assistantActionNotificationsData : [];
+        if (cloud.guestSupervisorsData !== undefined) guestSupervisorsData = Array.isArray(cloud.guestSupervisorsData) ? cloud.guestSupervisorsData : [];
+                if (cloud.guestSupervisorsData !== undefined) guestSupervisorsData = Array.isArray(cloud.guestSupervisorsData) ? cloud.guestSupervisorsData : [];
+                if (cloud.monitorsData !== undefined) monitorsData = Array.isArray(cloud.monitorsData) ? cloud.monitorsData : [];
+                if (cloud.monitorNotesData !== undefined) monitorNotesData = Array.isArray(cloud.monitorNotesData) ? cloud.monitorNotesData : [];
+        if (cloud.monitorInventoryReportsData !== undefined) monitorInventoryReportsData = Array.isArray(cloud.monitorInventoryReportsData) ? cloud.monitorInventoryReportsData : [];
+        if (cloud.monitorMessagesData !== undefined) monitorMessagesData = Array.isArray(cloud.monitorMessagesData) ? cloud.monitorMessagesData : [];
+                localStorage.setItem('schoolData', JSON.stringify(schoolData));
+                localStorage.setItem('teachersData', JSON.stringify(teachersData));
+                localStorage.setItem('teachersAbsenceData', JSON.stringify(teachersAbsenceData));
+                localStorage.setItem('announcementsData', JSON.stringify(announcementsData));
+        pruneExpiredComplaintsData();
+        localStorage.setItem('complaintsData', JSON.stringify(complaintsData));
+                localStorage.setItem('homeworkData', JSON.stringify(homeworkData));
+                localStorage.setItem('subjectsData', JSON.stringify(subjectsData));
+                localStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
+                localStorage.setItem('printManagerName', JSON.stringify(printManagerName));
+                localStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
+                localStorage.setItem('assistantsData', JSON.stringify(assistantsData));
+                localStorage.setItem('guestSupervisorsData', JSON.stringify(guestSupervisorsData));
+                localStorage.setItem('monitorsData', JSON.stringify(monitorsData));
+                localStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
+                if (announcementsPrunedOnLoad && window.FirebaseCloud && window.FirebaseCloud.enabled) {
+                    await saveCurrentCloudPayload();
+                }
             } else {
-                // Firebase فارغة: ننشئ النسخة الأولى من القيم الافتراضية، وليس من التخزين المحلي.
-                const initialPayload = getCloudPayload();
-                initialPayload.updatedAt = new Date().toISOString();
-                initialPayload.resetGeneration = String(factoryResetGeneration || '0');
-                await window.FirebaseCloud.saveForGeneration(initialPayload, factoryResetGeneration);
-                lastAppliedCloudUpdatedAt = String(initialPayload.updatedAt);
-                APP_SECURITY.lastGoodCloudUpdatedAt = String(initialPayload.updatedAt);
-                APP_SECURITY.lastGoodCloudSnapshot = initialPayload;
-                cloudReady = true;
-                startFactoryResetControlSync();
-                startRealtimeCloudSync();
-                scheduleAutomaticBackup();
-                updateCloudStatus('تم إنشاء النسخة السحابية الأولى في Firebase ☁️', '#16803c');
+                // أول تشغيل: ارفع البيانات الموجودة على هذا الجهاز إلى Firebase.
+                await saveCurrentCloudPayload();
             }
-
+            ensureStableIds();
+            cloudReady = true;
+            firebaseOnline = true;
+            updateCloudStatus('متصل بـ  ☁️', '#16803c');
+            startFactoryResetControlSync();
+            startRealtimeCloudSync();
+            scheduleAutomaticBackup();
             const btn = document.getElementById('loginButton');
             if (btn) btn.disabled = false;
             toggleLoginFields();
             return true;
-        } catch (e) {
-            cloudReady = false;
-            firebaseOnline = false;
-            const btn = document.getElementById('loginButton');
-            if (btn) btn.disabled = true;
-            toggleLoginFields();
-            updateCloudStatus('تعذر الاتصال بـ Firebase — لا يمكن استخدام النظام بدون السحابة.', '#b42318');
-            console.error('Cloud-only initialization failed:', e);
-            clearTimeout(firebaseRetryTimer);
-            firebaseRetryTimer = setTimeout(() => initializeCloudData().catch(()=>{}), 10000);
-            return false;
+          } catch (e) {
+            lastError = e;
+            console.error(`Cloud initialization attempt ${attempt} failed:`, e);
+            if (attempt < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+          }
         }
+        // فشل Firebase لا يعني فشل النظام. نتركه يعمل محلياً ونعيد المحاولة تلقائياً.
+        cloudReady = true;
+        firebaseOnline = false;
+        const btn = document.getElementById('loginButton');
+        if (btn) btn.disabled = false;
+        toggleLoginFields();
+        updateCloudStatus('النظام يعمل — جارٍ إعادة محاولة اتصال Firebase تلقائياً...', '#9a6700');
+        console.error('Cloud initialization failed:', lastError);
+        clearTimeout(firebaseRetryTimer);
+        firebaseRetryTimer = setTimeout(() => {
+            initializeCloudData().catch(err => console.error('Firebase retry failed:', err));
+        }, 10000);
+        return false;
     }
 
     let realtimeUnsubscribe = null;
@@ -3531,19 +3649,19 @@ function updateCloudStatus(text, color) {
         if (cloud.monitorMessagesData !== undefined) monitorMessagesData = Array.isArray(cloud.monitorMessagesData) ? cloud.monitorMessagesData : [];
         repairLegacySchoolData(); ensureStableIds(); ensureTeacherClassIds();
         try {
-            cloudOnlyStorage.setItem('schoolData', JSON.stringify(schoolData));
-            cloudOnlyStorage.setItem('teachersData', JSON.stringify(teachersData));
-            cloudOnlyStorage.setItem('guestSupervisorsData', JSON.stringify(guestSupervisorsData));
-            cloudOnlyStorage.setItem('teachersAbsenceData', JSON.stringify(teachersAbsenceData));
-            cloudOnlyStorage.setItem('announcementsData', JSON.stringify(announcementsData));
+            localStorage.setItem('schoolData', JSON.stringify(schoolData));
+            localStorage.setItem('teachersData', JSON.stringify(teachersData));
+            localStorage.setItem('guestSupervisorsData', JSON.stringify(guestSupervisorsData));
+            localStorage.setItem('teachersAbsenceData', JSON.stringify(teachersAbsenceData));
+            localStorage.setItem('announcementsData', JSON.stringify(announcementsData));
         pruneExpiredComplaintsData();
-        cloudOnlyStorage.setItem('complaintsData', JSON.stringify(complaintsData));
-            cloudOnlyStorage.setItem('homeworkData', JSON.stringify(homeworkData));
-            cloudOnlyStorage.setItem('subjectsData', JSON.stringify(subjectsData));
-            cloudOnlyStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
-            cloudOnlyStorage.setItem('assistantsData', JSON.stringify(assistantsData));
-            cloudOnlyStorage.setItem('monitorsData', JSON.stringify(monitorsData));
-            cloudOnlyStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
+        localStorage.setItem('complaintsData', JSON.stringify(complaintsData));
+            localStorage.setItem('homeworkData', JSON.stringify(homeworkData));
+            localStorage.setItem('subjectsData', JSON.stringify(subjectsData));
+            localStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
+            localStorage.setItem('assistantsData', JSON.stringify(assistantsData));
+            localStorage.setItem('monitorsData', JSON.stringify(monitorsData));
+            localStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
         } catch (e) {}
         if (announcementsPrunedInRealtime && cloudReady) {
             queueCloudSave(50);
@@ -3573,15 +3691,15 @@ function updateCloudStatus(text, color) {
         clearTimeout(cloudSaveConfirmTimer);
         if (automaticBackupTimer) { clearInterval(automaticBackupTimer); automaticBackupTimer = null; }
         try {
-            cloudOnlyStorage.removeItem('currentUser');
-            cloudOnlyStorage.removeItem('loggedInUser');
-            cloudOnlyStorage.removeItem('activeUser');
-            cloudOnlyStorage.removeItem('sessionUser');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('loggedInUser');
+            localStorage.removeItem('activeUser');
+            localStorage.removeItem('sessionUser');
             currentUser=null;
             const keepKeys=new Set(['theme','appearance','accentColor']);
             const keys=[];
-            for(let i=0;i<cloudOnlyStorage.length;i++){const k=cloudOnlyStorage.key(i);if(k && !keepKeys.has(k))keys.push(k);}
-            keys.forEach(k=>{try{cloudOnlyStorage.removeItem(k);}catch(_){}});
+            for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k && !keepKeys.has(k))keys.push(k);}
+            keys.forEach(k=>{try{localStorage.removeItem(k);}catch(_){}});
             sessionStorage.clear();
         } catch(_) {}
         // أوقف أي مستمع قديم حتى لا يعيد تطبيق بيانات النسخة السابقة.
@@ -3596,10 +3714,10 @@ function updateCloudStatus(text, color) {
     function forceGlobalLogout(reason='global'){
         if (factoryResetInProgress) return;
         try {
-            cloudOnlyStorage.removeItem('currentUser');
-            cloudOnlyStorage.removeItem('loggedInUser');
-            cloudOnlyStorage.removeItem('activeUser');
-            cloudOnlyStorage.removeItem('sessionUser');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('loggedInUser');
+            localStorage.removeItem('activeUser');
+            localStorage.removeItem('sessionUser');
             sessionStorage.clear();
         } catch(_) {}
         currentUser=null;
@@ -3667,12 +3785,14 @@ function updateCloudStatus(text, color) {
             }
             const revision = String(cloud.updatedAt || '');
 
-            // أثناء انتظار تأكيد حفظ محلي، نقبل فقط نسخة Firebase المطابقة أو الأحدث.
-            // إذا وصلت نسخة أقدم نتجاهلها، وإذا وصلت نسخة أحدث من جهاز آخر نعتمدها
-            // فوراً حتى لا تبقى البيانات المحلية متغلبة على السحابة.
+            // إذا كان لدينا تعديل محلي لم يُؤكَّد بعد، تجاهل أي نسخة من Firebase
+            // لا تحمل نفس revision. هذا مهم جداً للحذف: يمنع النسخة القديمة من
+            // إعادة العنصر المحذوف إلى الشاشة/localStorage.
             if (cloudSavePending) {
-                const expected = String(cloudSaveExpectedRevision || '');
-                if (expected && revision === expected) {
+                if (cloudSaveExpectedRevision && revision !== cloudSaveExpectedRevision) {
+                    return;
+                }
+                if (cloudSaveExpectedRevision && revision === cloudSaveExpectedRevision) {
                     clearTimeout(cloudSaveConfirmTimer);
                     cloudSavePending = false;
                     cloudSaveExpectedRevision = '';
@@ -3680,11 +3800,7 @@ function updateCloudStatus(text, color) {
                     updateCloudStatus('تمت مزامنة التعديل مع Firebase ✓', '#16803c');
                     return;
                 }
-                if (expected && revisionTime(revision) < revisionTime(expected)) {
-                    return;
-                }
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
+                return;
             }
 
             if (revision && revision === lastAppliedCloudUpdatedAt) return;
@@ -3710,10 +3826,10 @@ function updateCloudStatus(text, color) {
         try {
             const payload=makeBackupPayload();
             const key=new Date().toISOString().replace(/[.:]/g,'-');
-            cloudOnlyStorage.setItem('schoolAutoBackupLatest',JSON.stringify(payload));
+            localStorage.setItem('schoolAutoBackupLatest',JSON.stringify(payload));
             if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.saveBackup==='function' && cloudReady){
                 await window.FirebaseCloud.saveBackup(key,payload);
-                cloudOnlyStorage.setItem('schoolAutoBackupLastCloud',key);
+                localStorage.setItem('schoolAutoBackupLastCloud',key);
             }
         } catch(e){ console.warn('Automatic backup failed',e); }
     }
@@ -4134,7 +4250,7 @@ function updateCloudStatus(text, color) {
     },30000);
 
     function logoutSystem() {
-        cloudOnlyStorage.removeItem('currentUser');
+        localStorage.removeItem('currentUser');
         currentUser = null;
         document.getElementById('loginCodeInput').value = '';
         document.getElementById('loginOverlay').style.display = 'flex';
@@ -4892,8 +5008,8 @@ function updateCloudStatus(text, color) {
             // مسح كل التخزين المحلي الخاص بالنظام حتى لا تعود البيانات القديمة بعد إعادة التشغيل.
             const keepKeys=new Set(['theme','appearance','accentColor']);
             const keys=[];
-            for(let i=0;i<cloudOnlyStorage.length;i++){const k=cloudOnlyStorage.key(i);if(k && !keepKeys.has(k))keys.push(k);}
-            keys.forEach(k=>{try{cloudOnlyStorage.removeItem(k);}catch(_){}});
+            for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k && !keepKeys.has(k))keys.push(k);}
+            keys.forEach(k=>{try{localStorage.removeItem(k);}catch(_){}});
 
             sessionStorage.clear();
             alert('✅ تم تنفيذ إعادة ضبط المصنع بنجاح. تم حذف بيانات النظام من Firebase والنسخ الاحتياطية والتخزين المحلي. سيتم إعادة تحميل النظام الآن.');
@@ -4948,9 +5064,9 @@ function updateCloudStatus(text, color) {
             }
 
             // الحفظ المحلي المباشر أولاً حتى لا تفشل العملية بسبب أي وحدة جانبية.
-            cloudOnlyStorage.setItem('schoolData', JSON.stringify(schoolData));
-            cloudOnlyStorage.setItem('teachersData', JSON.stringify(teachersData));
-            try{ cloudOnlyStorage.setItem('subjectsData', JSON.stringify(subjectsData)); }catch(_){ }
+            localStorage.setItem('schoolData', JSON.stringify(schoolData));
+            localStorage.setItem('teachersData', JSON.stringify(teachersData));
+            try{ localStorage.setItem('subjectsData', JSON.stringify(subjectsData)); }catch(_){ }
 
             // تسجيل العملية لا يمنع تنفيذ الترسيت إذا كان سجل التدقيق فيه مشكلة.
             try{
@@ -4963,8 +5079,8 @@ function updateCloudStatus(text, color) {
             try{ saveData(); }
             catch(saveError){
                 console.error('System reset saveData error:', saveError);
-                try{ cloudOnlyStorage.setItem('schoolData', JSON.stringify(schoolData)); }catch(_){ }
-                try{ cloudOnlyStorage.setItem('teachersData', JSON.stringify(teachersData)); }catch(_){ }
+                try{ localStorage.setItem('schoolData', JSON.stringify(schoolData)); }catch(_){ }
+                try{ localStorage.setItem('teachersData', JSON.stringify(teachersData)); }catch(_){ }
                 try{ queueCloudSave(); }catch(cloudError){ console.error('System reset cloud queue error:', cloudError); }
             }
 
@@ -5013,8 +5129,8 @@ function updateCloudStatus(text, color) {
         if(!manager || !school){ alert('يجب كتابة اسم المدير واسم المدرسة قبل الحفظ.'); return; }
         printManagerName=manager;
         printSchoolName=school;
-        cloudOnlyStorage.setItem('printManagerName', JSON.stringify(printManagerName));
-        cloudOnlyStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
+        localStorage.setItem('printManagerName', JSON.stringify(printManagerName));
+        localStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
         saveData();
         if(window.ProfessionalModules?.addAudit) window.ProfessionalModules.addAudit('تعديل بيانات الطباعة',`${printManagerName} — ${printSchoolName}`);
         alert('تم حفظ اسم المدير واسم المدرسة ومزامنتهما مع Firebase.');
@@ -8548,8 +8664,8 @@ function updateCloudStatus(text, color) {
             }
 
             // 6) تحديث النسخة المحلية التلقائية بعد التنظيف.
-            try{ cloudOnlyStorage.setItem('schoolAutoBackupLatest',JSON.stringify(makeBackupPayload())); }catch(_e){}
-            cloudOnlyStorage.removeItem('schoolAutoBackupLastCloud');
+            try{ localStorage.setItem('schoolAutoBackupLatest',JSON.stringify(makeBackupPayload())); }catch(_e){}
+            localStorage.removeItem('schoolAutoBackupLastCloud');
 
             // 7) حفظ الحالة المنظفة مباشرة في Firebase الرئيسية حتى لا تعود الأسماء القديمة عند المزامنة.
             if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.save==='function'){
@@ -8582,8 +8698,8 @@ function updateCloudStatus(text, color) {
             if(typeof window.__loadProfessionalAuditFromCloud==='function') window.__loadProfessionalAuditFromCloud([]);
             saveData();
             if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.deleteAllBackups==='function') await window.FirebaseCloud.deleteAllBackups();
-            cloudOnlyStorage.removeItem('schoolAutoBackupLatest');
-            cloudOnlyStorage.removeItem('schoolAutoBackupLastCloud');
+            localStorage.removeItem('schoolAutoBackupLatest');
+            localStorage.removeItem('schoolAutoBackupLastCloud');
             document.getElementById('dailyInventoryResetModal')?.remove();
             document.getElementById('studentDailyResetModal')?.remove();
             alert('✅ تم ترسيت جميع محفوظات الحضور والغياب والمجاز وجرد الغياب بنجاح.');
@@ -8972,7 +9088,7 @@ const currentStatus = adminChangedStatus || professionalStatus || x.status || 'a
 
     window.onload = async function() {
         currentUser = null;
-        cloudOnlyStorage.removeItem('currentUser');
+        localStorage.removeItem('currentUser');
         document.getElementById('loginOverlay').style.display = 'flex';
         const btn = document.getElementById('loginButton');
         // تسجيل الدخول لا ينتظر Firebase؛ الاتصال السحابي يعمل في الخلفية.
@@ -9027,8 +9143,8 @@ window.addEventListener('unhandledrejection', function (event) {
 
   function persistModules(){
     try{
-      cloudOnlyStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify(attendanceData));
-      cloudOnlyStorage.setItem(STORAGE_KEYS.audit, JSON.stringify(auditLog));
+      localStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify(attendanceData));
+      localStorage.setItem(STORAGE_KEYS.audit, JSON.stringify(auditLog));
       if (typeof queueCloudSave === 'function') queueCloudSave();
     }catch(e){ console.error('تعذر حفظ بيانات الوحدات الاحترافية',e); }
   }
@@ -9039,8 +9155,8 @@ window.addEventListener('unhandledrejection', function (event) {
   window.__loadProfessionalAuditFromCloud = (data) => { auditLog = Array.isArray(data) ? data : []; pruneAuditToCurrentMonth(); persistModulesLocalOnly(); };
   function persistModulesLocalOnly(){
     try{
-      cloudOnlyStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify(attendanceData));
-      cloudOnlyStorage.setItem(STORAGE_KEYS.audit, JSON.stringify(auditLog));
+      localStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify(attendanceData));
+      localStorage.setItem(STORAGE_KEYS.audit, JSON.stringify(auditLog));
     }catch(e){ console.error('تعذر حفظ بيانات الوحدات الاحترافية',e); }
   }
 
@@ -9070,7 +9186,7 @@ window.addEventListener('unhandledrejection', function (event) {
     auditLog=auditLog.filter(r=>auditMonthKey(r.timestamp||r.createdAt||Date.now())===currentMonth);
     if(auditLog.length>1000) auditLog.length=1000;
     if(before!==auditLog.length){
-      try{cloudOnlyStorage.setItem(STORAGE_KEYS.audit,JSON.stringify(auditLog));}catch(e){}
+      try{localStorage.setItem(STORAGE_KEYS.audit,JSON.stringify(auditLog));}catch(e){}
     }
     return before!==auditLog.length;
   }
@@ -9085,7 +9201,7 @@ window.addEventListener('unhandledrejection', function (event) {
       pruneAssistantActionNotificationsData();
       assistantActionNotificationsData.unshift({id:createStableId('assistantAction'),assistantId:currentUser.assistantId||'',assistantName:currentUser.name||'المعاون',action:String(action||''),details:String(details||''),createdAt:new Date().toISOString(),createdAtMs:Date.now(),viewedAt:''});
       if(assistantActionNotificationsData.length>500) assistantActionNotificationsData.length=500;
-      try{cloudOnlyStorage.setItem('assistantActionNotificationsData',JSON.stringify(assistantActionNotificationsData));}catch(e){}
+      try{localStorage.setItem('assistantActionNotificationsData',JSON.stringify(assistantActionNotificationsData));}catch(e){}
       try{queueCloudSave();}catch(e){}
     }
     auditLog.unshift({
