@@ -3348,24 +3348,9 @@ function acknowledgeAnnouncement(id) {
         return window.FirebaseCloud.save(payload);
     }
 
-    function getLastCloudRevision() {
-        return String(lastAppliedCloudUpdatedAt || APP_SECURITY.lastGoodCloudUpdatedAt || '').trim();
-    }
-
-    function revisionTime(value) {
-        const t = Date.parse(String(value || ''));
-        return Number.isFinite(t) ? t : 0;
-    }
-
     function persistOfflineCloudQueue(payload = null) {
         try {
             const snapshot = payload || getCloudPayload();
-            // نسجل نسخة Firebase التي كان الجهاز متزامناً معها لحظة بدء العمل أوفلاين.
-            // لا يجوز لاحقاً رفع النسخة المحلية فوق Firebase إذا تغيّرت هذه النسخة
-            // على جهاز آخر أثناء غياب الإنترنت.
-            if (!localStorage.getItem('schoolOfflinePending')) {
-                localStorage.setItem('schoolOfflinePendingBaseRevision', getLastCloudRevision());
-            }
             localStorage.setItem('schoolOfflinePendingCloud', JSON.stringify(snapshot));
             localStorage.setItem('schoolOfflinePendingAt', new Date().toISOString());
             localStorage.setItem('schoolOfflinePending', '1');
@@ -3378,97 +3363,39 @@ function acknowledgeAnnouncement(id) {
         try {
             localStorage.removeItem('schoolOfflinePendingCloud');
             localStorage.removeItem('schoolOfflinePendingAt');
-            localStorage.removeItem('schoolOfflinePendingBaseRevision');
             localStorage.removeItem('schoolOfflinePending');
         } catch (e) {}
     }
 
-    async function flushOfflineCloudQueue(cloudFromServer = null) {
+    async function flushOfflineCloudQueue() {
         if (!window.FirebaseCloud?.enabled || !navigator.onLine) return false;
         let queued = null;
-        let baseRevision = '';
         try {
             const raw = localStorage.getItem('schoolOfflinePendingCloud');
             if (raw) queued = JSON.parse(raw);
-            baseRevision = String(localStorage.getItem('schoolOfflinePendingBaseRevision') || '').trim();
         } catch (e) { queued = null; }
         if (!queued) return false;
-
         try {
-            updateCloudStatus('جاري فحص نسخة Firebase قبل رفع التعديلات الأوفلاين... ☁️', '#9a6700');
-            const cloud = normalizeCloudPayload(cloudFromServer || await window.FirebaseCloud.load());
-            const cloudRevision = String(cloud?.updatedAt || '').trim();
-            const cloudGeneration = String(cloud?.resetGeneration || '0');
-            const currentGeneration = String(factoryResetGeneration || '0');
-
-            if (cloud && cloudGeneration !== currentGeneration) {
-                clearOfflineCloudQueue();
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
-                applyCloudPayloadToLocal(cloud, {silent:true});
-                lastAppliedCloudUpdatedAt = cloudRevision;
-                updateCloudStatus('تم اعتماد بيانات Firebase بعد الترسيت العام — لم يتم رفع نسخة قديمة ✓', '#16803c');
-                return false;
-            }
-
-            // أي طابور لا يملك baseRevision هو طابور قديم من النسخ السابقة للنظام.
-            // لا نعرف على أي نسخة Firebase بُني، لذلك يمنع منعاً باتاً من الكتابة فوق السحابة.
-            // نعتمد Firebase ونحذف هذا الطابور القديم.
-            if (!baseRevision) {
-                clearOfflineCloudQueue();
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
-                if (cloud) {
-                    applyCloudPayloadToLocal(cloud, {silent:true});
-                    lastAppliedCloudUpdatedAt = cloudRevision;
-                    APP_SECURITY.lastGoodCloudUpdatedAt = cloudRevision;
-                    APP_SECURITY.lastGoodCloudSnapshot = cloud;
-                }
-                updateCloudStatus('تم اعتماد Firebase وحذف نسخة محلية قديمة غير موثقة ✓', '#16803c');
-                return false;
-            }
-
-            // إذا تغيّرت Firebase منذ آخر مزامنة للجهاز، فالنسخة السحابية أحدث.
-            // نرفض الكتابة الكاملة للنسخة المحلية حتى لا تمحو تغييرات جهاز آخر.
-            const sameBase = !cloudRevision || baseRevision === cloudRevision;
-            if (!sameBase) {
-                clearOfflineCloudQueue();
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
-                if (cloud) {
-                    applyCloudPayloadToLocal(cloud, {silent:true});
-                    lastAppliedCloudUpdatedAt = cloudRevision;
-                    APP_SECURITY.lastGoodCloudUpdatedAt = cloudRevision;
-                    APP_SECURITY.lastGoodCloudSnapshot = cloud;
-                }
-                updateCloudStatus('تم اعتماد أحدث بيانات Firebase. لم يتم استبدالها ببيانات محلية قديمة ✓', '#16803c');
-                return false;
-            }
-
+            updateCloudStatus('جاري رفع بيانات وضع الأوف لاين إلى Firebase... ⬆️', '#9a6700');
             queued.updatedAt = new Date().toISOString();
-            queued.resetGeneration = currentGeneration;
-            if (!validateCloudPayload(queued)) throw new Error('OFFLINE_QUEUE_INVALID_PAYLOAD');
-
+            queued.resetGeneration = String(factoryResetGeneration || queued.resetGeneration || '0');
             if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
                 await window.FirebaseCloud.saveForGeneration(queued, factoryResetGeneration);
             } else {
                 await window.FirebaseCloud.save(queued);
             }
-
             clearOfflineCloudQueue();
             cloudSavePending = false;
             cloudSaveExpectedRevision = String(queued.updatedAt || '');
-            lastAppliedCloudUpdatedAt = String(queued.updatedAt || '');
             firebaseOnline = true;
             APP_SECURITY.lastGoodCloudUpdatedAt = String(queued.updatedAt || '');
             APP_SECURITY.lastGoodCloudSnapshot = queued;
-            updateCloudStatus('تم رفع التعديلات الأوفلاين إلى Firebase بنجاح ✓', '#16803c');
+            updateCloudStatus('تم رفع كل التعديلات المحفوظة أوف لاين إلى Firebase ✓', '#16803c');
             return true;
         } catch (e) {
             firebaseOnline = false;
-            // أبقِ النسخة على الجهاز فقط عند فشل الشبكة الحقيقي.
             persistOfflineCloudQueue(queued);
-            updateCloudStatus('تعذر رفع التعديلات الآن — بقيت محفوظة على الجهاز ✓', '#9a6700');
+            updateCloudStatus('لا يزال الاتصال غير متاح — بياناتك محفوظة على الجهاز ✓', '#9a6700');
             console.warn('Offline cloud flush failed:', e);
             return false;
         }
@@ -3485,37 +3412,29 @@ function acknowledgeAnnouncement(id) {
             firebaseOnline = true;
             updateCloudStatus('عاد الإنترنت — جاري مزامنة البيانات... ☁️', '#9a6700');
             clearTimeout(firebaseRetryTimer);
-            // عند عودة الإنترنت نقرأ Firebase أولاً ثم نقرر هل الطابور الأوفلاين
-            // ما زال صالحاً للرفع أم أصبح قديماً بسبب جهاز آخر.
-            await initializeCloudData();
+            await flushOfflineCloudQueue();
+            initializeCloudData().catch(err => console.warn('Online Firebase refresh failed:', err));
         });
         setInterval(() => {
-            if (navigator.onLine && localStorage.getItem('schoolOfflinePending') === '1') {
-                flushOfflineCloudQueue().catch(() => {});
-            }
+            if (navigator.onLine && localStorage.getItem('schoolOfflinePending') === '1') flushOfflineCloudQueue();
         }, 5000);
     }
 
     function queueCloudSave(delay = 600) {
+        // localStorage هو طبقة الحفظ الأولى دائماً؛ Firebase مجرد مزامنة سحابية.
+        // لذلك حتى عند انقطاع الإنترنت لا نفقد أي تعديل.
         if (!window.FirebaseCloud || !window.FirebaseCloud.enabled) return;
+        cloudSavePending = true;
         clearTimeout(cloudSaveTimer);
         clearTimeout(cloudSaveConfirmTimer);
-
-        // أوفلاين فقط: هنا نضع Snapshot في الطابور.
-        // أثناء الاتصال لا نعتبر localStorage مصدراً للحقيقة ولا نضع نسخة محلية
-        // في طابور قد يعيد رفعها لاحقاً فوق Firebase.
-        if (!navigator.onLine || !cloudReady) {
-            if (!navigator.onLine) {
-                persistOfflineCloudQueue(getCloudPayload());
-                updateCloudStatus('لا يوجد إنترنت — تم حفظ التعديل محلياً وسيُرفع بعد التحقق من Firebase ✓', '#9a6700');
-            }
+        const offlineSnapshot = getCloudPayload();
+        persistOfflineCloudQueue(offlineSnapshot);
+        if (!navigator.onLine) {
+            updateCloudStatus('لا يوجد إنترنت — تم حفظ التعديل محلياً وسيُرفع عند عودة الإنترنت ✓', '#9a6700');
             return;
         }
-
-        cloudSavePending = true;
         cloudSaveTimer = setTimeout(async () => {
             if (!cloudReady || !navigator.onLine) {
-                cloudSavePending = false;
                 persistOfflineCloudQueue(getCloudPayload());
                 updateCloudStatus('تم حفظ التعديل محلياً — بانتظار عودة الإنترنت ✓', '#9a6700');
                 return;
@@ -3529,38 +3448,38 @@ function acknowledgeAnnouncement(id) {
                     console.error('Cloud save blocked: invalid payload structure.');
                     return;
                 }
-                payload.updatedAt = new Date().toISOString();
+                const revision = String(payload.updatedAt || new Date().toISOString());
+                payload.updatedAt = revision;
                 payload.resetGeneration = String(factoryResetGeneration || '0');
-
+                // قبل الحفظ نتحقق من جيل الترسيت في Firebase. إذا كان جهاز آخر
+                // قد نفذ ترسيتاً عاماً، يمنع هذا الجهاز القديم من إعادة رفع بياناته.
                 if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
                     await window.FirebaseCloud.saveForGeneration(payload, factoryResetGeneration);
                 } else {
                     await window.FirebaseCloud.save(payload);
                 }
-
-                // الحفظ المباشر نجح، لذلك أي طابور قديم لم يعد له معنى.
-                clearOfflineCloudQueue();
-                lastAppliedCloudUpdatedAt = String(payload.updatedAt);
-                cloudSaveExpectedRevision = String(payload.updatedAt);
-                APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
+                lastAppliedCloudUpdatedAt = revision;
+                cloudSaveExpectedRevision = revision;
+                // لا نرفع cloudSavePending=false هنا. ننتظر أول snapshot من Firebase
+                // يحمل نفس revision؛ وبذلك لا تستطيع نسخة أقدم إعادة البيانات المحذوفة.
+                APP_SECURITY.lastGoodCloudUpdatedAt = revision;
                 APP_SECURITY.lastGoodCloudSnapshot = payload;
-                updateCloudStatus('تم الحفظ في Firebase ☁️ — جاري تأكيد المزامنة', '#16803c');
+                updateCloudStatus('تم الحفظ في Firebase ☁️ — بانتظار تأكيد المزامنة', '#16803c');
 
+                // احتياط: إذا لم تصل إشارة listener بسبب انقطاع مؤقت، لا نبقى محجوبين للأبد.
                 cloudSaveConfirmTimer = setTimeout(() => {
-                    if (cloudSavePending && cloudSaveExpectedRevision === String(payload.updatedAt)) {
+                    if (cloudSavePending && cloudSaveExpectedRevision === revision) {
                         cloudSavePending = false;
                         cloudSaveExpectedRevision = '';
                         updateCloudStatus('تم الحفظ في Firebase ☁️', '#16803c');
                     }
                 }, 5000);
             } catch (e) {
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
+                // لا نحذف التعديل عند فشل الشبكة: يحتفظ به طابور الأوف لاين حتى تعود الشبكة.
                 firebaseOnline = false;
-                // فقط عند فشل الاتصال ننتقل إلى وضع الطابور الأوفلاين.
                 persistOfflineCloudQueue(getCloudPayload());
                 console.error('Cloud save failed:', e);
-                updateCloudStatus('تعذر الاتصال — التعديل محفوظ أوف لاين وسيُرفع بعد التحقق ✓', '#9a6700');
+                updateCloudStatus('تعذر الاتصال — التعديل محفوظ أوف لاين وسيُرفع تلقائياً ✓', '#9a6700');
             }
         }, delay);
     }
@@ -3591,8 +3510,6 @@ function acknowledgeAnnouncement(id) {
             }
             const rawCloud = await window.FirebaseCloud.load();
             firebaseOnline = true;
-            // لا نسمح لبيانات الجهاز المحلية أن تسبق Firebase عند بدء التشغيل.
-            // سيتم التعامل مع طابور الأوفلاين فقط بعد قراءة نسخة Firebase الحالية.
             // اقرأ علامة آخر ترسيت عام قبل قبول أي بيانات سحابية.
             if (typeof window.FirebaseCloud.getFactoryResetControl === 'function') {
                 const control = await window.FirebaseCloud.getFactoryResetControl();
@@ -3613,6 +3530,16 @@ function acknowledgeAnnouncement(id) {
                 if (!validateCloudPayload(cloud)) {
                     console.warn('Firebase payload structure was repaired/normalized but is still incomplete.', rawCloud);
                     throw new Error('Firebase returned an invalid schoolSystem payload.');
+                }
+                // إذا عدّل المستخدم بيانات محلياً أثناء انتظار Firebase، لا تستبدل
+                // تعديله بنسخة أقدم؛ ارفع النسخة المحلية إلى Firebase بدلاً من ذلك.
+                if (cloudSavePending) {
+                    await saveCurrentCloudPayload();
+                    cloudSavePending = false;
+                    updateCloudStatus('تمت مزامنة التعديلات المحلية مع Firebase ☁️', '#16803c');
+                    startRealtimeCloudSync();
+                    scheduleAutomaticBackup();
+                    return true;
                 }
                 APP_SECURITY.lastGoodCloudUpdatedAt = String(cloud.updatedAt || '');
                 APP_SECURITY.lastGoodCloudSnapshot = cloud;
@@ -3655,37 +3582,11 @@ function acknowledgeAnnouncement(id) {
                 localStorage.setItem('monitorsData', JSON.stringify(monitorsData));
                 localStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
                 if (announcementsPrunedOnLoad && window.FirebaseCloud && window.FirebaseCloud.enabled) {
-                    // تنظيف السحابة يتم فقط بعد اعتماد نسخة Firebase، وليس من localStorage القديم.
-                    const cleanedPayload = getCloudPayload();
-                    cleanedPayload.updatedAt = new Date().toISOString();
-                    await window.FirebaseCloud.saveForGeneration(cleanedPayload, factoryResetGeneration);
-                    lastAppliedCloudUpdatedAt = String(cleanedPayload.updatedAt);
-                    APP_SECURITY.lastGoodCloudUpdatedAt = String(cleanedPayload.updatedAt);
-                    APP_SECURITY.lastGoodCloudSnapshot = cleanedPayload;
-                }
-                // إذا كان هناك تعديل حقيقي تم أثناء انقطاع الإنترنت، نرفعه فقط إذا
-                // كانت Firebase ما تزال على نفس النسخة التي كان الجهاز متزامناً معها.
-                if (localStorage.getItem('schoolOfflinePending') === '1') {
-                    // flushOfflineCloudQueue يتحقق من baseRevision؛ الطوابير القديمة أو المتعارضة تُلغى.
-                    await flushOfflineCloudQueue(cloud);
+                    await saveCurrentCloudPayload();
                 }
             } else {
-                // لا توجد نسخة Firebase بعد. في هذه الحالة فقط نستخدم بيانات الجهاز
-                // لإنشاء أول نسخة سحابية. إذا كان هناك طابور أوفلاين، يمر عبر نفس
-                // آلية التحقق بدلاً من الكتابة العمياء.
-                if (localStorage.getItem('schoolOfflinePending') === '1') {
-                    const uploaded = await flushOfflineCloudQueue(null);
-                    if (!uploaded) {
-                        await saveCurrentCloudPayload();
-                    }
-                } else {
-                    const initialPayload = getCloudPayload();
-                    initialPayload.updatedAt = new Date().toISOString();
-                    await window.FirebaseCloud.saveForGeneration(initialPayload, factoryResetGeneration);
-                    lastAppliedCloudUpdatedAt = String(initialPayload.updatedAt);
-                    APP_SECURITY.lastGoodCloudUpdatedAt = String(initialPayload.updatedAt);
-                    APP_SECURITY.lastGoodCloudSnapshot = initialPayload;
-                }
+                // أول تشغيل: ارفع البيانات الموجودة على هذا الجهاز إلى Firebase.
+                await saveCurrentCloudPayload();
             }
             ensureStableIds();
             cloudReady = true;
@@ -3884,12 +3785,14 @@ function acknowledgeAnnouncement(id) {
             }
             const revision = String(cloud.updatedAt || '');
 
-            // أثناء انتظار تأكيد حفظ محلي، نقبل فقط نسخة Firebase المطابقة أو الأحدث.
-            // إذا وصلت نسخة أقدم نتجاهلها، وإذا وصلت نسخة أحدث من جهاز آخر نعتمدها
-            // فوراً حتى لا تبقى البيانات المحلية متغلبة على السحابة.
+            // إذا كان لدينا تعديل محلي لم يُؤكَّد بعد، تجاهل أي نسخة من Firebase
+            // لا تحمل نفس revision. هذا مهم جداً للحذف: يمنع النسخة القديمة من
+            // إعادة العنصر المحذوف إلى الشاشة/localStorage.
             if (cloudSavePending) {
-                const expected = String(cloudSaveExpectedRevision || '');
-                if (expected && revision === expected) {
+                if (cloudSaveExpectedRevision && revision !== cloudSaveExpectedRevision) {
+                    return;
+                }
+                if (cloudSaveExpectedRevision && revision === cloudSaveExpectedRevision) {
                     clearTimeout(cloudSaveConfirmTimer);
                     cloudSavePending = false;
                     cloudSaveExpectedRevision = '';
@@ -3897,11 +3800,7 @@ function acknowledgeAnnouncement(id) {
                     updateCloudStatus('تمت مزامنة التعديل مع Firebase ✓', '#16803c');
                     return;
                 }
-                if (expected && revisionTime(revision) < revisionTime(expected)) {
-                    return;
-                }
-                cloudSavePending = false;
-                cloudSaveExpectedRevision = '';
+                return;
             }
 
             if (revision && revision === lastAppliedCloudUpdatedAt) return;
