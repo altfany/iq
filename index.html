@@ -5670,6 +5670,7 @@ function updateCloudStatus(text, color) {
             const studentId=String(r.studentId||student.id||'');
             const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30);
             const basic=[
+                ['اسم الطالب',r.name||'—'],
                 ['الصف',r.className||'—'],
                 ['الرحلة/المقعد',`#${r.deskNumber||'—'} — ${r.seat||'—'}`],
                 ...getSearchedStudentDisplayFields(r)
@@ -5677,9 +5678,9 @@ function updateCloudStatus(text, color) {
             const photo=student.photoData||student.photo||student.imageData||student.image||'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
             html+=`<div style="margin-top:10px;padding:9px;background:#f8fbfd;border:1px solid #e1e7ec;border-radius:10px"><b>📅 حصص الصف اليوم — ${esc(dayName)}</b>${renderTodaySchedule(r.classObj)}</div>`;
-            html+=`<div style="margin-top:10px"><b>⭐ السلوك والمستوى</b><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
-            html+=`<div style="margin-top:10px"><b>📝 الدرجات (${grades.length})</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>المعلم</th></tr></thead><tbody>${grades.slice(0,30).map(g=>`<tr><td>${esc(g.subject||'-')}</td><td>${esc(g.score)} / ${esc(g.maxScore)}</td><td>${esc(getGradePeriodLabel(g.periodType))}</td><td>${esc(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد درجات.</td></tr>'}</tbody></table></div></div>`;
-            html+=`<div style="margin-top:10px"><b>📌 سجل الحضور</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows.map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات احترافية.</td></tr>'}</tbody></table></div></div>`;
+            html+=`<div style="margin-top:10px"><b>⭐ التقييم والسلوك والمستوى الدراسي</b><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
+            html+=`<div style="margin-top:10px"><b>📝 الدرجات (${grades.length})</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>المعلم</th></tr></thead><tbody>${grades.map(g=>`<tr><td>${esc(g.subject||'-')}</td><td>${esc(g.score)} / ${esc(g.maxScore)}</td><td>${esc(getGradePeriodLabel(g.periodType))}</td><td>${esc(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد درجات.</td></tr>'}</tbody></table></div></div>`;
+            html+=`<div style="margin-top:10px"><b>📌 سجل الحضور</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows.map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات حضور مسجلة.</td></tr>'}</tbody></table></div></div>`;
             contentDiv.innerHTML=html; extraActions.style.display='flex';
             if(matches.length>1)contentDiv.insertAdjacentHTML('beforeend',`<div style="margin-top:8px;color:#666">تم العثور على ${matches.length} طالب مطابق؛ تم عرض أول نتيجة ويمكنك تضييق البحث بالاسم الكامل.</div>`);
         }
@@ -5833,8 +5834,9 @@ function updateCloudStatus(text, color) {
 
         add('اسم الطالب', desk[`student${suffix}`] || result.name, `student${suffix}`);
         add('كود الطالب', desk[`code${suffix}`] || result.code, `code${suffix}`);
+        add('العمر', desk[`age${suffix}`] || desk.age || result.age, `age${suffix}`);
         add('الجنس', desk[`gender${suffix}`], `gender${suffix}`);
-        add('تاريخ الميلاد', desk[`birthDate${suffix}`], `birthDate${suffix}`);
+        add('تاريخ الميلاد', desk[`birthDate${suffix}`] || desk[`dateOfBirth${suffix}`], `birthDate${suffix}`);
         add('الرقم الوطني', desk[`nationalId${suffix}`], `nationalId${suffix}`);
         add('رقم الهاتف', desk[`phone${suffix}`], `phone${suffix}`);
         add('العنوان', desk[`address${suffix}`], `address${suffix}`);
@@ -5843,7 +5845,7 @@ function updateCloudStatus(text, color) {
         // المفاتيح الداخلية الخاصة بالنظام أو بيانات الطالب الآخر.
         const internalKeys = new Set([
             'deskNumber','student1','student2','student1Id','student2Id','code1','code2',
-            'phone1','phone2','gender1','gender2','birthDate1','birthDate2',
+            'phone1','phone2','gender1','gender2','age1','age2','birthDate1','birthDate2','dateOfBirth1','dateOfBirth2',
             'nationalId1','nationalId2','address1','address2','separated1','separated2',
             'id','key','firebaseKey','createdAt','updatedAt'
         ]);
