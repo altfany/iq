@@ -3374,7 +3374,7 @@ function acknowledgeAnnouncement(id) {
             updateCloudStatus('لا يوجد إنترنت — لن يتم حفظ أي بيانات محلياً.', '#9a6700');
         });
         window.addEventListener('online', async () => {
-            updateCloudStatus('عاد الإنترنت — جاري تحميل آخر نسخة من ...', '#9a6700');
+            updateCloudStatus('عاد الإنترنت — جاري تحميل آخر نسخة من F...', '#9a6700');
             await initializeCloudData().catch(err => console.warn('Online Firebase refresh failed:', err));
         });
     }
@@ -3434,8 +3434,8 @@ function updateCloudStatus(text, color) {
         firebaseOnline = false;
         const loginBtn = document.getElementById('loginButton');
         if (loginBtn) loginBtn.disabled = true;
-        updateCloudStatus('  جاري الاتصال...', '#666');
-
+        updateCloudStatus('جاري الاتصال ...',  '#FF0000');
+	
         try {
             if (!window.FirebaseCloud || !window.FirebaseCloud.enabled || typeof window.FirebaseCloud.load !== 'function') {
                 throw new Error('Firebase SDK غير متاح في الصفحة.');
@@ -3483,7 +3483,7 @@ function updateCloudStatus(text, color) {
                 startFactoryResetControlSync();
                 startRealtimeCloudSync();
                 scheduleAutomaticBackup();
-                updateCloudStatus(' متصل  ☁️', '#16803 c');
+                updateCloudStatus('متصل Connected ☁️', '#16803c');
             }
 
             const btn = document.getElementById('loginButton');
