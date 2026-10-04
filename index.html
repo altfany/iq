@@ -2068,7 +2068,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         </div>
         <div class="header-actions">
             <div style="display: flex; gap: 4px;" id="globalSearchWrapper">
-                <input type="text" id="globalStudentSearchInput" placeholder="🔍 ابحث عن طالب..." style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
+                <input type="text" id="globalStudentSearchInput" placeholder="🔍 ابحث عن طالب أو معلم أو صف..." style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث عام</button>
             </div>
             <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 جرد الصفوف</button>
@@ -2495,7 +2495,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 <div class="modal" id="globalSearchResultModal">
     <div class="modal-content" style="width: 440px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 style="margin:0; color: var(--primary);">🔍 نتيجة البحث عن الطالب</h3>
+            <h3 style="margin:0; color: var(--primary);">🔍 نتيجة البحث الشامل</h3>
             <button onclick="closeModal('globalSearchResultModal')" style="background: #7f8c8d; padding: 3px 8px; font-size: 11px;">إغلاق X</button>
         </div>
         <div id="globalSearchResultContent" style="font-size: 13px; line-height: 1.6; background: #f8f9fa; padding: 12px; border-radius: 4px; border: 1px solid #ddd;"></div>
@@ -5539,114 +5539,99 @@ function updateCloudStatus(text, color) {
     }
 
     function globalSearchStudent() {
-        if (currentUser.role === 'parent') return;
+        if (!currentUser || currentUser.role === 'parent') return;
+        const input=document.getElementById('globalStudentSearchInput');
+        const queryRaw=String(input?.value||'').trim();
+        const query=queryRaw.toLocaleLowerCase('ar');
+        if(!query) return;
+        lastFoundSearchResult=null;
+        const contentDiv=document.getElementById('globalSearchResultContent');
+        const extraActions=document.getElementById('globalSearchExtraActions');
+        const detailBox=document.getElementById('globalSearchDetailBox');
+        const classActions=document.getElementById('globalSearchClassActions');
+        const classResults=document.getElementById('globalSearchClassResults');
+        if(!contentDiv||!detailBox)return;
+        detailBox.style.display='none';
+        extraActions.style.display='none';
+        classActions.style.display='none';
+        classResults.innerHTML='';
 
-        const queryRaw = document.getElementById('globalStudentSearchInput').value.trim();
-        const query = queryRaw.toLowerCase();
-        if (!query) return;
-
-        lastFoundSearchResult = null;
-
-        const contentDiv = document.getElementById('globalSearchResultContent');
-        const extraActions = document.getElementById('globalSearchExtraActions');
-        const detailBox = document.getElementById('globalSearchDetailBox');
-        const classActions = document.getElementById('globalSearchClassActions');
-        const classResults = document.getElementById('globalSearchClassResults');
-
-        detailBox.style.display = 'none';
-        extraActions.style.display = 'none';
-        classActions.style.display = 'none';
-        classResults.innerHTML = '';
-
-        const allowedClassIndices = currentUser.role === 'teacher' ? getCurrentTeacherAssignedClassIndices() : [];
-        if (currentUser.role === 'teacher' && allowedClassIndices.length === 0) { alert('لم يتم تحديد أي صف لهذا المعلم من قبل المدير.'); return; }
-
-        // 1) البحث عن الصفوف بالاسم ضمن الصف المسموح فقط.
-        const classMatches = [];
-        schoolData.forEach((cls, index) => {
-            if (currentUser.role === 'teacher' && !allowedClassIndices.includes(index)) return;
-            if (cls && cls.name && cls.name.toLowerCase().includes(query)) classMatches.push({ index, name: cls.name });
+        const allowedClassIndices=currentUser.role==='teacher'?getCurrentTeacherAssignedClassIndices():[];
+        if(currentUser.role==='teacher' && !allowedClassIndices.length){alert('لم يتم تحديد أي صف لهذا المعلم من قبل المدير.');return;}
+        const matches=[];
+        const classMatches=[];
+        schoolData.forEach((cls,cIdx)=>{
+            if(currentUser.role==='teacher' && !allowedClassIndices.includes(cIdx))return;
+            if(String(cls?.name||'').toLocaleLowerCase('ar').includes(query))classMatches.push({index:cIdx,name:cls.name});
+            (cls?.desks||[]).forEach((d,di)=>[1,2].forEach(slot=>{
+                const name=String(d?.['student'+slot]||'').trim();
+                if(name && name.toLocaleLowerCase('ar').includes(query)){
+                    matches.push({name,className:cls.name,classObj:cls,classIndex:cIdx,deskIndex:di,deskNumber:d.deskNumber??(di+1),slot,seat:slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)',itemKey:`${d.deskNumber??(di+1)}_${slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)'}_${name}`,code:d?.['code'+slot],studentId:d?.['student'+slot+'Id']||d?.id||'' ,student:d});
+                }
+            }));
+        });
+        const teacherMatches=(teachersData||[]).filter(t=>{
+            const assigned=getTeacherAssignedClassIndicesForRecord(t).map(i=>schoolData[i]?.name||'').join(' ');
+            const subjects=getTeacherSpecialties(t).join(' ');
+            const hay=[t.name,t.phone,t.age,t.spec,subjects,assigned].map(v=>String(v||'')).join(' ').toLocaleLowerCase('ar');
+            return hay.includes(query);
         });
 
-        // 2) البحث عن الطالب ضمن الصف المسموح فقط.
-        for (let cIdx = 0; cIdx < schoolData.length; cIdx++) {
-            if (currentUser.role === 'teacher' && !allowedClassIndices.includes(cIdx)) continue;
-            const cls = schoolData[cIdx];
-
-            for (let d of (cls.desks || [])) {
-                if (d.student1 && d.student1.toLowerCase().includes(query)) {
-                    const itemKey = `${d.deskNumber}_المقعد الأول (يمين)_${d.student1}`;
-                    lastFoundSearchResult = {
-                        name: d.student1,
-                        className: cls.name,
-                        classObj: cls,
-                        classIndex: cIdx,
-                        deskNumber: d.deskNumber,
-                        seat: 'المقعد الأول (يمين)',
-                        itemKey: itemKey,
-                        code: d.code1
-                    };
-                    break;
-                }
-
-                if (d.student2 && d.student2.toLowerCase().includes(query)) {
-                    const itemKey = `${d.deskNumber}_المقعد الثاني (يسار)_${d.student2}`;
-                    lastFoundSearchResult = {
-                        name: d.student2,
-                        className: cls.name,
-                        classObj: cls,
-                        classIndex: cIdx,
-                        deskNumber: d.deskNumber,
-                        seat: 'المقعد الثاني (يسار)',
-                        itemKey: itemKey,
-                        code: d.code2
-                    };
-                    break;
-                }
+        const esc=escapeGlobalSearchHTML;
+        const todayIndex=new Date().getDay();
+        const days=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+        const dayName=days[todayIndex];
+        const renderTodaySchedule=(cls)=>{
+            if(!cls)return '<div style="color:#777">لا توجد بيانات صف.</div>';
+            const rows=[]; const lessons=Number(cls.scheduleLessons||6); const daysCount=Number(cls.scheduleDays||5);
+            if(todayIndex>=daysCount && daysCount>0)return `<div style="color:#777">لا توجد حصص مجدولة يوم ${esc(dayName)}.</div>`;
+            for(let l=0;l<lessons;l++){
+                const e=getScheduleEntryData(cls,`${todayIndex}_${l}`); if(!e.subject)continue;
+                const t=e.teacherName||(!e.emergency?findScheduleTeacher(cls,e.subject)?.name:'');
+                rows.push(`<div style="padding:7px 8px;border:1px solid #e2e8ed;border-radius:9px;background:#fff;margin-top:5px"><b>الحصة ${l+1}:</b> ${e.emergency?'⚠️ ':''}${esc(e.subject)}${t?' — 👨‍🏫 '+esc(t):''}</div>`);
             }
+            return rows.join('')||'<div style="color:#777">لا توجد حصص مسجلة لهذا اليوم.</div>';
+        };
 
-            if (lastFoundSearchResult) break;
+        let html='';
+        if(matches.length){
+            const r=matches[0]; lastFoundSearchResult={...r,name:r.name,className:r.className,classObj:r.classObj,classIndex:r.classIndex,deskNumber:r.deskNumber,seat:r.seat,itemKey:r.itemKey,code:r.code,studentId:r.studentId,deskIndex:r.deskIndex,student:r.student};
+            const student=r.student||{};
+            const behaviorKey=`${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`;
+            const behavior=r.classObj?.behaviorNotes?.[behaviorKey];
+            const levels=Array.isArray(r.classObj?.studentLevels?.[behaviorKey])?r.classObj.studentLevels[behaviorKey]:[];
+            const grades=ensureStudentGrades(r.classObj).filter(g=>String(g.studentName||'').trim()===r.name.trim());
+            const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
+            const studentId=String(r.studentId||student.id||'');
+            const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30);
+            const knownFields=['name','student1','student2','code1','code2','phone','parentPhone','fatherPhone','motherPhone','address','gender','age','birthDate','dateOfBirth','nationalId','notes','photo','photoData','image','imageData'];
+            const extraKeys=Object.keys(student).filter(k=>!knownFields.includes(k)&&student[k]!=null&&typeof student[k]!=='object');
+            const basic=[['الاسم',r.name],['الصف',r.className],['الرحلة/المقعد',`#${r.deskNumber} — ${r.seat}`],['الجنس',student.gender==='female'?'مؤنث':student.gender==='male'?'ذكر':student.gender||'—'],['الهاتف',student.phone||'—'],['هاتف ولي الأمر',student.parentPhone||student.fatherPhone||student.motherPhone||'—'],['العنوان',student.address||'—'],['كود الطالب',r.code||'—']];
+            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${basic.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraKeys.map(k=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(k)}</small><b>${esc(student[k])}</b></div>`).join('')}</div>`;
+            const photo=student.photoData||student.photo||student.imageData||student.image||'';
+            if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
+            html+=`<div style="margin-top:10px;padding:9px;background:#f8fbfd;border:1px solid #e1e7ec;border-radius:10px"><b>📅 حصص الصف اليوم — ${esc(dayName)}</b>${renderTodaySchedule(r.classObj)}</div>`;
+            html+=`<div style="margin-top:10px"><b>⭐ السلوك والمستوى</b><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
+            html+=`<div style="margin-top:10px"><b>📝 الدرجات (${grades.length})</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>المعلم</th></tr></thead><tbody>${grades.slice(0,30).map(g=>`<tr><td>${esc(g.subject||'-')}</td><td>${esc(g.score)} / ${esc(g.maxScore)}</td><td>${esc(getGradePeriodLabel(g.periodType))}</td><td>${esc(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد درجات.</td></tr>'}</tbody></table></div></div>`;
+            html+=`<div style="margin-top:10px"><b>📌 سجل الحضور</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows.map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات احترافية.</td></tr>'}</tbody></table></div></div>`;
+            contentDiv.innerHTML=html; extraActions.style.display='flex';
+            if(matches.length>1)contentDiv.insertAdjacentHTML('beforeend',`<div style="margin-top:8px;color:#666">تم العثور على ${matches.length} طالب مطابق؛ تم عرض أول نتيجة ويمكنك تضييق البحث بالاسم الكامل.</div>`);
         }
-
-        // عرض الصفوف المطابقة وإتاحة فتح الصف كصفحة كاملة.
-        if (classMatches.length) {
-            classActions.style.display = 'block';
-
-            classMatches.forEach(match => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.style.cssText = 'background:var(--primary);font-size:12px;padding:8px 14px;font-weight:bold;';
-                btn.textContent = `📚 فتح صف: ${match.name}`;
-                btn.onclick = () => openSearchedClass(match.index);
-                classResults.appendChild(btn);
-            });
+        if(teacherMatches.length){
+            const t=teacherMatches[0];
+            const assigned=getTeacherAssignedClassIndicesForRecord(t).map(i=>schoolData[i]?.name||'').filter(Boolean);
+            const specs=getTeacherSpecialties(t);
+            const tAtt=(teachersAbsenceData||[]).filter(a=>String(a.teacherId||a.teacherName||'')===String(t.id||t.name||''));
+            html+=`<div style="margin-top:12px;padding:11px;background:#eef7ff;border:1px solid #cfe3f4;border-radius:12px"><div style="font-weight:900;font-size:16px;color:#176b9c;margin-bottom:8px">👨‍🏫 ملف المعلم الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${[['الاسم',t.name],['الهاتف',t.phone||'—'],['العمر',t.age||'—'],['الاختصاص',t.spec||'—'],['الدروس/الاختصاصات',specs.join('، ')||'—'],['الصفوف',assigned.join('، ')||'غير محدد'],['كود الدخول',isPrimaryAdminUser()?(t.password||'بدون كود'):'محجوب'],['عدد سجلات الغياب',tAtt.length]].map(x=>`<div style="background:#fff;border:1px solid #dce7ef;border-radius:9px;padding:8px"><small style="display:block;color:#71808e">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}</div>${tAtt.length?`<div style="margin-top:9px;padding:8px;background:#fff;border-radius:8px"><b>📌 سجلات غياب المعلم</b>${tAtt.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30).map(a=>`<div style="margin-top:4px;padding:5px;border:1px solid #e5eaf0;border-radius:6px">${esc(a.date||'-')} — ${esc(a.status||'مسجل')}</div>`).join('')}</div>`:''}${assigned.map(n=>{const ci=schoolData.findIndex(c=>String(c?.name||'')===String(n));return ci>=0?`<div style="margin-top:8px;padding:7px;background:#fff;border-radius:8px"><b>📅 ${esc(n)} — حصص اليوم (${esc(dayName)})</b>${renderTodaySchedule(schoolData[ci])}</div>`:''}).join('')}</div>`;
         }
-
-        if (lastFoundSearchResult) {
-            const codeDisplay = lastFoundSearchResult.code || 'غير محدد';
-
-            contentDiv.innerHTML = `
-                <p><strong>اسم الطالب:</strong> ${lastFoundSearchResult.name}</p>
-                <p><strong>الصف:</strong> ${lastFoundSearchResult.className}</p>
-                <p><strong>رقم الرحلة:</strong> #${lastFoundSearchResult.deskNumber} (${lastFoundSearchResult.seat})</p>
-                <p><strong>كود المتابعة:</strong> ${codeDisplay}</p>
-            `;
-
-            extraActions.style.display = 'flex';
-
-            // إذا كان البحث عن صف فقط، لا نعرض رسالة طالب غير موجود.
-        } else if (!classMatches.length) {
-            contentDiv.innerHTML = `<p style="color: var(--danger);">لم يتم العثور على طالب أو صف بهذا الاسم.</p>`;
-        } else {
-            contentDiv.innerHTML = `
-                <div style="text-align:center;">
-                    <p style="margin:0 0 6px 0; font-weight:bold; color:var(--primary);">تم العثور على صف مطابق للبحث.</p>
-                    <p style="margin:0; color:#666;">اضغط على زر «فتح صف» لعرض الصف كاملاً على الصفحة.</p>
-                </div>
-            `;
+        if(classMatches.length){
+            classActions.style.display='block'; classMatches.forEach(m=>{const b=document.createElement('button');b.type='button';b.style.cssText='background:var(--primary);font-size:12px;padding:8px 14px;font-weight:bold;';b.textContent=`📚 فتح صف: ${m.name}`;b.onclick=()=>openSearchedClass(m.index);classResults.appendChild(b);});
         }
-
-        document.getElementById('globalSearchResultModal').style.display = 'flex';
+        if(!html && !classMatches.length)contentDiv.innerHTML='<p style="color:var(--danger);font-weight:bold">لم يتم العثور على طالب أو معلم أو صف بهذا الاسم.</p>';
+        else if(html)contentDiv.innerHTML=html;
+        else contentDiv.innerHTML='<div style="text-align:center"><p style="font-weight:bold;color:var(--primary)">تم العثور على صف مطابق للبحث.</p></div>';
+        const title=document.querySelector('#globalSearchResultModal h3'); if(title)title.textContent='🔍 نتيجة البحث الشامل';
+        document.getElementById('globalSearchResultModal').style.display='flex';
     }
 
     // فتح الصف من نتيجة البحث وإظهاره كصفحة داخلية كاملة.
@@ -6219,17 +6204,30 @@ function updateCloudStatus(text, color) {
 
     function buildClassScheduleSummaryHTML(cls){
         const days=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-        const rows=[]; const lessons=Number(cls?.scheduleLessons||6), daysCount=Number(cls?.scheduleDays||5);
-        for(let d=0; d<daysCount; d++){
-            for(let l=0; l<lessons; l++){
-                const entry=getScheduleEntryData(cls,`${d}_${l}`);
-                if(!entry.subject) continue;
-                const teacher=entry.teacherName || (!entry.emergency ? findScheduleTeacher(cls,entry.subject)?.name : '');
-                rows.push(`<div style="display:flex;gap:6px;align-items:center;justify-content:space-between;padding:6px 8px;margin-top:5px;border-radius:9px;background:#f8fbfd;border:1px solid #e5edf2;font-size:10px;"><span><b>${days[d]}</b> — الحصة ${l+1}</span><span>${entry.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(entry.subject)}${teacher?` — 👨‍🏫 ${escapeGlobalSearchHTML(teacher)}`:''}</span></div>`);
-            }
+        const todayIndex=new Date().getDay();
+        const todayName=days[todayIndex] || days[0];
+        const rows=[];
+        const lessons=Number(cls?.scheduleLessons||6);
+        const daysCount=Number(cls?.scheduleDays||5);
+        if(todayIndex >= daysCount && daysCount > 0){
+            return `<div style="margin-top:10px;padding:10px;border-radius:12px;background:#fff;border:1px solid #e5edf2;">
+                <div style="font-size:12px;font-weight:900;color:#34495e;">📅 حصص الصف اليوم — ${todayName}</div>
+                <div style="font-size:11px;color:#777;margin-top:5px;">لا توجد حصص مجدولة لهذا اليوم.</div>
+            </div>`;
         }
-        if(!rows.length) return '';
-        return `<div style="margin-top:10px;padding:9px;border-radius:12px;background:#fff;border:1px solid #e5edf2;"><div style="font-size:11px;font-weight:900;color:#34495e;margin-bottom:4px;">📅 حصص الصف والمعلم المسؤول</div>${rows.join('')}</div>`;
+        for(let l=0; l<lessons; l++){
+            const entry=getScheduleEntryData(cls,`${todayIndex}_${l}`);
+            if(!entry.subject) continue;
+            const teacher=entry.teacherName || (!entry.emergency ? findScheduleTeacher(cls,entry.subject)?.name : '');
+            rows.push(`<div style="display:grid;grid-template-columns:72px 1fr;gap:7px;align-items:center;padding:8px 9px;margin-top:6px;border-radius:10px;background:#f8fbfd;border:1px solid #e5edf2;font-size:11px;">
+                <span style="font-weight:900;color:var(--indigo);">الحصة ${l+1}</span>
+                <span>${entry.emergency?'⚠️ ':''}<b>${escapeGlobalSearchHTML(entry.subject)}</b>${teacher?` — 👨‍🏫 ${escapeGlobalSearchHTML(teacher)}`:''}</span>
+            </div>`);
+        }
+        return `<div style="margin-top:10px;padding:10px;border-radius:12px;background:#fff;border:1px solid #e5edf2;">
+            <div style="font-size:12px;font-weight:900;color:#34495e;">📅 حصص الصف اليوم — ${todayName}</div>
+            ${rows.join('') || '<div style="font-size:11px;color:#777;margin-top:5px;">لا توجد حصص مسجلة لهذا اليوم.</div>'}
+        </div>`;
     }
 
     function buildClassCardHTML(cls, index) {
@@ -8166,112 +8164,42 @@ function updateCloudStatus(text, color) {
         document.getElementById('studentRoleDashboardModal')?.remove();
         const f=currentStudentForDashboard();
         if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
+        const liveClass=schoolData[f.classIndex]||f.classObj||{};
         const studentId=String(f.student.id||'');
         const studentName=String(f.student.name||'');
-        const grades=ensureStudentGrades(f.classObj).filter(g=>String(g.studentName||'').trim()===studentName.trim());
-        const att=(window.ProfessionalModules && Array.isArray(window.ProfessionalModules.attendanceData)) ? window.ProfessionalModules.attendanceData : [];
+        const grades=ensureStudentGrades(liveClass).filter(g=>String(g.studentName||'').trim()===studentName.trim());
+        const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
         const myAtt=att.filter(r=>String(r.studentId)===studentId).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-        const legacyDates=[];
-        const legacyMap=f.classObj?.absenceRecords||{};
-        Object.keys(legacyMap).forEach(date=>{
-            const key1=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
-            if(legacyMap[date] && legacyMap[date][key1] && !myAtt.some(r=>r.date===date)) legacyDates.push({date,status:legacyMap[date][key1]});
-        });
-        const absentDates=myAtt.filter(r=>r.status==='absent').map(r=>({date:r.date,status:'absent'})).concat(legacyDates.filter(x=>x.status==='absent'))
-            .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-        const leaveDates=myAtt.filter(r=>r.status==='leave').map(r=>({date:r.date,status:'leave'})).concat(legacyDates.filter(x=>x.status==='leave'))
-            .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
         const today=getFormattedDate();
-        const todayRecord=myAtt.find(r=>String(r.date)===String(today));
+        const todayIndex=new Date().getDay();
+        const days=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+        const todayName=days[todayIndex];
+        const legacyMap=liveClass?.absenceRecords||{};
         const legacyKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
-        const todayLegacy=legacyMap?.[today]?.[legacyKey]||'';
-        const todayStatus=todayRecord?.status||todayLegacy||'present';
-        const todayMessage=todayStatus==='absent'
-            ? '<div class="parent-alert parent-alert-absent">🚨 <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>غائباً</b>.</div>'
-            : todayStatus==='leave'
-            ? '<div class="parent-alert parent-alert-leave">🏖️ <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>مجازاً</b>.</div>'
-            : todayStatus==='late'
-            ? '<div class="parent-alert parent-alert-late">⏰ <b>تنبيه:</b> تم تسجيل تأخر ابنك اليوم.</div>'
-            : '<div class="parent-alert parent-alert-ok">✅ حالة اليوم: <b>حاضر</b> أو لم يُسجّل عليه غياب.</div>';
+        const legacyDates=[]; Object.keys(legacyMap).forEach(date=>{if(legacyMap[date]?.[legacyKey]&&!myAtt.some(r=>r.date===date))legacyDates.push({date,status:legacyMap[date][legacyKey]});});
+        const absentDates=myAtt.filter(r=>r.status==='absent').map(r=>({date:r.date,status:'absent'})).concat(legacyDates.filter(x=>x.status==='absent')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+        const leaveDates=myAtt.filter(r=>r.status==='leave').map(r=>({date:r.date,status:'leave'})).concat(legacyDates.filter(x=>x.status==='leave')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+        const todayRecord=myAtt.find(r=>String(r.date)===String(today)); const todayStatus=todayRecord?.status||legacyMap?.[today]?.[legacyKey]||'present';
+        const todayMessage=todayStatus==='absent'?'<div class="parent-alert parent-alert-absent">🚨 <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>غائباً</b>.</div>':todayStatus==='leave'?'<div class="parent-alert parent-alert-leave">🏖️ <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>مجازاً</b>.</div>':todayStatus==='late'?'<div class="parent-alert parent-alert-late">⏰ <b>تنبيه:</b> تم تسجيل تأخر ابنك اليوم.</div>':'<div class="parent-alert parent-alert-ok">✅ حالة اليوم: <b>حاضر</b> أو لم يُسجّل عليه غياب.</div>';
         const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لابنك حالياً.</td></tr>';
         const absenceRows=absentDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>غائب</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام غياب مسجلة.</td></tr>';
         const leaveRows=leaveDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>مجاز</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام إجازة مسجلة.</td></tr>';
-        const liveParentClass = schoolData[f.classIndex] || f.classObj || {};
-        const parentBehaviorName = studentName.trim();
-        const parentBehaviorDesk = f.student.deskNumber ?? f.student.desk ?? '';
-        const parentBehaviorSlot = Number(f.student.slot) === 1 ? 'يمين' : 'يسار';
-        const parentBehaviorKey = `${parentBehaviorDesk}_${parentBehaviorSlot}_${parentBehaviorName}`;
-        const parentBehaviorMap = (liveParentClass.behaviorNotes && liveParentClass.behaviorNotes[parentBehaviorKey]) ? liveParentClass.behaviorNotes[parentBehaviorKey] : {};
-        const parentBehaviorText = typeof parentBehaviorMap === 'object'
-            ? Object.entries(parentBehaviorMap).filter(([k,v]) => v).map(([k,v]) => `<div style="padding:7px 9px;border:1px solid #e1e7ec;border-radius:8px;background:#f8fafc;margin-bottom:6px;"><b>${escapeGlobalSearchHTML(k||'السلوك')}:</b> ${escapeGlobalSearchHTML(v)}</div>`).join('')
-            : (parentBehaviorMap ? `<div style="padding:7px 9px;border:1px solid #e1e7ec;border-radius:8px;background:#f8fafc;">${escapeGlobalSearchHTML(parentBehaviorMap)}</div>` : '');
-        const parentLevelList = (liveParentClass.studentLevels && Array.isArray(liveParentClass.studentLevels[parentBehaviorKey])) ? liveParentClass.studentLevels[parentBehaviorKey] : [];
-        const parentLevelRows = parentLevelList.filter(x=>x && x.level!=null).map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #e1e7ec;border-radius:8px;background:#fff;margin-bottom:6px;"><b>${escapeGlobalSearchHTML(x.lesson||'المادة')}</b><span style="font-size:18px;letter-spacing:2px;">${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</span></div>`).join('');
-        const parentBehaviorSection = `<div class="pro-panel" id="parentBehaviorPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">⭐ السلوك والمستوى</h3><span style="font-size:11px;color:#687985">بيانات ${escapeGlobalSearchHTML(studentName)}</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div><h4 style="margin:6px 0;color:#34495e">📝 السلوك</h4>${parentBehaviorText || '<div class="pro-empty">لا توجد تقييمات سلوك مسجلة حالياً.</div>'}</div><div><h4 style="margin:6px 0;color:#34495e">⭐ المستوى</h4>${parentLevelRows || '<div class="pro-empty">لا توجد تقييمات مستوى مسجلة حالياً.</div>'}</div></div></div>`;
-        // واجبات الصف تصل فقط إلى طلاب الصف الذي حدده المعلم عند الدخول.
-        // وإذا كان الواجب لطالب محدد، يظهر لذلك الطالب فقط.
-        const parentClassId = String(f.classObj?.id || '');
-        const parentHomework = homeworkData.filter(h => {
-            if (!h) return false;
-            const sameStudent = h.targetCode && String(h.targetCode) === String(currentUser.code);
-            if (h.audience === 'student') return !!sameStudent;
-            if (h.audience !== 'all') return false;
-            // الواجبات الجديدة مرتبطة بالصف. الواجبات القديمة بلا classId تبقى ظاهرة للتوافق.
-            const homeworkClassId = String(h.classId || '');
-            if (homeworkClassId) return homeworkClassId === parentClassId;
-            if (h.classIndex != null && f.classIndex != null) return Number(h.classIndex) === Number(f.classIndex);
-            return true;
-        });
-        const parentHomeworkRows = parentHomework.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||''))).map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667;">${escapeGlobalSearchHTML(h.description||'')}</div></td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('') || '<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة لابنك.</td></tr>';
-
-        // جدول ولي الأمر: عرض الأسبوع كاملاً، مع تمييز اليوم بالأخضر والغد بالأحمر.
-        const weekDays=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-        const currentDayIndex=new Date().getDay();
-        const tomorrowDayIndex=(currentDayIndex+1)%7;
-        const parentScheduleLessons=Math.max(1,Number(f.classObj?.scheduleLessons||6));
-        const parentScheduleHTML=weekDays.map((dayName,dayIndex)=>{
-            const isToday=dayIndex===currentDayIndex;
-            const isTomorrow=dayIndex===tomorrowDayIndex;
-            const entries=[];
-            for(let lessonIndex=0;lessonIndex<parentScheduleLessons;lessonIndex++){
-                const entry=getScheduleEntryData(f.classObj,`${dayIndex}_${lessonIndex}`);
-                if(!entry || !entry.subject) continue;
-                const teacherName=entry.teacherName || (!entry.emergency ? getTeacherNameBySubject(entry.subject) : '') || '';
-                entries.push(`<div style="display:grid;grid-template-columns:52px 1fr auto;gap:8px;align-items:center;padding:8px 9px;margin-top:6px;background:rgba(255,255,255,.78);border:1px solid rgba(52,73,94,.12);border-radius:9px;"><b style="font-size:11px;">الحصة ${lessonIndex+1}</b><span style="font-weight:900;">${escapeGlobalSearchHTML(entry.subject)}</span><span style="font-size:10px;color:#52616b;">${escapeGlobalSearchHTML(teacherName||'غير محدد')}</span></div>`);
-            }
-            const dayStyle=isToday?'background:#dff6df;border:2px solid #35a853;':isTomorrow?'background:#ffe1e1;border:2px solid #e74c3c;':'background:#fff;border:1px solid #dce4ea;';
-            const badge=isToday?' <span style="background:#2e9d45;color:#fff;border-radius:999px;padding:3px 8px;font-size:10px;">اليوم</span>':isTomorrow?' <span style="background:#e74c3c;color:#fff;border-radius:999px;padding:3px 8px;font-size:10px;">غداً</span>':'';
-            return `<div style="${dayStyle}border-radius:12px;padding:10px;box-sizing:border-box;"><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:900;font-size:13px;"><span>📅 ${dayName}</span>${badge}</div>${entries.join('')||'<div style="padding:10px 4px 3px;color:#7b8790;font-size:11px;text-align:center;">لا توجد حصص مسجلة لهذا اليوم.</div>'}</div>`;
-        }).join('');
-        const parentScheduleSection=`<div class="pro-panel" id="parentSchedulePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 جدول صف ابنك — الأسبوع كامل</h3><span style="font-size:11px;color:#687985">🟢 اليوم &nbsp; 🔴 غداً</span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;">${parentScheduleHTML}</div></div>`;
-        const modal=document.createElement('div');
-        modal.id='studentRoleDashboardModal';
-        modal.className='modal';
-        modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:#f5f8fb;border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)">
-          <div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>
-          ${todayMessage}
-          <div class="parent-stats">
-            <div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div>
-            <div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(f.classObj.name||'-')}</b></div>
-            <div><span>❌</span><small>عدد الغيابات</small><b>${absentDates.length}</b></div>
-            <div><span>🏖️</span><small>عدد المجازات</small><b>${leaveDates.length}</b></div>
-          </div>
-          <div class="parent-portal-actions"><button type="button" onclick="document.getElementById('parentAbsencePanel')?.scrollIntoView({behavior:'smooth'})">📅 عدد الغيابات والتواريخ</button><button type="button" onclick="document.getElementById('parentGradesPanel')?.scrollIntoView({behavior:'smooth'})">📝 درجات الطالب</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff">📮 شكوى إلى المدير</button></div>
-          <div class="parent-portal-grid">
-            <div class="pro-panel"><h3>👤 بيانات ابنك</h3><div class="pro-mini-grid"><div class="pro-info"><small>الاسم</small>${escapeGlobalSearchHTML(studentName)}</div><div class="pro-info"><small>الصف</small>${escapeGlobalSearchHTML(f.classObj.name||'-')}</div><div class="pro-info"><small>المقعد</small>${escapeGlobalSearchHTML(f.student.deskNumber||'-')}</div><div class="pro-info"><small>الجنس</small>${f.student.gender==='female'?'مؤنث':f.student.gender==='male'?'ذكر':'-'}</div></div></div>
-            <div class="pro-panel"><h3>📊 ملخص الحضور</h3><div class="parent-att-summary"><div><b>${myAtt.filter(r=>r.status==='present').length}</b><span>حاضر</span></div><div><b>${absentDates.length}</b><span>غائب</span></div><div><b>${leaveDates.length}</b><span>مجاز</span></div><div><b>${myAtt.filter(r=>r.status==='late').length}</b><span>متأخر</span></div></div></div>
-          </div>
-          <div class="pro-panel" id="parentAbsencePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 عدد غيابات الطالب والتواريخ</h3><strong style="color:#c0392b">${absentDates.length} يوم</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${absenceRows}</tbody></table></div></div>
-          <div class="pro-panel"><h3>🏖️ تواريخ المجاز</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${leaveRows}</tbody></table></div></div>
-          ${parentScheduleSection}
-          <div class="pro-panel" id="parentHomeworkPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📚 واجبات ابني</h3><strong style="color:#d35400">${parentHomework.length} واجب</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div>
-          ${parentBehaviorSection}
-          <div class="pro-panel" id="parentGradesPanel"><h3>📝 درجات ابني</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div>
-          <div style="text-align:center;padding:12px;color:#6b7b88;font-size:11px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.</div>
-        </div>`;
+        const parentBehaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
+        const behavior=liveClass.behaviorNotes?.[parentBehaviorKey];
+        const levels=Array.isArray(liveClass.studentLevels?.[parentBehaviorKey])?liveClass.studentLevels[parentBehaviorKey]:[];
+        const parentBehaviorText=behavior&&typeof behavior==='object'?Object.entries(behavior).filter(([k,v])=>v).map(([k,v])=>`<div style="padding:7px 9px;border:1px solid #e1e7ec;border-radius:8px;background:#f8fafc;margin-bottom:6px"><b>${escapeGlobalSearchHTML(k)}:</b> ${escapeGlobalSearchHTML(v)}</div>`).join(''):behavior?`<div>${escapeGlobalSearchHTML(behavior)}</div>`:'<div class="pro-empty">لا توجد تقييمات سلوك مسجلة حالياً.</div>';
+        const parentLevelRows=levels.filter(x=>x&&x.level!=null).map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 10px;border:1px solid #e1e7ec;border-radius:8px;background:#fff;margin-bottom:6px"><b>${escapeGlobalSearchHTML(x.lesson||x.subject||'المادة')}</b><span>${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</span></div>`).join('')||'<div class="pro-empty">لا توجد تقييمات مستوى مسجلة حالياً.</div>';
+        const parentClassId=String(liveClass.id||'');
+        const parentHomework=homeworkData.filter(h=>{if(!h)return false;const sameStudent=h.targetCode&&String(h.targetCode)===String(currentUser.code);if(h.audience==='student')return !!sameStudent;if(h.audience!=='all')return false;const hc=String(h.classId||'');if(hc)return hc===parentClassId;if(h.classIndex!=null&&f.classIndex!=null)return Number(h.classIndex)===Number(f.classIndex);return true;});
+        const parentHomeworkRows=parentHomework.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||''))).map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div></td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة لابنك.</td></tr>';
+        const scheduleRows=[]; const lessons=Number(liveClass.scheduleLessons||6); const daysCount=Number(liveClass.scheduleDays||5);
+        if(todayIndex<daysCount||!daysCount){for(let l=0;l<lessons;l++){const e=getScheduleEntryData(liveClass,`${todayIndex}_${l}`);if(!e.subject)continue;const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');scheduleRows.push(`<tr><td><b>الحصة ${l+1}</b></td><td>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</td><td>${escapeGlobalSearchHTML(t||'-')}</td></tr>`);}}
+        const scheduleHtml=`<div class="pro-panel" id="parentTodaySchedulePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 جدول صف ابني — اليوم: ${todayName}</h3><strong>${scheduleRows.length} حصة</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الحصة</th><th>المادة</th><th>المعلم</th></tr></thead><tbody>${scheduleRows.join('')||'<tr><td colspan="3" class="pro-empty">لا توجد حصص مسجلة لهذا اليوم.</td></tr>'}</tbody></table></div></div>`;
+        const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
+        modal.innerHTML=`<div class="modal-content parent-portal" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:#f5f8fb;border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div><div><span>❌</span><small>عدد الغيابات</small><b>${absentDates.length}</b></div><div><span>🏖️</span><small>عدد المجازات</small><b>${leaveDates.length}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="document.getElementById('parentTodaySchedulePanel')?.scrollIntoView({behavior:'smooth'})">📅 جدول اليوم</button><button type="button" onclick="document.getElementById('parentAbsencePanel')?.scrollIntoView({behavior:'smooth'})">📌 الغيابات</button><button type="button" onclick="document.getElementById('parentGradesPanel')?.scrollIntoView({behavior:'smooth'})">📝 الدرجات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff">📮 شكوى إلى المدير</button></div><div class="parent-portal-grid"><div class="pro-panel"><h3>👤 بيانات ابنك</h3><div class="pro-mini-grid"><div class="pro-info"><small>الاسم</small>${escapeGlobalSearchHTML(studentName)}</div><div class="pro-info"><small>الصف</small>${escapeGlobalSearchHTML(liveClass.name||'-')}</div><div class="pro-info"><small>المقعد</small>${escapeGlobalSearchHTML(f.student.deskNumber||'-')}</div><div class="pro-info"><small>الجنس</small>${f.student.gender==='female'?'مؤنث':f.student.gender==='male'?'ذكر':'-'}</div></div></div><div class="pro-panel"><h3>📊 ملخص الحضور</h3><div class="parent-att-summary"><div><b>${myAtt.filter(r=>r.status==='present').length}</b><span>حاضر</span></div><div><b>${absentDates.length}</b><span>غائب</span></div><div><b>${leaveDates.length}</b><span>مجاز</span></div><div><b>${myAtt.filter(r=>r.status==='late').length}</b><span>متأخر</span></div></div></div></div>${scheduleHtml}<div class="pro-panel" id="parentAbsencePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 عدد غيابات الطالب والتواريخ</h3><strong style="color:#c0392b">${absentDates.length} يوم</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${absenceRows}</tbody></table></div></div><div class="pro-panel"><h3>🏖️ تواريخ المجاز</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${leaveRows}</tbody></table></div></div><div class="pro-panel" id="parentHomeworkPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📚 واجبات ابني</h3><strong style="color:#d35400">${parentHomework.length} واجب</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div><div class="pro-panel"><div class="pro-toolbar"><h3 style="margin:0">⭐ السلوك والمستوى</h3></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h4>📝 السلوك</h4>${parentBehaviorText}</div><div><h4>⭐ المستوى</h4>${parentLevelRows}</div></div></div><div class="pro-panel" id="parentGradesPanel"><h3>📝 درجات ابني</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div><div style="text-align:center;padding:12px;color:#6b7b88;font-size:11px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.</div></div>`;
         document.body.appendChild(modal);
     }
+
     function openTeacherDashboard(){
         const t=getCurrentTeacher();if(!t){alert('لم يتم العثور على بيانات المعلم.');return;} const ids=new Set((currentUser.assignedClassIds||[]).map(String)), students=[];
         schoolData.forEach((c,ci)=>{if(!ids.has(String(c.id)))return;(c.desks||[]).forEach((d,di)=>[1,2].forEach(slot=>{const n=String(d?.['student'+slot]||'').trim();if(n)students.push({name:n,classObj:c,classIndex:ci,studentId:String(d['student'+slot+'Id']||d.id||`${ci}_${di}_${slot}`)});}));});
