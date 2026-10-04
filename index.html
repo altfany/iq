@@ -5664,16 +5664,34 @@ function updateCloudStatus(text, color) {
             const student=r.student||{};
             const behaviorKey=`${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`;
             const behavior=r.classObj?.behaviorNotes?.[behaviorKey];
-            const levels=Array.isArray(r.classObj?.studentLevels?.[behaviorKey])?r.classObj.studentLevels[behaviorKey]:[];
-            const grades=ensureStudentGrades(r.classObj).filter(g=>String(g.studentName||'').trim()===r.name.trim());
+            const levels=getSearchedStudentLevels(r.classObj,r);
+            const grades=ensureStudentGrades(r.classObj).filter(g=>{
+                const gn=String(g.studentName||'').trim();
+                const gkey=String(g.studentKey||'').trim();
+                return gn===r.name.trim() || (gkey && gkey===String(r.itemKey||'').trim());
+            });
             const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
-            const studentId=String(r.studentId||student.id||'');
-            const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30);
+            const studentId=String(r.studentId||student.id||'').trim();
+            const normalizedSearchName=normalizeStudentText(r.name||'');
+            const attRows=att.filter(a=>{
+                const aid=String(a.studentId||a.studentID||a.id||'').trim();
+                const aname=normalizeStudentText(a.studentName||a.name||'');
+                const aclass=String(a.className||a.class||'').trim();
+                const adesk=String(a.deskNumber??a.desk??'').trim();
+                const idMatch=studentId && aid===studentId;
+                const nameMatch=normalizedSearchName && aname===normalizedSearchName;
+                const locationMatch=deskNumberMatches(adesk,String(r.deskNumber??'')) && (!aclass || aclass===String(r.className||''));
+                return idMatch || nameMatch || (locationMatch && nameMatch);
+            }).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,100);
             const basic=[
                 ['اسم الطالب',r.name||'—'],
+                ['العمر',getSearchedStudentAge(r)],
+                ['الرقم الوطني',getSearchedStudentNationalId(r)||'—'],
+                ['رقم الهاتف',getSearchedStudentPhone(r)||'—'],
+                ['العنوان',getSearchedStudentAddress(r)||'—'],
                 ['الصف',r.className||'—'],
-                ['الرحلة/المقعد',`#${r.deskNumber||'—'} — ${r.seat||'—'}`],
-                ...getSearchedStudentDisplayFields(r)
+                ['الرحلة',`رقم ${r.deskNumber||'—'}`],
+                ['المقعد',r.seat||'—']
             ];
             const photo=student.photoData||student.photo||student.imageData||student.image||'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
@@ -5814,6 +5832,48 @@ function updateCloudStatus(text, color) {
         });
     }
 
+    function deskNumberMatches(a,b){
+        if(!a || !b) return false;
+        return String(a).replace(/[^0-9]/g,'')===String(b).replace(/[^0-9]/g,'');
+    }
+
+    function getSearchedStudentField(result, baseName){
+        const desk=result?.student||{};
+        const slot=Number(result?.slot)===2?2:1;
+        const suffix=String(slot);
+        const direct=desk[`${baseName}${suffix}`];
+        if(direct!==undefined && direct!==null && String(direct).trim()!=='') return direct;
+        const legacy=desk[baseName];
+        return legacy!==undefined && legacy!==null ? legacy : '';
+    }
+
+    function getSearchedStudentNationalId(result){
+        return getSearchedStudentField(result,'nationalId') || getSearchedStudentField(result,'nationalNumber') || getSearchedStudentField(result,'nationalID');
+    }
+
+    function getSearchedStudentPhone(result){
+        return getSearchedStudentField(result,'phone') || getSearchedStudentField(result,'phoneNumber') || getSearchedStudentField(result,'mobile');
+    }
+
+    function getSearchedStudentAddress(result){
+        return getSearchedStudentField(result,'address') || getSearchedStudentField(result,'housingAddress') || getSearchedStudentField(result,'homeAddress');
+    }
+
+    function getSearchedStudentAge(result){
+        const stored=getSearchedStudentField(result,'age');
+        if(String(stored||'').trim()!=='') return String(stored);
+        const birth=String(getSearchedStudentField(result,'birthDate') || getSearchedStudentField(result,'dateOfBirth') || '').trim();
+        if(!birth) return '—';
+        const m=birth.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if(!m) return '—';
+        const y=Number(m[1]), mo=Number(m[2]), d=Number(m[3]);
+        const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+        let age=today.getFullYear()-y;
+        const birthday=new Date(today.getFullYear(),mo-1,d);
+        if(today<birthday) age--;
+        return age>=0 && age<150 ? `${age} سنة` : '—';
+    }
+
     function getSearchedStudentDisplayFields(result) {
         const desk = result?.student || {};
         const slot = Number(result?.slot) === 2 ? 2 : 1;
@@ -5834,12 +5894,12 @@ function updateCloudStatus(text, color) {
 
         add('اسم الطالب', desk[`student${suffix}`] || result.name, `student${suffix}`);
         add('كود الطالب', desk[`code${suffix}`] || result.code, `code${suffix}`);
-        add('العمر', desk[`age${suffix}`] || desk.age || result.age, `age${suffix}`);
+        add('العمر', getSearchedStudentAge(result), 'age');
         add('الجنس', desk[`gender${suffix}`], `gender${suffix}`);
-        add('تاريخ الميلاد', desk[`birthDate${suffix}`] || desk[`dateOfBirth${suffix}`], `birthDate${suffix}`);
-        add('الرقم الوطني', desk[`nationalId${suffix}`], `nationalId${suffix}`);
-        add('رقم الهاتف', desk[`phone${suffix}`], `phone${suffix}`);
-        add('العنوان', desk[`address${suffix}`], `address${suffix}`);
+        add('تاريخ الميلاد', desk[`birthDate${suffix}`] || desk[`dateOfBirth${suffix}`], 'birthDate');
+        add('الرقم الوطني', getSearchedStudentNationalId(result), 'nationalId');
+        add('رقم الهاتف', getSearchedStudentPhone(result), 'phone');
+        add('العنوان', getSearchedStudentAddress(result), 'address');
 
         // أي بيانات نصية إضافية محفوظة مع نفس الطالب تظهر أيضًا، مع استبعاد
         // المفاتيح الداخلية الخاصة بالنظام أو بيانات الطالب الآخر.
