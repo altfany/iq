@@ -2583,6 +2583,14 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <select id="gender1Input"><option value="">اختر الجنس</option><option value="male">ذكر</option><option value="female">مؤنث</option></select>
             </div>
             <div class="form-group">
+                <label>تاريخ الميلاد</label>
+                <input type="date" id="birthDate1Input" aria-label="تاريخ الميلاد">
+            </div>
+            <div class="form-group">
+                <label>الرقم الوطني</label>
+                <input type="text" id="nationalId1Input" placeholder="اكتب الرقم الوطني">
+            </div>
+            <div class="form-group">
                 <label>هاتف ولي الأمر</label>
                 <input type="text" id="phone1Input" placeholder="رقم الهاتف">
             </div>
@@ -2605,6 +2613,14 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <div class="form-group">
                 <label>جنس الطالب</label>
                 <select id="gender2Input"><option value="">اختر الجنس</option><option value="male">ذكر</option><option value="female">مؤنث</option></select>
+            </div>
+            <div class="form-group">
+                <label>تاريخ الميلاد</label>
+                <input type="date" id="birthDate2Input" aria-label="تاريخ الميلاد">
+            </div>
+            <div class="form-group">
+                <label>الرقم الوطني</label>
+                <input type="text" id="nationalId2Input" placeholder="اكتب الرقم الوطني">
             </div>
             <div class="form-group">
                 <label>هاتف ولي الأمر</label>
@@ -5635,10 +5651,23 @@ function updateCloudStatus(text, color) {
             const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
             const studentId=String(r.studentId||student.id||'');
             const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30);
-            const knownFields=['name','student1','student2','code1','code2','phone','parentPhone','fatherPhone','motherPhone','address','gender','age','birthDate','dateOfBirth','nationalId','notes','photo','photoData','image','imageData'];
-            const extraKeys=Object.keys(student).filter(k=>!knownFields.includes(k)&&student[k]!=null&&typeof student[k]!=='object');
-            const basic=[['الاسم',r.name],['الصف',r.className],['الرحلة/المقعد',`#${r.deskNumber} — ${r.seat}`],['الجنس',student.gender==='female'?'مؤنث':student.gender==='male'?'ذكر':student.gender||'—'],['الهاتف',student.phone||'—'],['هاتف ولي الأمر',student.parentPhone||student.fatherPhone||student.motherPhone||'—'],['العنوان',student.address||'—'],['كود الطالب',r.code||'—']];
-            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${basic.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraKeys.map(k=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(k)}</small><b>${esc(student[k])}</b></div>`).join('')}</div>`;
+            // نعرض فقط المعلومات التي أدخلها المدير/المعلم فعلياً للطالب،
+            // ولا نعرض مفاتيح Firebase الداخلية أو معرفات الرحلات/المقاعد باللغة الإنكليزية.
+            const basic=[
+                ['الاسم',r.name],
+                ['الصف',r.className||'—'],
+                ['الرحلة/المقعد',`#${r.deskNumber||'—'} — ${r.seat||'—'}`],
+                ['الجنس',student.gender==='female'?'مؤنث':student.gender==='male'?'ذكر':student.gender||'—'],
+                ['العمر',student.age||'—'],
+                ['تاريخ الميلاد',student.birthDate||student.dateOfBirth||'—'],
+                ['الهاتف',student.phone||'—'],
+                ['هاتف ولي الأمر',student.parentPhone||student.fatherPhone||student.motherPhone||'—'],
+                ['العنوان',student.address||'—'],
+                ['الرقم الوطني',student.nationalId||'—'],
+                ['كود الطالب',r.code||'—'],
+                ['ملاحظات',student.notes||'—']
+            ];
+            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${basic.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}</div>`;
             const photo=student.photoData||student.photo||student.imageData||student.image||'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
             html+=`<div style="margin-top:10px;padding:9px;background:#f8fbfd;border:1px solid #e1e7ec;border-radius:10px"><b>📅 حصص الصف اليوم — ${esc(dayName)}</b>${renderTodaySchedule(r.classObj)}</div>`;
@@ -5792,7 +5821,6 @@ function updateCloudStatus(text, color) {
         const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
         const studentId=String(r.studentId||student.id||'');
         const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,100);
-        const extraKeys=Object.keys(student).filter(k=>!['name','student1','student2','code1','code2','phone','parentPhone','fatherPhone','motherPhone','address','gender','age','birthDate','dateOfBirth','nationalId','notes','photo','photoData','image','imageData','deskNumber','slot'].includes(k)&&student[k]!=null&&typeof student[k]!=='object');
         const basic=[['الاسم',r.name],['الصف',r.className||'-'],['الرحلة/المقعد',`#${r.deskNumber||'-'} — ${r.seat||'-'}`],['الجنس',student.gender==='female'?'مؤنث':student.gender==='male'?'ذكر':student.gender||'—'],['العمر',student.age||'—'],['تاريخ الميلاد',student.birthDate||student.dateOfBirth||'—'],['الهاتف',student.phone||'—'],['هاتف ولي الأمر',student.parentPhone||student.fatherPhone||student.motherPhone||'—'],['العنوان',student.address||'—'],['الرقم الوطني',student.nationalId||'—'],['كود الطالب',r.code||'—'],['ملاحظات',student.notes||'—']];
         let html=`<div class="student-print-header"><h1 style="margin:0 0 5px">🏫 نظام مدرسة التفاني الابتدائية</h1><div style="font-size:13px">🖨️ ملف الطالب الكامل — تاريخ الطباعة: ${esc(new Date().toLocaleString('ar-IQ'))}</div></div>`;
         if(photo)html+=`<div class="student-print-photo"><img src="${esc(photo)}" alt="صورة الطالب"></div>`;
@@ -6539,11 +6567,15 @@ function updateCloudStatus(text, color) {
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('phone1Input').value = desk.phone1 || '';
         const g1=document.getElementById('gender1Input'); if(g1) g1.value = desk.gender1 || '';
+        const bd1=document.getElementById('birthDate1Input'); if(bd1) bd1.value = desk.birthDate1 || '';
+        const nid1=document.getElementById('nationalId1Input'); if(nid1) nid1.value = desk.nationalId1 || '';
         document.getElementById('address1Input').value = desk.address1 || '';
         document.getElementById('student2Input').value = desk.student2 || '';
         document.getElementById('code2Input').value = desk.code2 || '';
         document.getElementById('phone2Input').value = desk.phone2 || '';
         const g2=document.getElementById('gender2Input'); if(g2) g2.value = desk.gender2 || '';
+        const bd2=document.getElementById('birthDate2Input'); if(bd2) bd2.value = desk.birthDate2 || '';
+        const nid2=document.getElementById('nationalId2Input'); if(nid2) nid2.value = desk.nationalId2 || '';
         document.getElementById('address2Input').value = desk.address2 || '';
 
         document.getElementById('code1Input').readOnly = true;
@@ -6575,6 +6607,10 @@ function updateCloudStatus(text, color) {
         const oldStudent2 = String(desk.student2 || '').trim();
         const newStudent1 = document.getElementById('student1Input').value.trim();
         const newStudent2 = document.getElementById('student2Input').value.trim();
+        const birthDate1 = (document.getElementById('birthDate1Input')?.value || '').trim();
+        const birthDate2 = (document.getElementById('birthDate2Input')?.value || '').trim();
+        const nationalId1 = (document.getElementById('nationalId1Input')?.value || '').trim();
+        const nationalId2 = (document.getElementById('nationalId2Input')?.value || '').trim();
 
         // منع تسجيل الطالب نفسه مرتين، مع إظهار مكان التسجيل الحالي للمدير.
         const normalizeStudentNameForDuplicate = (value) => String(value || '')
@@ -6615,10 +6651,14 @@ function updateCloudStatus(text, color) {
         desk.student1 = newStudent1;
         desk.phone1 = document.getElementById('phone1Input').value.trim();
         desk.gender1 = document.getElementById('gender1Input')?.value || '';
+        desk.birthDate1 = birthDate1;
+        desk.nationalId1 = nationalId1;
         desk.address1 = document.getElementById('address1Input').value.trim();
         desk.student2 = newStudent2;
         desk.phone2 = document.getElementById('phone2Input').value.trim();
         desk.gender2 = document.getElementById('gender2Input')?.value || '';
+        desk.birthDate2 = birthDate2;
+        desk.nationalId2 = nationalId2;
         desk.address2 = document.getElementById('address2Input').value.trim();
         if (newStudent1 && newStudent1 !== oldStudent1) desk.student1Id = createStableId('student');
         if (newStudent2 && newStudent2 !== oldStudent2) desk.student2Id = createStableId('student');
