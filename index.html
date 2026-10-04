@@ -2993,13 +2993,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let firebaseOnline = false;
     let firebaseRetryTimer = null;
     let cloudSaveTimer = null;
-    // يمنع تداخل عمليات الحفظ: لا نبدأ كتابة Firebase جديدة بينما كتابة سابقة ما زالت قيد التنفيذ.
-    let cloudSaveInFlight = false;
-    let cloudSaveQueuedAfterFlight = false;
-    let cloudSaveRequestedAt = 0;
-    // وقت آخر تعديل محلي؛ يمنع snapshot أقدم من محو تعديل لم يُرفع بعد.
-    let cloudLocalMutationAt = 0;
-    let cloudSaveSequence = 0;
     // يمنع مزامنة Firebase القديمة من الكتابة فوق تعديل المدير مباشرة بعد الضغط على زر الحالة.
     let cloudSavePending = false;
     // آخر نسخة محلية ننتظر تأكيد وصولها من Firebase؛ يمنع رجوع نسخة أقدم بعد الحذف/التعديل.
@@ -3301,16 +3294,11 @@ function acknowledgeAnnouncement(id) {
     setTimeout(()=>showLiveAnnouncements(), 80);
 }
 
-    let lastDataPruneAt = 0;
     function saveData() {
-        const now = Date.now();
-        if (now - lastDataPruneAt > 30000) {
-            pruneExpiredAnnouncementsData();
-            pruneExpiredComplaintsData();
-            pruneManagerNotesData();
-            pruneAssistantActionNotificationsData();
-            lastDataPruneAt = now;
-        }
+        pruneExpiredAnnouncementsData();
+        pruneExpiredComplaintsData();
+        pruneManagerNotesData();
+        pruneAssistantActionNotificationsData();
         // لا يوجد حفظ محلي. Firebase هو المصدر الوحيد للحقيقة.
         queueCloudSave();
     }
@@ -3391,58 +3379,19 @@ function acknowledgeAnnouncement(id) {
         });
     }
 
-    // تحسين الاعتمادية عند الانتقال بين التبويبات/التطبيقات: إذا كان هناك تعديل مؤجل،
-    // حاول تثبيته فور عودة الصفحة للواجهة بدلاً من ترك المؤقت معلقاً.
-    if (!window.__schoolCloudLifecycleReady) {
-        window.__schoolCloudLifecycleReady = true;
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && cloudSavePending && cloudReady && navigator.onLine) {
-                clearTimeout(cloudSaveTimer);
-                cloudSaveTimer = setTimeout(() => queueCloudSave(0), 0);
-            }
-        });
-        window.addEventListener('pageshow', () => {
-            if (cloudSavePending && cloudReady && navigator.onLine) {
-                clearTimeout(cloudSaveTimer);
-                cloudSaveTimer = setTimeout(() => queueCloudSave(0), 0);
-            }
-        });
-    }
-
     function queueCloudSave(delay = 600) {
         if (!window.FirebaseCloud || !window.FirebaseCloud.enabled || !cloudReady || !navigator.onLine) {
             if (!navigator.onLine) updateCloudStatus('لا يوجد إنترنت — لن يتم حفظ التعديل محلياً.', '#9a6700');
             return;
         }
-
-        cloudSaveRequestedAt = Date.now();
-        cloudLocalMutationAt = cloudSaveRequestedAt;
-        cloudSaveSequence++;
         clearTimeout(cloudSaveTimer);
         clearTimeout(cloudSaveConfirmTimer);
         cloudSavePending = true;
-
-        // إذا كانت عملية حفظ سابقة ما زالت تنتظر Firebase، لا نفتح عملية ثانية فوقها.
-        // بعد انتهائها سيعاد تنفيذ آخر تعديل فقط، وهذا يقلل تعارضات الكتابة والـ race conditions.
-        if (cloudSaveInFlight) {
-            cloudSaveQueuedAfterFlight = true;
-            updateCloudStatus('جارٍ تثبيت آخر تعديل في Firebase…', '#9a6700');
-            return;
-        }
-
         cloudSaveTimer = setTimeout(async () => {
             if (!cloudReady || !navigator.onLine) {
                 cloudSavePending = false;
                 return;
             }
-            if (cloudSaveInFlight) {
-                cloudSaveQueuedAfterFlight = true;
-                return;
-            }
-
-            cloudSaveInFlight = true;
-            cloudSaveQueuedAfterFlight = false;
-            const requestStamp = cloudSaveRequestedAt;
             try {
                 const payload = getCloudPayload();
                 if (!validateCloudPayload(payload)) {
@@ -3470,17 +3419,6 @@ function acknowledgeAnnouncement(id) {
                 firebaseOnline = false;
                 updateCloudStatus('تعذر الحفظ في Firebase — لم يتم حفظ أي شيء على الجهاز.', '#b42318');
                 console.error('Cloud-only save failed:', e);
-            } finally {
-                cloudSaveInFlight = false;
-                // إذا حصل تعديل أثناء عملية الحفظ، نحفظ أحدث حالة بعد انتهاء العملية الحالية.
-                if (cloudSaveQueuedAfterFlight || cloudSaveRequestedAt > requestStamp) {
-                    cloudSaveQueuedAfterFlight = false;
-                    clearTimeout(cloudSaveTimer);
-                    if (cloudReady && navigator.onLine) {
-                        cloudSavePending = true;
-                        cloudSaveTimer = setTimeout(() => queueCloudSave(0), 0);
-                    }
-                }
             }
         }, delay);
     }
@@ -3734,11 +3672,6 @@ function updateCloudStatus(text, color) {
             // فوراً حتى لا تبقى البيانات المحلية متغلبة على السحابة.
             if (cloudSavePending) {
                 const expected = String(cloudSaveExpectedRevision || '');
-                // أثناء فترة الانتظار قبل الرفع، لا تسمح لنسخة أقدم من آخر تعديل محلي
-                // أن تعيد البيانات إلى الواجهة. بعد الرفع ننتظر تأكيد revision.
-                if (!expected && revisionTime(revision) && revisionTime(revision) < cloudLocalMutationAt) {
-                    return;
-                }
                 if (expected && revision === expected) {
                     clearTimeout(cloudSaveConfirmTimer);
                     cloudSavePending = false;
