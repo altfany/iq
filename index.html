@@ -2552,6 +2552,18 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <select id="gender1Input"><option value="">اختر الجنس</option><option value="male">ذكر</option><option value="female">مؤنث</option></select>
             </div>
             <div class="form-group">
+                <label>العمر</label>
+                <input type="number" id="age1Input" min="1" max="30" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label>تاريخ الميلاد</label>
+                <input type="date" id="birthDate1Input">
+            </div>
+            <div class="form-group">
+                <label>الرقم الوطني</label>
+                <input type="text" id="nationalId1Input" inputmode="numeric">
+            </div>
+            <div class="form-group">
                 <label>هاتف ولي الأمر</label>
                 <input type="text" id="phone1Input" placeholder="رقم الهاتف">
             </div>
@@ -2574,6 +2586,18 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <div class="form-group">
                 <label>جنس الطالب</label>
                 <select id="gender2Input"><option value="">اختر الجنس</option><option value="male">ذكر</option><option value="female">مؤنث</option></select>
+            </div>
+            <div class="form-group">
+                <label>العمر</label>
+                <input type="number" id="age2Input" min="1" max="30" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label>تاريخ الميلاد</label>
+                <input type="date" id="birthDate2Input">
+            </div>
+            <div class="form-group">
+                <label>الرقم الوطني</label>
+                <input type="text" id="nationalId2Input" inputmode="numeric">
             </div>
             <div class="form-group">
                 <label>هاتف ولي الأمر</label>
@@ -6475,11 +6499,17 @@ function updateCloudStatus(text, color) {
         document.getElementById('modalDeskTitle').innerText = `إدارة الرحلة رقم ${desk.deskNumber}`;
         document.getElementById('student1Input').value = desk.student1 || '';
         document.getElementById('code1Input').value = desk.code1 || '';
+        document.getElementById('age1Input').value = desk.age1 || '';
+        document.getElementById('birthDate1Input').value = desk.birthDate1 || desk.dateOfBirth1 || '';
+        document.getElementById('nationalId1Input').value = desk.nationalId1 || '';
         document.getElementById('phone1Input').value = desk.phone1 || '';
         const g1=document.getElementById('gender1Input'); if(g1) g1.value = desk.gender1 || '';
         document.getElementById('address1Input').value = desk.address1 || '';
         document.getElementById('student2Input').value = desk.student2 || '';
         document.getElementById('code2Input').value = desk.code2 || '';
+        document.getElementById('age2Input').value = desk.age2 || '';
+        document.getElementById('birthDate2Input').value = desk.birthDate2 || desk.dateOfBirth2 || '';
+        document.getElementById('nationalId2Input').value = desk.nationalId2 || '';
         document.getElementById('phone2Input').value = desk.phone2 || '';
         const g2=document.getElementById('gender2Input'); if(g2) g2.value = desk.gender2 || '';
         document.getElementById('address2Input').value = desk.address2 || '';
@@ -6551,10 +6581,16 @@ function updateCloudStatus(text, color) {
         }
 
         desk.student1 = newStudent1;
+        desk.age1 = document.getElementById('age1Input')?.value.trim() || '';
+        desk.birthDate1 = document.getElementById('birthDate1Input')?.value || '';
+        desk.nationalId1 = document.getElementById('nationalId1Input')?.value.trim() || '';
         desk.phone1 = document.getElementById('phone1Input').value.trim();
         desk.gender1 = document.getElementById('gender1Input')?.value || '';
         desk.address1 = document.getElementById('address1Input').value.trim();
         desk.student2 = newStudent2;
+        desk.age2 = document.getElementById('age2Input')?.value.trim() || '';
+        desk.birthDate2 = document.getElementById('birthDate2Input')?.value || '';
+        desk.nationalId2 = document.getElementById('nationalId2Input')?.value.trim() || '';
         desk.phone2 = document.getElementById('phone2Input').value.trim();
         desk.gender2 = document.getElementById('gender2Input')?.value || '';
         desk.address2 = document.getElementById('address2Input').value.trim();
@@ -6661,7 +6697,12 @@ function updateCloudStatus(text, color) {
 
         const mode=askStudentTransferDataMode('نقل الطالب بين الرحلات');
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
-        const copySlotFields=(from,to,fromSlot,toSlot)=>copyStudentSlotCompletely(from,to,fromSlot,toSlot);
+        const copySlotFields=(from,to,fromSlot,toSlot)=>{
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+                const value=from?.[`${f}${fromSlot}`];
+                to[`${f}${toSlot}`]=value===undefined || value===null ? (f==='separated'?false:'') : value;
+            });
+        };
 
         if(occupant){
             if(!confirm(`الرحلة ${targetDesk.deskNumber??(targetDi+1)} / ${targetSlot===1?'يمين':'يسار'} مشغولة بالطالب «${occupant}».\n\nهل تريد استبداله بالطالب «${source.name}»؟`)) return;
@@ -6704,7 +6745,9 @@ function updateCloudStatus(text, color) {
             const sourceName=source.name;
             copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
             if(mode==='full') migrateStudentClassHistory(classObj,source.di,source.slot,sourceName,classObj,targetDi,targetSlot,sourceName,mode);
-            clearStudentSlotCompletely(sourceDesk,source.slot);
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+                sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
+            });
         }
 
         if(!Array.isArray(classObj.transfers)) classObj.transfers=[];
@@ -6762,7 +6805,7 @@ function updateCloudStatus(text, color) {
             sourceClassIndex:fromIndex,
             sourceDeskIndex:x.di,
             sourceSlot:x.slot,
-            payload:{slot:x.slot,fields:getStudentSlotKeys(x.desk,x.slot).reduce((o,k)=>{o[k]=cloneTransferValue(x.desk[k]);return o;},{})}
+            payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))
         }));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
@@ -6774,19 +6817,12 @@ function updateCloudStatus(text, color) {
             const target=toCls.desks[targetDi];
             const targetSlot=!String(target.student1||'').trim()?1:2;
             const targetName=String(item.payload.student||item.source.name||'').trim();
-            const sourceN=String(item.payload.slot===2?2:1), targetN=String(targetSlot===2?2:1);
-            Object.entries(item.payload.fields||{}).forEach(([k,v])=>{
-                const base=k.endsWith('Id')?k.slice(0,-2):k;
-                const suffix=base.endsWith(sourceN)?base.slice(0,-1):null;
-                if(suffix===null)return;
-                const tk=suffix+targetN+(k.endsWith('Id')?'Id':'');
-                target[tk]=cloneTransferValue(v);
-            });
+            Object.entries(item.payload).forEach(([f,v])=>target[`${f}${targetSlot}`]=v);
             if(mode==='full') migrateStudentClassHistory(fromCls,item.sourceDeskIndex,item.sourceSlot,item.source.name,toCls,targetDi,targetSlot,targetName,mode);
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:targetName,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            clearStudentSlotCompletely(src,slot);
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
         }
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
         saveData(); renderDesks(); renderClassesNav(); openWholeClassTransferControls();
@@ -6834,58 +6870,17 @@ function updateCloudStatus(text, color) {
         if(sb)sb.style.display=type==='school'?'block':'none';
     }
 
-    // ===== أدوات موحدة لنقل سجل الطالب كاملاً =====
-    function getStudentSlotKeys(desk, slot){
-        const n=String(slot===2?2:1);
-        if(!desk || typeof desk!=='object') return [];
-        return Object.keys(desk).filter(k=>{
-            // حقول الطالب المرتبطة بالمقعد تنتهي بـ 1 أو 2، أو بـ 1Id / 2Id.
-            return new RegExp(`${n}(Id)?$`).test(k) && k !== 'deskNumber' && k !== 'id';
-        });
-    }
-
-    function cloneTransferValue(value){
-        if(value===undefined) return undefined;
-        if(value===null || typeof value!=='object') return value;
-        try{return JSON.parse(JSON.stringify(value));}catch(_){return value;}
-    }
-
-    function copyStudentSlotCompletely(fromDesk,toDesk,fromSlot,toSlot){
-        if(!fromDesk || !toDesk) return;
-        const fromN=String(fromSlot===2?2:1), toN=String(toSlot===2?2:1);
-        const keys=getStudentSlotKeys(fromDesk,fromSlot);
-        keys.forEach(key=>{
-            const base=key.endsWith('Id') ? key.slice(0,-2) : key;
-            const suffix=base.endsWith(fromN) ? base.slice(0,-1) : null;
-            if(suffix===null) return;
-            const targetBase=suffix+toN;
-            const targetKey=key.endsWith('Id') ? targetBase+'Id' : targetBase;
-            toDesk[targetKey]=cloneTransferValue(fromDesk[key]);
-        });
-        // تأكد من أن الحقول الأساسية موجودة حتى في السجلات القديمة.
-        ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
-            const v=fromDesk[`${f}${fromN}`];
-            if(v!==undefined) toDesk[`${f}${toN}`]=cloneTransferValue(v);
-        });
-    }
-
-    function clearStudentSlotCompletely(desk,slot){
-        if(!desk) return;
-        const n=String(slot===2?2:1);
-        getStudentSlotKeys(desk,slot).forEach(key=>{
-            desk[key]=key==='separated'+n ? false : '';
-        });
-        // إزالة أي حقول بيانات إضافية معروفة حتى لو كانت من نسخة قديمة.
-        ['student','code','phone','gender','address','studentId','separationReason','separatedAt','separatedBy','age','birthDate','dateOfBirth','nationalId','notes','photo','photoData','image','imageData','parentPhone','fatherPhone','motherPhone'].forEach(f=>{
-            const k=`${f}${n}`;
-            if(Object.prototype.hasOwnProperty.call(desk,k)) desk[k]=f==='separated'?false:'';
-        });
-    }
-
     function clearStudentFromDesk(student){
-        const desk=student?.desk, slot=student?.slot;
-        const oldName=desk?.[`student${slot}`]||'';
-        clearStudentSlotCompletely(desk,slot);
+        const desk=student.desk, slot=student.slot;
+        const oldName=desk[`student${slot}`];
+        desk[`student${slot}`]='';
+        desk[`phone${slot}`]='';
+        desk[`gender${slot}`]='';
+        desk[`address${slot}`]='';
+        desk[`code${slot}`]='';
+        desk[`student${slot}Id`]='';
+        desk[`separated${slot}`]=false;
+        desk[`separationReason${slot}`]='';
         return oldName;
     }
 
@@ -6992,7 +6987,8 @@ function updateCloudStatus(text, color) {
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
         if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟\n\nنمط النقل: ${mode==='full'?'مع كل السجلات':'البيانات الأساسية فقط'}.`))return;
         const sourceSlot=student.slot;
-        copyStudentSlotCompletely(desk,targetDesk,sourceSlot,slot2);
+        const fields=['student','code','phone','gender','address','studentId'];
+        fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
         if(mode==='full') migrateStudentClassHistory(oldCls,student.di,sourceSlot,student.name,target,targetDi,slot2,student.name,mode);
