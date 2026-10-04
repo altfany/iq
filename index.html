@@ -6745,10 +6745,37 @@ function updateCloudStatus(text, color) {
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('code2Input').value = desk.code2 || '';
 
-        saveData();
-        closeModal('deskModal');
-        renderDesks();
-        renderClassesNav();
+        // الحفظ الفوري مهم هنا: لا نغلق نافذة الطالب قبل تأكيد وصول البيانات إلى Firebase.
+        try {
+            if (!window.FirebaseCloud?.enabled || !cloudReady || !navigator.onLine) {
+                alert('⚠️ لا يوجد اتصال ثابت بـ Firebase حالياً. لم يتم إغلاق نافذة الطالب حتى لا تضيع بياناته. حاول بعد عودة الإنترنت.');
+                return;
+            }
+            updateCloudStatus('جاري حفظ بيانات الطالب في Firebase ☁️...', '#9a6700');
+            const payload = getCloudPayload();
+            payload.updatedAt = new Date().toISOString();
+            payload.resetGeneration = String(factoryResetGeneration || '0');
+            if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
+                await window.FirebaseCloud.saveForGeneration(payload, factoryResetGeneration);
+            } else {
+                await window.FirebaseCloud.save(payload);
+            }
+            lastAppliedCloudUpdatedAt = String(payload.updatedAt);
+            APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
+            APP_SECURITY.lastGoodCloudSnapshot = payload;
+            cloudSavePending = false;
+            cloudSaveExpectedRevision = String(payload.updatedAt);
+            updateCloudStatus('تم حفظ بيانات الطالب في Firebase ☁️', '#16803c');
+
+            closeModal('deskModal');
+            renderDesks();
+            renderClassesNav();
+            alert('✅ تم حفظ بيانات الطالب بنجاح. الصورة والمعلومات محفوظة في Firebase ويمكن تسجيل الدخول بالكود بعد الخروج من النظام.');
+        } catch (e) {
+            console.error('Student save to Firebase failed:', e);
+            updateCloudStatus('تعذر حفظ بيانات الطالب في Firebase', '#b42318');
+            alert('❌ لم يتم حفظ الطالب في Firebase بسبب مشكلة في الاتصال. بقيت البيانات داخل الصفحة ولم يتم إغلاق نافذة الطالب حتى لا تضيع. حاول مرة أخرى.');
+        }
     }
 
 
