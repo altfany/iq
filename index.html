@@ -8955,7 +8955,12 @@ const currentStatus = adminChangedStatus || professionalStatus || x.status || 'a
         const w=window.open('','_blank','width=1000,height=800');
         if(!w){alert('اسمح بالنوافذ المنبثقة للطباعة.');return;}
         const rows=unique.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.name)}</td><td>${escapeGlobalSearchHTML(x.className)}</td><td>${escapeGlobalSearchHTML(x.date)}</td></tr>`).join('');
-        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>تقرير غياب الطالب</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center;margin-bottom:8px}p{font-size:15px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #777;padding:9px;text-align:right}th{background:#eee}.summary{font-size:18px;font-weight:bold;margin:15px 0}</style></head><body><h1>تقرير غياب طالب</h1><p>اسم الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</p><p>الصف: ${escapeGlobalSearchHTML(classes.join('، ')||'-')}</p><p>من تاريخ: ${escapeGlobalSearchHTML(from)} &nbsp;&nbsp; إلى تاريخ: ${escapeGlobalSearchHTML(to)}</p><div class="summary">عدد أيام الغياب: ${unique.length}</div><table><thead><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr></thead><tbody>${rows||'<tr><td colspan="3">لا توجد غيابات في الفترة المحددة.</td></tr>'}</tbody></table><script>window.onload=()=>window.print();<\/script></body></html>`);
+        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>تقرير غياب الطالب</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center;margin-bottom:8px}p{font-size:15px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #777;padding:9px;text-align:right}th{background:#eee}.summary{font-size:18px;font-weight:bold;margin:15px 0}</style></head><body><h1>تقرير غياب طالب</h1><p>اسم الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</p><p>الصف: ${escapeGlobalSearchHTML(classes.join('، ')||'-')}</p><p>من تاريخ: ${escapeGlobalSearchHTML(from)} &nbsp;&nbsp; إلى تاريخ: ${escapeGlobalSearchHTML(to)}</p><div class="summary">عدد أيام الغياب: ${unique.length}</div><table><thead><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr></thead><tbody>${rows||'<tr><td colspan="3">لا توجد غيابات في الفترة المحددة.</td></tr>'}</tbody></table><script>window.onload=()=>window.print();<\/script><script>
+document.addEventListener('DOMContentLoaded',function(){
+  try{ initializeSecretCodeInputs(); }catch(e){}
+});
+</script>
+</body></html>`);
         w.document.close();
     }
 
@@ -9963,10 +9968,3 @@ body.parent-only-mode header { display:none !important; }
 </script>
 </body>
 </html>
-
-
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-  try{ initializeSecretCodeInputs(); }catch(e){}
-});
-</script>
