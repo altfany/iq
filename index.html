@@ -5691,10 +5691,12 @@ function updateCloudStatus(text, color) {
                 ['العنوان',getSearchedStudentAddress(r)||'—'],
                 ['الصف',r.className||'—'],
                 ['الرحلة',`رقم ${r.deskNumber||'—'}`],
-                ['المقعد',r.seat||'—']
+                ['المقعد',r.seat||'—'],
+                ...getSearchedStudentDisplayFields(r).filter(x=>!['اسم الطالب','العمر','الرقم الوطني','رقم الهاتف','العنوان','الصف','الرحلة','المقعد'].includes(x[0]))
             ];
             const photo=student.photoData||student.photo||student.imageData||student.image||'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
+            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin:10px 0 8px">👨‍🎓 معلومات الطالب المسجلة</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px">${basic.map(([label,value])=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px;min-width:0"><small style="color:#71808e;display:block">${esc(label)}</small><b style="overflow-wrap:anywhere">${esc(value||'—')}</b></div>`).join('')}</div>`;
             html+=`<div style="margin-top:10px;padding:9px;background:#f8fbfd;border:1px solid #e1e7ec;border-radius:10px"><b>📅 حصص الصف اليوم — ${esc(dayName)}</b>${renderTodaySchedule(r.classObj)}</div>`;
             html+=`<div style="margin-top:10px"><b>⭐ التقييم والسلوك والمستوى الدراسي</b><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
             html+=`<div style="margin-top:10px"><b>📝 الدرجات (${grades.length})</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>المعلم</th></tr></thead><tbody>${grades.map(g=>`<tr><td>${esc(g.subject||'-')}</td><td>${esc(g.score)} / ${esc(g.maxScore)}</td><td>${esc(getGradePeriodLabel(g.periodType))}</td><td>${esc(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد درجات.</td></tr>'}</tbody></table></div></div>`;
