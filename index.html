@@ -3541,7 +3541,7 @@ function updateCloudStatus(text, color) {
                 startFactoryResetControlSync();
                 startRealtimeCloudSync();
                 scheduleAutomaticBackup();
-                updateCloudStatus('متصل بـ Firebase ☁️ — البيانات من السحابة فقط', '#16803c');
+                updateCloudStatus('متصل   ☁️ ', '#16803c');
             } else {
                 // Firebase فارغة: ننشئ النسخة الأولى من القيم الافتراضية، وليس من التخزين المحلي.
                 const initialPayload = getCloudPayload();
