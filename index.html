@@ -3374,7 +3374,7 @@ function acknowledgeAnnouncement(id) {
             updateCloudStatus('لا يوجد إنترنت — لن يتم حفظ أي بيانات محلياً.', '#9a6700');
         });
         window.addEventListener('online', async () => {
-            updateCloudStatus('عاد الإنترنت — جاري تحميل آخر نسخة من Firebase...', '#9a6700');
+            updateCloudStatus('عاد الإنترنت — جاري تحميل آخر نسخة من ...', '#9a6700');
             await initializeCloudData().catch(err => console.warn('Online Firebase refresh failed:', err));
         });
     }
