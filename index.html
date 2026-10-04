@@ -1395,12 +1395,13 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
 
   const firebaseConfig = {
     apiKey: "AIzaSyAUrzKmFBtpQyd5fig8RugixGBEALm5b7k",
-    authDomain: "school-30423.firebaseapp.com",
-    databaseURL: "https://school-30423-default-rtdb.firebaseio.com",
-    projectId: "school-30423",
-    storageBucket: "school-30423.firebasestorage.app",
-    messagingSenderId: "832600096689",
-    appId: "1:832600096689:web:e60ae91e5fc792e3c98790"
+    authDomain: "school-7d86c.firebaseapp.com",
+    databaseURL: "https://school-7d86c-default-rtdb.firebaseio.com",
+    projectId: "school-7d86c",
+    storageBucket: "school-7d86c.firebasestorage.app",
+    messagingSenderId: "204644660536",
+    appId: "1:204644660536:web:15b1e128ad99808f54fdcd",
+    measurementId: "G-XDEW6HTZC1"
   };
 
   let firebaseDB = null;
@@ -1956,20 +1957,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 }
 </style>
 
-
-<style>
-.student-photo-editor{margin-top:8px;padding:8px;border:1px dashed #cfd8e3;border-radius:10px;background:#fff}
-.student-photo-editor>label{display:block;font-size:12px;font-weight:800;color:#34495e;margin-bottom:7px}
-.student-photo-row{display:flex;align-items:center;gap:10px}
-.student-photo-preview{width:58px;height:58px;border-radius:12px;border:1px solid #d7dee7;background:#f1f4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:25px;flex:none}
-.student-photo-preview img{width:100%;height:100%;object-fit:cover;display:block}
-.student-photo-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.student-photo-actions input[type=file]{display:none}
-.photo-file-label,.photo-delete-btn{border:0;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#fff;background:#2878c8}
-.photo-delete-btn{background:#c0392b}
-.student-photo-editor small{display:block;color:#718096;font-size:9px;margin-top:5px}
-.trip-student-photo{width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-left:5px;border:2px solid rgba(255,255,255,.9);box-shadow:0 1px 4px rgba(0,0,0,.15)}
-</style>
 </head>
 <body>
 
@@ -2059,7 +2046,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                     <button class="btn-supervisor" id="currentClassSupervisorBtn" onclick="openClassSupervisorModal()">👨‍🏫 مرشد الصف: غير محدد</button>
                     <button class="btn-edit" id="btnEditClass" onclick="openEditModal()">تعديل الصف</button>
                     <button type="button" id="btnMoveStudentTrip" onclick="openTripTransferModal()" style="background:#2980b9;">🔄 نقل طالب بين الرحلات</button>
-                    <button type="button" id="btnStudentPhotos" onclick="openClassStudentPhotos()" style="background:#8e44ad;">📷 صور الطلاب</button>
                     <button class="btn-delete" id="btnDeleteClass" onclick="deleteCurrentClass()">حذف الصف</button>
                 </div>
             </div>
@@ -2511,19 +2497,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <label>عنوان السكن</label>
                 <input type="text" id="address1Input" placeholder="العنوان بالتفصيل">
             </div>
-            <div class="student-photo-editor">
-                <label>📷 صورة الطالب</label>
-                <div class="student-photo-row">
-                    <div id="student1PhotoPreview" class="student-photo-preview">👤</div>
-                    <div class="student-photo-actions">
-                        <input type="file" id="student1PhotoInput" accept="image/*" capture="environment">
-                        <label class="photo-file-label" for="student1PhotoInput">اختيار صورة</label>
-                        <button type="button" onclick="removeStudentPhoto(1)" class="photo-delete-btn">🗑️ حذف الصورة</button>
-                    </div>
-                </div>
-                <input type="checkbox" id="student1PhotoDelete" style="display:none">
-                <small>يتم ضغط الصورة تلقائياً قبل الحفظ لتقليل التخزين.</small>
-            </div>
         </div>
 
         <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ddd;">
@@ -2547,19 +2520,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <div class="form-group" style="margin-bottom: 0;">
                 <label>عنوان السكن</label>
                 <input type="text" id="address2Input" placeholder="العنوان بالتفصيل">
-            </div>
-            <div class="student-photo-editor">
-                <label>📷 صورة الطالب</label>
-                <div class="student-photo-row">
-                    <div id="student2PhotoPreview" class="student-photo-preview">👤</div>
-                    <div class="student-photo-actions">
-                        <input type="file" id="student2PhotoInput" accept="image/*" capture="environment">
-                        <label class="photo-file-label" for="student2PhotoInput">اختيار صورة</label>
-                        <button type="button" onclick="removeStudentPhoto(2)" class="photo-delete-btn">🗑️ حذف الصورة</button>
-                    </div>
-                </div>
-                <input type="checkbox" id="student2PhotoDelete" style="display:none">
-                <small>يتم ضغط الصورة تلقائياً قبل الحفظ لتقليل التخزين.</small>
             </div>
         </div>
 
@@ -2613,16 +2573,14 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         <table>
             <thead>
                 <tr>
-                    <th>الصورة</th>
                     <th>رقم الرحلة</th>
                     <th>موقع المقعد</th>
                     <th>اسم الطالب</th>
-                    <th>معلومات الطالب</th>
                     <th>كود المتابعة</th>
                 </tr>
             </thead>
             <tbody id="studentsTableBody">
-                <tr><td colspan="6">لا توجد بيانات</td></tr>
+                <tr><td colspan="4">لا توجد بيانات</td></tr>
             </tbody>
         </table>
     </div>
@@ -3116,7 +3074,7 @@ function getStudentById(studentId) {
         if (storedStudentId !== String(studentId)) continue;
         const name=String(desk['student'+slot]||'').trim();
         if(!name) return null;
-        return {student:{id:desk['student'+slot+'Id'],name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',photo:desk['student'+slot+'Photo']||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
+        return {student:{id:desk['student'+slot+'Id'],name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
       }
     }
   }
@@ -5590,24 +5548,11 @@ function updateCloudStatus(text, color) {
         if (lastFoundSearchResult) {
             const codeDisplay = lastFoundSearchResult.code || 'غير محدد';
 
-            const foundDesk = schoolData[lastFoundSearchResult.classIndex]?.desks?.find(d=>String(d.deskNumber)===String(lastFoundSearchResult.deskNumber));
-            const foundSlot = lastFoundSearchResult.seat.includes('الأول') ? 1 : 2;
-            const foundPhoto = foundDesk?.[`student${foundSlot}Photo`] || '';
             contentDiv.innerHTML = `
-                <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;background:#fff;padding:12px;border-radius:14px;border:1px solid #dfe6ec;">
-                    <div style="width:120px;height:120px;flex:0 0 120px;border-radius:14px;overflow:hidden;background:#eef2f5;border:1px solid #d9e1e8;display:flex;align-items:center;justify-content:center;font-size:42px;">
-                        ${foundPhoto ? `<img src="${escapeGlobalSearchHTML(foundPhoto)}" alt="صورة الطالب" style="width:100%;height:100%;object-fit:cover;">` : '👤'}
-                    </div>
-                    <div style="flex:1;min-width:220px;line-height:1.9;">
-                        <p><strong>اسم الطالب:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.name)}</p>
-                        <p><strong>الصف:</strong> ${escapeGlobalSearchHTML(lastFoundSearchResult.className)}</p>
-                        <p><strong>رقم الرحلة:</strong> #${escapeGlobalSearchHTML(lastFoundSearchResult.deskNumber)} (${escapeGlobalSearchHTML(lastFoundSearchResult.seat)})</p>
-                        <p><strong>كود المتابعة:</strong> ${escapeGlobalSearchHTML(codeDisplay)}</p>
-                        <p><strong>الهاتف:</strong> ${escapeGlobalSearchHTML(foundDesk?.[`phone${foundSlot}`]||'-')}</p>
-                        <p><strong>الجنس:</strong> ${escapeGlobalSearchHTML(foundDesk?.[`gender${foundSlot}`]||'-')}</p>
-                        <p><strong>العنوان:</strong> ${escapeGlobalSearchHTML(foundDesk?.[`address${foundSlot}`]||'-')}</p>
-                    </div>
-                </div>
+                <p><strong>اسم الطالب:</strong> ${lastFoundSearchResult.name}</p>
+                <p><strong>الصف:</strong> ${lastFoundSearchResult.className}</p>
+                <p><strong>رقم الرحلة:</strong> #${lastFoundSearchResult.deskNumber} (${lastFoundSearchResult.seat})</p>
+                <p><strong>كود المتابعة:</strong> ${codeDisplay}</p>
             `;
 
             extraActions.style.display = 'flex';
@@ -6247,93 +6192,6 @@ function updateCloudStatus(text, color) {
         `;
     }
 
-    // ===== معرض صور طلاب الصف =====
-    function getClassStudentsForPhotoGallery(){
-        const cls=schoolData?.[currentClassIndex];
-        if(!cls || !Array.isArray(cls.desks)) return [];
-        const out=[];
-        cls.desks.forEach((desk,di)=>{
-            [1,2].forEach(slot=>{
-                const name=String(desk?.[`student${slot}`]||'').trim();
-                if(!name || desk?.[`separated${slot}`]) return;
-                if(currentUser?.role==='parent' && name!==String(currentUser.name||'').trim()) return;
-                out.push({
-                    name,
-                    photo:String(desk?.[`student${slot}Photo`]||''),
-                    code:String(desk?.[`code${slot}`]||''),
-                    phone:String(desk?.[`phone${slot}`]||''),
-                    gender:String(desk?.[`gender${slot}`]||''),
-                    address:String(desk?.[`address${slot}`]||''),
-                    deskNumber:desk?.deskNumber ?? (di+1),
-                    side:slot===1?'يمين':'يسار',
-                    studentId:String(desk?.[`student${slot}Id`]||'')
-                });
-            });
-        });
-        return out;
-    }
-
-    function openClassStudentPhotos(){
-        const cls=schoolData?.[currentClassIndex];
-        if(!cls){alert('اختر الصف أولاً.');return;}
-        const old=document.getElementById('classStudentPhotosModal');
-        if(old) old.remove();
-        const students=getClassStudentsForPhotoGallery();
-        const modal=document.createElement('div');
-        modal.id='classStudentPhotosModal';
-        modal.className='modal';
-        modal.style.cssText='display:flex;position:fixed;inset:0;z-index:1000200;background:rgba(10,18,30,.68);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`
-          <div class="modal-content" style="width:min(1050px,98vw);max-height:94vh;overflow:auto;padding:18px;border-radius:18px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;position:sticky;top:0;background:#fff;z-index:2;padding-bottom:10px;border-bottom:1px solid #edf1f5;">
-              <div>
-                <h2 style="margin:0;color:#8e44ad;">📷 صور طلاب الصف</h2>
-                <div style="font-size:12px;color:#718096;margin-top:4px;">${escapeGlobalSearchHTML(cls.name||'الصف')} — ${students.length} طالب</div>
-              </div>
-              <button type="button" onclick="document.getElementById('classStudentPhotosModal')?.remove()" style="background:#7f8c8d;">✕ إغلاق</button>
-            </div>
-            <div id="classStudentPhotoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px;">
-              ${students.length ? students.map((st,i)=>{
-                const photo=st.photo ? `<img src="${st.photo}" alt="" style="width:100%;height:150px;object-fit:cover;display:block;">` : `<div style="width:100%;height:150px;display:flex;align-items:center;justify-content:center;font-size:54px;background:linear-gradient(135deg,#f0f3f7,#e2e8f0);">👤</div>`;
-                return `<button type="button" onclick="showClassStudentPhotoInfo(${i})" style="padding:0;overflow:hidden;border:1px solid #e1e7ef;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.07);cursor:pointer;text-align:right;">
-                  ${photo}
-                  <div style="padding:9px 10px 10px;"><div style="font-weight:900;color:#263238;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeGlobalSearchHTML(st.name)}</div><div style="font-size:10px;color:#7b8794;margin-top:4px;">الرحلة ${escapeGlobalSearchHTML(st.deskNumber)} — ${escapeGlobalSearchHTML(st.side)}</div></div>
-                </button>`;
-              }).join('') : `<div style="grid-column:1/-1;text-align:center;padding:35px;color:#7b8794;">لا توجد طلاب لعرضهم في هذا الصف.</div>`}
-            </div>
-          </div>`;
-        modal.dataset.students=JSON.stringify(students);
-        document.body.appendChild(modal);
-    }
-
-    function showClassStudentPhotoInfo(index){
-        const modal=document.getElementById('classStudentPhotosModal');
-        if(!modal)return;
-        let students=[];
-        try{students=JSON.parse(modal.dataset.students||'[]');}catch(e){students=[];}
-        const st=students[Number(index)];
-        if(!st)return;
-        const photo=st.photo ? `<img src="${st.photo}" alt="" style="width:120px;height:120px;object-fit:cover;border-radius:18px;border:3px solid #fff;box-shadow:0 5px 18px rgba(0,0,0,.15);">` : `<div style="width:120px;height:120px;border-radius:18px;background:#edf1f5;display:flex;align-items:center;justify-content:center;font-size:48px;">👤</div>`;
-        const gender=st.gender==='male'?'ذكر':(st.gender==='female'?'مؤنث':'غير محدد');
-        const info=document.createElement('div');
-        info.id='classStudentPhotoInfoOverlay';
-        info.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.58);display:flex;align-items:center;justify-content:center;padding:15px;z-index:5;';
-        info.innerHTML=`<div style="width:min(520px,96vw);background:#fff;border-radius:18px;padding:18px;box-shadow:0 15px 45px rgba(0,0,0,.25);">
-          <div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;">${photo}<div><h3 style="margin:0 0 6px;color:#8e44ad;">${escapeGlobalSearchHTML(st.name)}</h3><div style="font-size:12px;color:#718096;">${escapeGlobalSearchHTML(schoolData[currentClassIndex]?.name||'')}</div></div></div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;">
-            <div style="padding:10px;background:#f7f9fb;border-radius:10px;"><small>كود الطالب</small><br><b>${escapeGlobalSearchHTML(st.code||'غير محدد')}</b></div>
-            <div style="padding:10px;background:#f7f9fb;border-radius:10px;"><small>الجنس</small><br><b>${gender}</b></div>
-            <div style="padding:10px;background:#f7f9fb;border-radius:10px;"><small>الرحلة</small><br><b>#${escapeGlobalSearchHTML(st.deskNumber)}</b></div>
-            <div style="padding:10px;background:#f7f9fb;border-radius:10px;"><small>المقعد</small><br><b>${escapeGlobalSearchHTML(st.side)}</b></div>
-            <div style="padding:10px;background:#f7f9fb;border-radius:10px;grid-column:1/-1;"><small>هاتف ولي الأمر</small><br><b>${escapeGlobalSearchHTML(st.phone||'غير محدد')}</b></div>
-            <div style="padding:10px;background:#f7f9fb;border-radius:10px;grid-column:1/-1;"><small>عنوان السكن</small><br><b>${escapeGlobalSearchHTML(st.address||'غير محدد')}</b></div>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px;"><button type="button" onclick="this.closest('#classStudentPhotoInfoOverlay')?.remove()" style="background:#8e44ad;">إغلاق المعلومات</button></div>
-        </div>`;
-        modal.querySelector('#classStudentPhotoInfoOverlay')?.remove();
-        modal.firstElementChild.appendChild(info);
-    }
-
     // ===== فتح الصف كصفحة داخل الصفحة =====
     function toggleClassSelection(index) {
         if (!schoolData[index]) return;
@@ -6431,14 +6289,12 @@ function updateCloudStatus(text, color) {
         return getStoredAttendanceStatus(cls, date, key);
     }
 
-    function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='', photo='') {
+    function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
         if (!hasStudent) return `<div class="seat seat-empty ${extraClass}">فارغ</div>`;
         const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : '');
         const label = status === 'absent' ? '<span class="trip-status-label">غائب</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز</span>' : '');
         const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
-        const safePhoto = String(photo||'');
-        const photoHtml = safePhoto ? `<img class="trip-student-photo" src="${safePhoto}" alt="">` : '';
-        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${photoHtml}${name}</span></div>`;
+        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
 
     function renderDesks() {
@@ -6478,8 +6334,8 @@ function updateCloudStatus(text, color) {
                     deskEl.innerHTML = `
                         <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                         <div class="desk-seats">
-                            ${isStudent1MyChild ? renderTripStudentSeat(currentUser.name, true, status1, '', deskData.gender1, isStudent1MyChild ? deskData.student1Photo : '') : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
-                            ${isStudent2MyChild ? renderTripStudentSeat(currentUser.name, true, status2, '', deskData.gender2, isStudent2MyChild ? deskData.student2Photo : '') : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
+                            ${isStudent1MyChild ? renderTripStudentSeat(currentUser.name, true, status1, '', deskData.gender1) : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
+                            ${isStudent2MyChild ? renderTripStudentSeat(currentUser.name, true, status2, '', deskData.gender2) : '<div class="seat seat-empty" style="background:#bdc3c7;">-</div>'}
                         </div>
                     `;
                 }
@@ -6490,11 +6346,11 @@ function updateCloudStatus(text, color) {
                     <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                     <div class="desk-seats">
                         <div class="${sep1 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1, deskData.student1Photo)}
+                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1)}
                           ${sep1 && hasS1 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                         <div class="${sep2 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2, deskData.student2Photo)}
+                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2)}
                           ${sep2 && hasS2 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                     </div>
@@ -6553,97 +6409,12 @@ function updateCloudStatus(text, color) {
         const g2=document.getElementById('gender2Input'); if(g2) g2.value = desk.gender2 || '';
         document.getElementById('address2Input').value = desk.address2 || '';
 
-        const p1=document.getElementById('student1PhotoInput');
-        const p2=document.getElementById('student2PhotoInput');
-        const d1=document.getElementById('student1PhotoDelete');
-        const d2=document.getElementById('student2PhotoDelete');
-        if(p1){p1.value='';p1.dataset.compressedPhoto='';}
-        if(p2){p2.value='';p2.dataset.compressedPhoto='';}
-        if(d1)d1.checked=false; if(d2)d2.checked=false;
-        setStudentPhotoPreview(1,desk.student1Photo||'');
-        setStudentPhotoPreview(2,desk.student2Photo||'');
-        setupStudentPhotoInput(1);
-        setupStudentPhotoInput(2);
-
         document.getElementById('code1Input').readOnly = true;
         document.getElementById('code2Input').readOnly = true;
         document.getElementById('deskModal').style.display = 'flex';
     }
 
-    // ===== صور الطلاب: ضغط محلي قبل الحفظ لتقليل حجم Firebase =====
-    function compressStudentPhoto(file, maxBytes=25000) {
-        return new Promise((resolve, reject) => {
-            if (!file) return resolve('');
-            if (!String(file.type || '').startsWith('image/')) return reject(new Error('الملف ليس صورة.'));
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const maxSide = 320;
-                    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
-                    canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
-                    const ctx = canvas.getContext('2d', {alpha:false});
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0,0,canvas.width,canvas.height);
-                    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-
-                    let quality = 0.72;
-                    const make = () => {
-                        const data = canvas.toDataURL('image/jpeg', quality);
-                        const bytes = Math.ceil((data.length - data.indexOf(',') - 1) * 3 / 4);
-                        if (bytes <= maxBytes || quality <= 0.25) return resolve(data);
-                        quality -= 0.08;
-                        make();
-                    };
-                    make();
-                };
-                img.onerror = () => reject(new Error('تعذر قراءة الصورة.'));
-                img.src = reader.result;
-            };
-            reader.onerror = () => reject(new Error('تعذر قراءة ملف الصورة.'));
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function setStudentPhotoPreview(slot, photo) {
-        const box=document.getElementById(`student${slot}PhotoPreview`);
-        if(!box)return;
-        if(photo){
-            box.innerHTML=`<img src="${photo}" alt="صورة الطالب">`;
-        }else{
-            box.innerHTML='👤';
-        }
-    }
-
-    function removeStudentPhoto(slot) {
-        const input=document.getElementById(`student${slot}PhotoInput`);
-        const del=document.getElementById(`student${slot}PhotoDelete`);
-        if(input) input.value='';
-        if(del) del.checked=true;
-        setStudentPhotoPreview(slot,'');
-    }
-
-    function setupStudentPhotoInput(slot) {
-        const input=document.getElementById(`student${slot}PhotoInput`);
-        const del=document.getElementById(`student${slot}PhotoDelete`);
-        if(!input)return;
-        input.onchange=async()=>{
-            if(!input.files || !input.files[0]) return;
-            if(del) del.checked=false;
-            try{
-                const compressed=await compressStudentPhoto(input.files[0],25000);
-                input.dataset.compressedPhoto=compressed;
-                setStudentPhotoPreview(slot,compressed);
-            }catch(e){
-                input.value='';
-                alert('تعذر تجهيز صورة الطالب. اختر صورة أخرى.');
-            }
-        };
-    }
-
-    async function saveDeskStudents() {
+    function saveDeskStudents() {
         if(currentUser.role !== 'admin') return;
         if(!requireAdminSensitiveAction('إضافة أو حذف أو تعديل بيانات طالب')) return;
 
@@ -6712,17 +6483,6 @@ function updateCloudStatus(text, color) {
         desk.phone2 = document.getElementById('phone2Input').value.trim();
         desk.gender2 = document.getElementById('gender2Input')?.value || '';
         desk.address2 = document.getElementById('address2Input').value.trim();
-
-        // الصورة جزء من سجل الطالب نفسه، لذلك تنتقل معه عند النقل ولا تعتمد على الجهاز.
-        const photoInput1=document.getElementById('student1PhotoInput');
-        const photoInput2=document.getElementById('student2PhotoInput');
-        const photoDelete1=document.getElementById('student1PhotoDelete')?.checked;
-        const photoDelete2=document.getElementById('student2PhotoDelete')?.checked;
-        if(photoDelete1 || !newStudent1) desk.student1Photo='';
-        if(photoDelete2 || !newStudent2) desk.student2Photo='';
-        if(photoInput1?.dataset.compressedPhoto && newStudent1) desk.student1Photo=photoInput1.dataset.compressedPhoto;
-        if(photoInput2?.dataset.compressedPhoto && newStudent2) desk.student2Photo=photoInput2.dataset.compressedPhoto;
-
         if (newStudent1 && newStudent1 !== oldStudent1) desk.student1Id = createStableId('student');
         if (newStudent2 && newStudent2 !== oldStudent2) desk.student2Id = createStableId('student');
         if (!newStudent1) desk.student1Id = '';
@@ -6744,37 +6504,10 @@ function updateCloudStatus(text, color) {
         document.getElementById('code1Input').value = desk.code1 || '';
         document.getElementById('code2Input').value = desk.code2 || '';
 
-        // الحفظ الفوري مهم هنا: لا نغلق نافذة الطالب قبل تأكيد وصول البيانات إلى Firebase.
-        try {
-            if (!window.FirebaseCloud?.enabled || !cloudReady || !navigator.onLine) {
-                alert('⚠️ لا يوجد اتصال ثابت بـ Firebase حالياً. لم يتم إغلاق نافذة الطالب حتى لا تضيع بياناته. حاول بعد عودة الإنترنت.');
-                return;
-            }
-            updateCloudStatus('جاري حفظ بيانات الطالب في Firebase ☁️...', '#9a6700');
-            const payload = getCloudPayload();
-            payload.updatedAt = new Date().toISOString();
-            payload.resetGeneration = String(factoryResetGeneration || '0');
-            if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
-                await window.FirebaseCloud.saveForGeneration(payload, factoryResetGeneration);
-            } else {
-                await window.FirebaseCloud.save(payload);
-            }
-            lastAppliedCloudUpdatedAt = String(payload.updatedAt);
-            APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
-            APP_SECURITY.lastGoodCloudSnapshot = payload;
-            cloudSavePending = false;
-            cloudSaveExpectedRevision = String(payload.updatedAt);
-            updateCloudStatus('تم حفظ بيانات الطالب في Firebase ☁️', '#16803c');
-
-            closeModal('deskModal');
-            renderDesks();
-            renderClassesNav();
-            alert('✅ تم حفظ بيانات الطالب بنجاح. الصورة والمعلومات محفوظة في Firebase ويمكن تسجيل الدخول بالكود بعد الخروج من النظام.');
-        } catch (e) {
-            console.error('Student save to Firebase failed:', e);
-            updateCloudStatus('تعذر حفظ بيانات الطالب في Firebase', '#b42318');
-            alert('❌ لم يتم حفظ الطالب في Firebase بسبب مشكلة في الاتصال. بقيت البيانات داخل الصفحة ولم يتم إغلاق نافذة الطالب حتى لا تضيع. حاول مرة أخرى.');
-        }
+        saveData();
+        closeModal('deskModal');
+        renderDesks();
+        renderClassesNav();
     }
 
 
@@ -6854,21 +6587,24 @@ function updateCloudStatus(text, color) {
         if(source.di===targetDi && source.slot===targetSlot){ alert('الطالب موجود أصلاً في هذا المقعد.'); return; }
 
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
-        // نلتقط سجل الطالبين كاملاً قبل أي تعديل. هذا يمنع فقدان الصورة عند التبديل.
-        const sourceRecord=captureStudentSlot(sourceDesk,source.slot);
-        const targetRecord=occupant ? captureStudentSlot(targetDesk,targetSlot) : null;
+        const copySlotFields=(from,to,fromSlot,toSlot)=>{
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+                const value=from?.[`${f}${fromSlot}`];
+                to[`${f}${toSlot}`]=value===undefined || value===null ? (f==='separated'?false:'') : value;
+            });
+        };
 
         if(occupant){
             if(!confirm(`الرحلة ${targetDesk.deskNumber??(targetDi+1)} / ${targetSlot===1?'يمين':'يسار'} مشغولة بالطالب «${occupant}».\n\nهل تريد استبداله بالطالب «${source.name}»؟`)) return;
-            // الطالب الأول يأخذ مكان الثاني بكل بياناته وصورته، والعكس صحيح.
-            writeStudentSlot(targetDesk,targetSlot,sourceRecord);
-            writeStudentSlot(sourceDesk,source.slot,targetRecord);
+            const temp={};
+            copySlotFields(targetDesk,temp,targetSlot,1);
+            copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
+            copySlotFields(temp,sourceDesk,1,source.slot);
         }else{
-            // نقل كامل إلى المقعد الفارغ ثم تفريغ المقعد القديم.
-            writeStudentSlot(targetDesk,targetSlot,sourceRecord);
-            const empty={};
-            STUDENT_SLOT_FIELDS.forEach(f=>empty[f]=f==='separated'?false:'');
-            writeStudentSlot(sourceDesk,source.slot,empty);
+            copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
+                sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
+            });
         }
 
         if(!Array.isArray(classObj.transfers)) classObj.transfers=[];
@@ -6935,7 +6671,7 @@ function updateCloudStatus(text, color) {
 \
 الطلاب الذين رفعت عنهم علامة الصح لن يتم نقلهم.\
 هل أنت متأكد؟`))return;
-        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','studentPhoto','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
+        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
             let targetDi=empty;
@@ -6949,7 +6685,7 @@ function updateCloudStatus(text, color) {
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:item.source.name,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            ['student','code','phone','gender','address','studentId','studentPhoto','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
         }
         // إبقاء أرقام الرحلات مرتبة بعد إضافة رحلات جديدة.
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
@@ -7000,37 +6736,17 @@ function updateCloudStatus(text, color) {
         if(sb)sb.style.display=type==='school'?'block':'none';
     }
 
-    // ===== هوية الطالب الكاملة: الاسم + المعلومات + الصورة =====
-    // نستخدم هذه الدوال في كل عمليات النقل والتبديل حتى لا تنفصل الصورة عن الطالب.
-    const STUDENT_SLOT_FIELDS = [
-        'student','code','phone','gender','address','studentId','studentPhoto',
-        'separated','separationReason','separatedAt','separatedBy'
-    ];
-
-    function captureStudentSlot(desk, slot){
-        if(!desk) return null;
-        const record={};
-        STUDENT_SLOT_FIELDS.forEach(f=>{
-            const v=desk[`${f}${slot}`];
-            record[f] = (v === undefined || v === null) ? (f==='separated'?false:'') : v;
-        });
-        return record;
-    }
-
-    function writeStudentSlot(desk, slot, record){
-        if(!desk) return;
-        STUDENT_SLOT_FIELDS.forEach(f=>{
-            const v=record?.[f];
-            desk[`${f}${slot}`] = (v === undefined || v === null) ? (f==='separated'?false:'') : v;
-        });
-    }
-
     function clearStudentFromDesk(student){
         const desk=student.desk, slot=student.slot;
         const oldName=desk[`student${slot}`];
-        const empty={};
-        STUDENT_SLOT_FIELDS.forEach(f=>empty[f]=f==='separated'?false:'');
-        writeStudentSlot(desk,slot,empty);
+        desk[`student${slot}`]='';
+        desk[`phone${slot}`]='';
+        desk[`gender${slot}`]='';
+        desk[`address${slot}`]='';
+        desk[`code${slot}`]='';
+        desk[`student${slot}Id`]='';
+        desk[`separated${slot}`]=false;
+        desk[`separationReason${slot}`]='';
         return oldName;
     }
 
@@ -7068,9 +6784,10 @@ function updateCloudStatus(text, color) {
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
         if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟`))return;
         const sourceSlot=student.slot;
-        // خذ لقطة كاملة من سجل الطالب قبل مسح مكانه، بما فيها الصورة المضغوطة.
-        const studentRecord=captureStudentSlot(desk,sourceSlot);
-        writeStudentSlot(targetDesk,slot2,studentRecord);
+        const fields=['student','code','phone','gender','address','studentId'];
+        fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
+        targetDesk[`separated${slot2}`]=false;
+        targetDesk[`separationReason${slot2}`]='';
         clearStudentFromDesk(student);
         if(!Array.isArray(target.transfers))target.transfers=[];
         target.transfers.push({studentName:student.name,studentId:targetDesk[`studentId${slot2}`]||'',fromClass:student.className,toClass:target.name||`الصف ${toIndex+1}`,date:new Date().toISOString(),by:currentUser.name||'المدير'});
@@ -7604,28 +7321,14 @@ function updateCloudStatus(text, color) {
         tbody.innerHTML = '';
         
         if (currentUser.role === 'parent') return;
-        if (!cls || !Array.isArray(cls.desks)) return;
-
-        const makeRow = (desk, slot, side) => {
-            const name = String(desk?.[`student${slot}`] || '').trim();
-            if (!name) return '';
-            const photo = String(desk?.[`student${slot}Photo`] || '');
-            const id = String(desk?.[`student${slot}Id`] || '');
-            const phone = String(desk?.[`phone${slot}`] || '');
-            const address = String(desk?.[`address${slot}`] || '');
-            const gender = String(desk?.[`gender${slot}`] || '');
-            const genderText = gender === 'male' ? 'ذكر' : gender === 'female' ? 'أنثى' : 'غير محدد';
-            const safeId = escapeGlobalSearchHTML(id);
-            const photoCell = photo
-                ? `<img src="${escapeGlobalSearchHTML(photo)}" alt="صورة ${escapeGlobalSearchHTML(name)}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;border:1px solid #d8e0e7;display:block;margin:auto;">`
-                : `<span style="display:flex;width:48px;height:48px;border-radius:10px;background:#eef2f5;align-items:center;justify-content:center;margin:auto;font-size:24px;">👤</span>`;
-            const info = `<div style="text-align:right;font-size:11px;line-height:1.65;"><b>${escapeGlobalSearchHTML(name)}</b><br>📞 ${escapeGlobalSearchHTML(phone || '-')}<br>⚥ ${genderText}<br>📍 ${escapeGlobalSearchHTML(address || '-')}</div>`;
-            return `<tr class="clickable-row" data-student-search="${escapeGlobalSearchHTML([desk.deskNumber,side,name,desk[`code${slot}`]||'',phone,address,genderText].join(' '))}" onclick="openProfessionalStudentProfile('${safeId}')"><td>${photoCell}</td><td>${escapeGlobalSearchHTML(desk.deskNumber)}</td><td>${side}</td><td><b>${escapeGlobalSearchHTML(name)}</b></td><td>${info}</td><td><code>${escapeGlobalSearchHTML(desk[`code${slot}`] || 'غير محدد')}</code></td></tr>`;
-        };
 
         cls.desks.forEach(desk => {
-            tbody.innerHTML += makeRow(desk, 1, 'يمين');
-            tbody.innerHTML += makeRow(desk, 2, 'يسار');
+            if (desk.student1) {
+                tbody.innerHTML += `<tr><td>${desk.deskNumber}</td><td>يمين</td><td>${desk.student1}</td><td><code>${desk.code1 || 'غير محدد'}</code></td></tr>`;
+            }
+            if (desk.student2) {
+                tbody.innerHTML += `<tr><td>${desk.deskNumber}</td><td>يسار</td><td>${desk.student2}</td><td><code>${desk.code2 || 'غير محدد'}</code></td></tr>`;
+            }
         });
     }
 
@@ -9412,7 +9115,7 @@ window.addEventListener('unhandledrejection', function (event) {
       (cls.desks||[]).forEach((d,di)=>{
         [1,2].forEach(slot=>{
           const name=String(d?.['student'+slot]||'').trim();
-          if(name) out.push({student:{id:d['student'+slot+'Id']||d.id,name,code:d['code'+slot]||'',phone:d['phone'+slot]||'',address:d['address'+slot]||'',gender:d['gender'+slot]||'',photo:d['student'+slot+'Photo']||'',deskNumber:d.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di});
+          if(name) out.push({student:{id:d['student'+slot+'Id']||d.id,name,code:d['code'+slot]||'',phone:d['phone'+slot]||'',address:d['address'+slot]||'',gender:d['gender'+slot]||'',deskNumber:d.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di});
         });
       });
     });
@@ -9460,9 +9163,6 @@ window.addEventListener('unhandledrejection', function (event) {
     const found=findStudent(studentId);
     if(!found) return '<div class="pro-empty">لم يتم العثور على الطالب.</div>';
     const s=found.student, c=found.classObj;
-    const photoHtml=s.photo
-      ? `<div style="width:130px;height:130px;border-radius:18px;overflow:hidden;border:2px solid #dfe6ec;background:#f3f6f8;box-shadow:0 5px 16px rgba(0,0,0,.10);flex:0 0 130px;"><img src="${escapeHTML(s.photo)}" alt="صورة الطالب" style="width:100%;height:100%;object-fit:cover;"></div>`
-      : `<div style="width:130px;height:130px;border-radius:18px;border:2px dashed #cbd5df;background:#f5f7f9;display:flex;align-items:center;justify-content:center;font-size:48px;flex:0 0 130px;">👤</div>`;
     const records=studentAttendance(s.id).sort((a,b)=>b.date.localeCompare(a.date));
     const abs=records.filter(x=>x.status==='absent').length;
     const late=records.filter(x=>x.status==='late').length;
@@ -9471,8 +9171,7 @@ window.addEventListener('unhandledrejection', function (event) {
     return `
       <div class="pro-panel pro-module">
         <div class="pro-student-head">
-          ${photoHtml}
-          <div style="flex:1;min-width:190px;">
+          <div>
             <div class="pro-student-name">${escapeHTML(s.name)}</div>
             <div style="opacity:.7">${escapeHTML(c.name||'')} ${c.section?'- '+escapeHTML(c.section):''}</div>
           </div>
@@ -9496,7 +9195,7 @@ window.addEventListener('unhandledrejection', function (event) {
         <h3>📝 الملاحظات والسجل</h3>
         <div class="pro-mini-grid">
           <div class="pro-info"><small>ملاحظات الطالب</small>${escapeHTML(s.notes||s.note||'لا توجد ملاحظات')}</div>
-          <div class="pro-info"><small>رمز الطالب</small>${escapeHTML(s.code||'-')}</div>
+          <div class="pro-info"><small>رمز الطالب</small>${escapeHTML(s.code1||'-')}</div>
         </div>
       </div>`;
   }
@@ -10044,7 +9743,7 @@ function d5students(){
   const out=[];
   (schoolData||[]).forEach((c,ci)=>(c.desks||[]).forEach((d,di)=>[1,2].forEach(slot=>{
     const name=String(d?.['student'+slot]||'').trim(); if(!name)return;
-    out.push({id:String(d['student'+slot+'Id']||d.id||ci+'_'+di+'_'+slot),name,code:String(d['code'+slot]||''),phone:String(d['phone'+slot]||''),address:String(d['address'+slot]||''),photo:String(d['student'+slot+'Photo']||''),gender:String(d['gender'+slot]||''),className:String(c.name||''),classIndex:ci,deskIndex:di,slot,deskNumber:d.deskNumber||di+1,key:di+':'+slot});
+    out.push({id:String(d['student'+slot+'Id']||d.id||ci+'_'+di+'_'+slot),name,code:String(d['code'+slot]||''),phone:String(d['phone'+slot]||''),address:String(d['address'+slot]||''),className:String(c.name||''),classIndex:ci,deskIndex:di,slot,deskNumber:d.deskNumber||di+1,key:di+':'+slot});
   })));
   return out;
 }
@@ -10086,7 +9785,7 @@ function d5open(title,html,id){
 }
 
 function d5studentActions(st){return '<div class="dev5-actions"><button type="button" onclick="openProfessionalStudentProfile(&quot;'+d5esc(st.id)+'&quot;)">👤 البيانات</button><button type="button" onclick="window.Dev5.openStudentGrades(&quot;'+d5esc(st.id)+'&quot;)">📝 الدرجات</button><button type="button" onclick="window.Dev5.openStudentReport(&quot;'+d5esc(st.id)+'&quot;)">🖨️ تقرير</button></div>'; }
-function openDev5StudentSearch(){rebuildD5Index();let m=d5open('🔎 البحث الموحد عن الطالب','<div class="dev5-toolbar"><input id="dev5StudentQ" placeholder="ابحث بالاسم أو الكود أو الهاتف أو الصف..." autocomplete="off"><select id="dev5ClassFilter"><option value="">كل الصفوف</option>'+[...new Set(dev5StudentIndex.map(s=>s.className).filter(Boolean))].map(x=>'<option>'+d5esc(x)+'</option>').join('')+'</select></div><div id="dev5StudentResults"></div>');const q=m.querySelector('#dev5StudentQ');const f=m.querySelector('#dev5ClassFilter');function render(){const term=q.value.trim().toLocaleLowerCase('ar');const cls=f.value;const rows=dev5StudentIndex.filter(s=>(!cls||s.className===cls)&&(!term||[s.name,s.code,s.phone,s.address,s.className].join(' ').toLocaleLowerCase('ar').includes(term))).slice(0,200);m.querySelector('#dev5StudentResults').innerHTML=rows.length?rows.map(s=>'<div class="dev5-search-result" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><div style="width:64px;height:64px;flex:0 0 64px;border-radius:14px;overflow:hidden;background:#eef2f5;border:1px solid #d9e1e8;display:flex;align-items:center;justify-content:center;font-size:28px;">'+(s.photo?'<img src="'+d5esc(s.photo)+'" alt="صورة الطالب" style="width:100%;height:100%;object-fit:cover;">':'👤')+'</div><div style="flex:1;min-width:180px;"><b>'+d5esc(s.name)+'</b><div class="dev5-muted">'+d5esc(s.className)+' • الرحلة '+d5esc(s.deskNumber)+' • '+d5esc(s.slot===1?'يمين':'يسار')+' • الكود '+d5esc(s.code||'-')+'</div><div class="dev5-muted">📞 '+d5esc(s.phone||'-')+' • '+d5esc(s.address||'-')+'</div></div>'+d5studentActions(s)+'</div>').join(''):'<div class="pro-empty">لا يوجد طالب مطابق.</div>';}
+function openDev5StudentSearch(){rebuildD5Index();let m=d5open('🔎 البحث الموحد عن الطالب','<div class="dev5-toolbar"><input id="dev5StudentQ" placeholder="ابحث بالاسم أو الكود أو الهاتف أو الصف..." autocomplete="off"><select id="dev5ClassFilter"><option value="">كل الصفوف</option>'+[...new Set(dev5StudentIndex.map(s=>s.className).filter(Boolean))].map(x=>'<option>'+d5esc(x)+'</option>').join('')+'</select></div><div id="dev5StudentResults"></div>');const q=m.querySelector('#dev5StudentQ');const f=m.querySelector('#dev5ClassFilter');function render(){const term=q.value.trim().toLocaleLowerCase('ar');const cls=f.value;const rows=dev5StudentIndex.filter(s=>(!cls||s.className===cls)&&(!term||[s.name,s.code,s.phone,s.address,s.className].join(' ').toLocaleLowerCase('ar').includes(term))).slice(0,200);m.querySelector('#dev5StudentResults').innerHTML=rows.length?rows.map(s=>'<div class="dev5-search-result"><div><b>'+d5esc(s.name)+'</b><div class="dev5-muted">'+d5esc(s.className)+' • المقعد '+d5esc(s.deskNumber)+' • الكود '+d5esc(s.code||'-')+'</div></div>'+d5studentActions(s)+'</div>').join(''):'<div class="pro-empty">لا يوجد طالب مطابق.</div>';}
 q.oninput=()=>{clearTimeout(dev5SearchTimer);dev5SearchTimer=setTimeout(render,80)};f.onchange=render;render();}
 function openDev5GradeCenter(){if(!currentUser||!['admin','teacher'].includes(currentUser.role)){alert('هذه الخاصية متاحة للمدير والمعلم.');return;}rebuildD5Index();dev5GradePage=0;const classes=schoolData||[];const subjects=[...new Set((subjectsData||[]).map(x=>String(x.name||'').trim()).filter(Boolean))];const html='<div class="dev5-toolbar"><select id="d5gClass">'+classes.map((c,i)=>'<option value="'+i+'">'+d5esc(c.name||('صف '+(i+1)))+'</option>').join('')+'</select><select id="d5gSubject">'+subjects.map(x=>'<option>'+d5esc(x)+'</option>').join('')+'</select><select id="d5gType"><option value="daily">امتحان يومي</option><option value="monthly">امتحان شهري</option><option value="midyear">نصف السنة</option><option value="finalyear">آخر السنة</option></select><input id="d5gPeriod" type="date"><input id="d5gMax" type="number" min="1" value="10" placeholder="الدرجة الكاملة"><input id="d5gFilter" placeholder="بحث داخل الطلاب"></div><div id="d5gTable"></div><div class="dev5-actions"><button id="d5gSave" style="background:var(--success)">💾 حفظ درجات المجموعة</button><button id="d5gPrint" style="background:var(--indigo)">🖨️ طباعة الجدول</button></div>';
 const m=d5open('⚡ مركز إدخال الدرجات السريع',html,'dev5GradeModal');const c=m.querySelector('#d5gClass');const sub=m.querySelector('#d5gSubject');const typ=m.querySelector('#d5gType');const per=m.querySelector('#d5gPeriod');const filt=m.querySelector('#d5gFilter');const max=m.querySelector('#d5gMax');if(currentUser.role==='teacher'){const t=getCurrentTeacher?.();const allowed=getTeacherSpecialties(t||{});const allowedClasses=getTeacherAssignedClassIdsForRecord?getTeacherAssignedClassIdsForRecord(t||{}):[];c.innerHTML=classes.map((x,i)=>({x,i})).filter(o=>!allowedClasses.length||allowedClasses.map(String).includes(String(o.x.id))).map(o=>'<option value="'+o.i+'">'+d5esc(o.x.name)+'</option>').join('');const mySubs=subjects.filter(x=>allowed.includes(x));sub.innerHTML=mySubs.map(x=>'<option>'+d5esc(x)+'</option>').join('');}
