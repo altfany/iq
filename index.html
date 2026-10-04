@@ -3434,7 +3434,7 @@ function updateCloudStatus(text, color) {
         firebaseOnline = false;
         const loginBtn = document.getElementById('loginButton');
         if (loginBtn) loginBtn.disabled = true;
-        updateCloudStatus('جاري تحميل بيانات Firebase — انتظر حتى تكتمل المزامنة...', '#666');
+        updateCloudStatus('  جاري الاتصال...', '#666');
 
         try {
             if (!window.FirebaseCloud || !window.FirebaseCloud.enabled || typeof window.FirebaseCloud.load !== 'function') {
