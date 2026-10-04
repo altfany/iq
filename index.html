@@ -5628,10 +5628,39 @@ function updateCloudStatus(text, color) {
             const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
             const studentId=String(r.studentId||student.id||'');
             const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30);
-            const knownFields=['name','student1','student2','code1','code2','phone','parentPhone','fatherPhone','motherPhone','address','gender','age','birthDate','dateOfBirth','nationalId','notes','photo','photoData','image','imageData'];
-            const extraKeys=Object.keys(student).filter(k=>!knownFields.includes(k)&&student[k]!=null&&typeof student[k]!=='object');
-            const basic=[['الاسم',r.name],['الصف',r.className],['الرحلة/المقعد',`#${r.deskNumber} — ${r.seat}`],['الجنس',student.gender==='female'?'مؤنث':student.gender==='male'?'ذكر':student.gender||'—'],['الهاتف',student.phone||'—'],['هاتف ولي الأمر',student.parentPhone||student.fatherPhone||student.motherPhone||'—'],['العنوان',student.address||'—'],['كود الطالب',r.code||'—']];
-            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${basic.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraKeys.map(k=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(k)}</small><b>${esc(student[k])}</b></div>`).join('')}</div>`;
+            // بيانات الطالب مخزنة داخل الرحلة بحسب المقعد (student1/2، age1/2 ...)،
+            // لذلك يجب أن يقرأ البحث بيانات المقعد الصحيح وليس الحقول العامة فقط.
+            const slotN=String(r.slot===2?2:1);
+            const slotValue=(base)=>{
+                const v=student[base+slotN];
+                if(v!==undefined && v!==null && String(v).trim()!=='') return v;
+                const alt={birthDate:'dateOfBirth',phone:'parentPhone'}[base];
+                if(alt){const av=student[alt+slotN];if(av!==undefined&&av!==null&&String(av).trim()!=='')return av;}
+                return '';
+            };
+            const genderValue=slotValue('gender');
+            const arabicStudentFields=[
+                ['اسم الطالب',r.name],
+                ['الصف',r.className],
+                ['الرحلة / المقعد',`رقم ${r.deskNumber} — ${r.seat}`],
+                ['الجنس',genderValue==='female'?'مؤنث':genderValue==='male'?'ذكر':(genderValue||'—')],
+                ['العمر',slotValue('age')||'—'],
+                ['تاريخ الميلاد',slotValue('birthDate')||'—'],
+                ['الرقم الوطني',slotValue('nationalId')||'—'],
+                ['هاتف ولي الأمر',slotValue('phone')||'—'],
+                ['العنوان',slotValue('address')||'—'],
+                ['كود الطالب',slotValue('code')||r.code||'—']
+            ];
+            const internalKeys=new Set(['student'+slotN,'code'+slotN,'gender'+slotN,'age'+slotN,'birthDate'+slotN,'dateOfBirth'+slotN,'nationalId'+slotN,'phone'+slotN,'parentPhone'+slotN,'fatherPhone'+slotN,'motherPhone'+slotN,'address'+slotN,'student'+slotN+'Id','separated'+slotN,'separationReason'+slotN,'separatedAt'+slotN,'separatedBy'+slotN,'photo'+slotN,'photoData'+slotN,'image'+slotN,'imageData'+slotN]);
+            const arabicExtraLabels={notes:'ملاحظات الطالب',note:'ملاحظة الطالب',level:'المستوى',gradeLevel:'المستوى الدراسي',fatherPhone:'هاتف الأب',motherPhone:'هاتف الأم',parentPhone:'هاتف ولي الأمر'};
+            const extraKeys=Object.keys(student).filter(k=>k.endsWith(slotN)&&!internalKeys.has(k)&&student[k]!=null&&typeof student[k]!=='object'&&String(student[k]).trim()!=='');
+            const extraHtml=extraKeys.map(k=>{
+                const base=k.slice(0,-slotN.length);
+                const label=arabicExtraLabels[base]||'';
+                if(!label) return '';
+                return `<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(label)}</small><b>${esc(student[k])}</b></div>`;
+            }).join('');
+            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${arabicStudentFields.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraHtml}</div>`;
             const photo=student.photoData||student.photo||student.imageData||student.image||'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
             html+=`<div style="margin-top:10px;padding:9px;background:#f8fbfd;border:1px solid #e1e7ec;border-radius:10px"><b>📅 حصص الصف اليوم — ${esc(dayName)}</b>${renderTodaySchedule(r.classObj)}</div>`;
