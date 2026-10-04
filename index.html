@@ -3459,7 +3459,7 @@ function acknowledgeAnnouncement(id) {
                 if (!validateCloudPayload(payload)) {
                     cloudSavePending = false;
                     cloudSaveExpectedRevision = '';
-                    updateCloudStatus('تم منع حفظ بيانات غير صالحة في Firebase', '#b42318');
+                    updateCloudStatus('تم منع حفظ بيانات غير صالحة في F', '#b42318');
                     return;
                 }
                 payload.updatedAt = new Date().toISOString();
@@ -3474,12 +3474,12 @@ function acknowledgeAnnouncement(id) {
                 APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
                 APP_SECURITY.lastGoodCloudSnapshot = payload;
                 cloudSavePending = false;
-                updateCloudStatus('تم الحفظ في Firebase ☁️', '#16803c');
+                updateCloudStatus('تم الحفظ   ☁️', '#16803c');
             } catch (e) {
                 cloudSavePending = false;
                 cloudSaveExpectedRevision = '';
                 firebaseOnline = false;
-                updateCloudStatus('تعذر الحفظ في Firebase — لم يتم حفظ أي شيء على الجهاز.', '#b42318');
+                updateCloudStatus('تعذر الحفظ في F لم يتم حفظ أي شيء على الجهاز.', '#b42318');
                 console.error('Cloud-only save failed:', e);
             }
         }, delay);
