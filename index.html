@@ -2993,6 +2993,13 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let firebaseOnline = false;
     let firebaseRetryTimer = null;
     let cloudSaveTimer = null;
+    // يمنع تداخل عمليات الحفظ: لا نبدأ كتابة Firebase جديدة بينما كتابة سابقة ما زالت قيد التنفيذ.
+    let cloudSaveInFlight = false;
+    let cloudSaveQueuedAfterFlight = false;
+    let cloudSaveRequestedAt = 0;
+    // وقت آخر تعديل محلي؛ يمنع snapshot أقدم من محو تعديل لم يُرفع بعد.
+    let cloudLocalMutationAt = 0;
+    let cloudSaveSequence = 0;
     // يمنع مزامنة Firebase القديمة من الكتابة فوق تعديل المدير مباشرة بعد الضغط على زر الحالة.
     let cloudSavePending = false;
     // آخر نسخة محلية ننتظر تأكيد وصولها من Firebase؛ يمنع رجوع نسخة أقدم بعد الحذف/التعديل.
@@ -3294,11 +3301,16 @@ function acknowledgeAnnouncement(id) {
     setTimeout(()=>showLiveAnnouncements(), 80);
 }
 
+    let lastDataPruneAt = 0;
     function saveData() {
-        pruneExpiredAnnouncementsData();
-        pruneExpiredComplaintsData();
-        pruneManagerNotesData();
-        pruneAssistantActionNotificationsData();
+        const now = Date.now();
+        if (now - lastDataPruneAt > 30000) {
+            pruneExpiredAnnouncementsData();
+            pruneExpiredComplaintsData();
+            pruneManagerNotesData();
+            pruneAssistantActionNotificationsData();
+            lastDataPruneAt = now;
+        }
         // لا يوجد حفظ محلي. Firebase هو المصدر الوحيد للحقيقة.
         queueCloudSave();
     }
@@ -3379,19 +3391,58 @@ function acknowledgeAnnouncement(id) {
         });
     }
 
+    // تحسين الاعتمادية عند الانتقال بين التبويبات/التطبيقات: إذا كان هناك تعديل مؤجل،
+    // حاول تثبيته فور عودة الصفحة للواجهة بدلاً من ترك المؤقت معلقاً.
+    if (!window.__schoolCloudLifecycleReady) {
+        window.__schoolCloudLifecycleReady = true;
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && cloudSavePending && cloudReady && navigator.onLine) {
+                clearTimeout(cloudSaveTimer);
+                cloudSaveTimer = setTimeout(() => queueCloudSave(0), 0);
+            }
+        });
+        window.addEventListener('pageshow', () => {
+            if (cloudSavePending && cloudReady && navigator.onLine) {
+                clearTimeout(cloudSaveTimer);
+                cloudSaveTimer = setTimeout(() => queueCloudSave(0), 0);
+            }
+        });
+    }
+
     function queueCloudSave(delay = 600) {
         if (!window.FirebaseCloud || !window.FirebaseCloud.enabled || !cloudReady || !navigator.onLine) {
             if (!navigator.onLine) updateCloudStatus('لا يوجد إنترنت — لن يتم حفظ التعديل محلياً.', '#9a6700');
             return;
         }
+
+        cloudSaveRequestedAt = Date.now();
+        cloudLocalMutationAt = cloudSaveRequestedAt;
+        cloudSaveSequence++;
         clearTimeout(cloudSaveTimer);
         clearTimeout(cloudSaveConfirmTimer);
         cloudSavePending = true;
+
+        // إذا كانت عملية حفظ سابقة ما زالت تنتظر Firebase، لا نفتح عملية ثانية فوقها.
+        // بعد انتهائها سيعاد تنفيذ آخر تعديل فقط، وهذا يقلل تعارضات الكتابة والـ race conditions.
+        if (cloudSaveInFlight) {
+            cloudSaveQueuedAfterFlight = true;
+            updateCloudStatus('جارٍ تثبيت آخر تعديل في Firebase…', '#9a6700');
+            return;
+        }
+
         cloudSaveTimer = setTimeout(async () => {
             if (!cloudReady || !navigator.onLine) {
                 cloudSavePending = false;
                 return;
             }
+            if (cloudSaveInFlight) {
+                cloudSaveQueuedAfterFlight = true;
+                return;
+            }
+
+            cloudSaveInFlight = true;
+            cloudSaveQueuedAfterFlight = false;
+            const requestStamp = cloudSaveRequestedAt;
             try {
                 const payload = getCloudPayload();
                 if (!validateCloudPayload(payload)) {
@@ -3419,6 +3470,17 @@ function acknowledgeAnnouncement(id) {
                 firebaseOnline = false;
                 updateCloudStatus('تعذر الحفظ في Firebase — لم يتم حفظ أي شيء على الجهاز.', '#b42318');
                 console.error('Cloud-only save failed:', e);
+            } finally {
+                cloudSaveInFlight = false;
+                // إذا حصل تعديل أثناء عملية الحفظ، نحفظ أحدث حالة بعد انتهاء العملية الحالية.
+                if (cloudSaveQueuedAfterFlight || cloudSaveRequestedAt > requestStamp) {
+                    cloudSaveQueuedAfterFlight = false;
+                    clearTimeout(cloudSaveTimer);
+                    if (cloudReady && navigator.onLine) {
+                        cloudSavePending = true;
+                        cloudSaveTimer = setTimeout(() => queueCloudSave(0), 0);
+                    }
+                }
             }
         }, delay);
     }
@@ -3672,6 +3734,11 @@ function updateCloudStatus(text, color) {
             // فوراً حتى لا تبقى البيانات المحلية متغلبة على السحابة.
             if (cloudSavePending) {
                 const expected = String(cloudSaveExpectedRevision || '');
+                // أثناء فترة الانتظار قبل الرفع، لا تسمح لنسخة أقدم من آخر تعديل محلي
+                // أن تعيد البيانات إلى الواجهة. بعد الرفع ننتظر تأكيد revision.
+                if (!expected && revisionTime(revision) && revisionTime(revision) < cloudLocalMutationAt) {
+                    return;
+                }
                 if (expected && revision === expected) {
                     clearTimeout(cloudSaveConfirmTimer);
                     cloudSavePending = false;
@@ -9959,199 +10026,6 @@ body.parent-only-mode header { display:none !important; }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean); else clean();
   setTimeout(clean,300);
   setTimeout(clean,1000);
-})();
-</script>
-
-
-<!-- =========================================================
-     SCHOOL SYSTEM V2 - SAFE PERFORMANCE & STABILITY LAYER
-     تطوير إضافي لا يغيّر وظائف النظام الحالية
-     ========================================================= -->
-<style id="school-v2-stability-css">
-  /* طبقة أداء: تقليل إعادة الرسم غير الضرورية */
-  html{scroll-behavior:smooth;}
-  button,input,select,textarea{touch-action:manipulation;}
-  .school-v2-saving{animation:schoolV2Pulse 1.1s ease-in-out infinite;}
-  @keyframes schoolV2Pulse{0%,100%{opacity:1}50%{opacity:.55}}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-</style>
-<script id="school-v2-stability-js">
-(function(){
-  'use strict';
-  if(window.__SCHOOL_SYSTEM_V2__) return;
-  window.__SCHOOL_SYSTEM_V2__ = true;
-
-  const V2 = window.SchoolSystemV2 = {
-    version:'2.0-stable',
-    startedAt:Date.now(),
-    cloudWriteQueue:Promise.resolve(),
-    originalSaveData:null,
-    studentIndex:null,
-    studentIndexRevision:0
-  };
-
-  /* ---------------------------------------------------------
-     1) حماية Firebase من عمليات الكتابة المتزامنة.
-        إذا ضغط المستخدم عدة أزرار بسرعة، لا نسمح بكتابتين متداخلتين.
-     --------------------------------------------------------- */
-  function installFirebaseWriteGuard(){
-    const cloud=window.FirebaseCloud;
-    if(!cloud || cloud.__schoolV2WriteGuard) return false;
-    if(typeof cloud.save!=='function' && typeof cloud.saveForGeneration!=='function') return false;
-
-    const originalSave=typeof cloud.save==='function' ? cloud.save.bind(cloud) : null;
-    const originalSaveForGeneration=typeof cloud.saveForGeneration==='function' ? cloud.saveForGeneration.bind(cloud) : null;
-
-    const enqueue=(fn)=>{
-      const run=V2.cloudWriteQueue.then(()=>fn(),()=>fn());
-      V2.cloudWriteQueue=run.catch(()=>{});
-      return run;
-    };
-
-    if(originalSave){
-      cloud.save=function(data){
-        return enqueue(()=>originalSave(data));
-      };
-    }
-    if(originalSaveForGeneration){
-      cloud.saveForGeneration=function(data,generation){
-        return enqueue(()=>originalSaveForGeneration(data,generation));
-      };
-    }
-    cloud.__schoolV2WriteGuard=true;
-    return true;
-  }
-
-  /* Firebase قد يُنشأ بعد تحميل الصفحة، لذلك نفحصه عدة مرات فقط. */
-  let firebaseChecks=0;
-  const tryFirebaseGuard=()=>{
-    if(installFirebaseWriteGuard()) return;
-    if(++firebaseChecks<20) setTimeout(tryFirebaseGuard,250);
-  };
-  tryFirebaseGuard();
-
-  /* ---------------------------------------------------------
-     2) فهرس سريع للطلاب.
-        يستخدمه التطويرات الجديدة عند الحاجة ولا يغيّر بيانات الطلاب.
-     --------------------------------------------------------- */
-  V2.rebuildStudentIndex=function(){
-    const map=new Map();
-    const classes=Array.isArray(window.schoolData)?window.schoolData:[];
-    classes.forEach((cls,ci)=>{
-      const students=Array.isArray(cls?.students)?cls.students:[];
-      students.forEach((st,si)=>{
-        if(!st || !st.name) return;
-        const name=String(st.name).trim();
-        if(!name) return;
-        const key=name.toLocaleLowerCase('ar-IQ');
-        if(!map.has(key)) map.set(key,[]);
-        map.get(key).push({student:st,classIndex:ci,studentIndex:si,className:String(cls?.name||'')});
-      });
-    });
-    V2.studentIndex=map;
-    V2.studentIndexRevision++;
-    return map;
-  };
-
-  V2.findStudentsFast=function(query){
-    const q=String(query||'').trim().toLocaleLowerCase('ar-IQ');
-    if(!q) return [];
-    if(!V2.studentIndex) V2.rebuildStudentIndex();
-    const exact=V2.studentIndex.get(q);
-    if(exact) return exact.slice();
-    const out=[];
-    for(const [name,rows] of V2.studentIndex.entries()){
-      if(name.includes(q)) out.push(...rows);
-      if(out.length>=100) break;
-    }
-    return out;
-  };
-
-  /* ---------------------------------------------------------
-     3) تحديث الفهرس بعد الحفظ بدون تغيير saveData الأصلية.
-     --------------------------------------------------------- */
-  function installSaveHook(){
-    if(typeof window.saveData!=='function' || V2.originalSaveData) return;
-    const original=window.saveData;
-    V2.originalSaveData=original;
-    window.saveData=function(){
-      const result=original.apply(this,arguments);
-      V2.studentIndex=null;
-      return result;
-    };
-  }
-  installSaveHook();
-
-  /* إذا تم تعريف saveData لاحقاً، نحاول ربطها بعد اكتمال الصفحة. */
-  let saveChecks=0;
-  const trySaveHook=()=>{
-    if(V2.originalSaveData) return;
-    installSaveHook();
-    if(++saveChecks<20) setTimeout(trySaveHook,250);
-  };
-  setTimeout(trySaveHook,0);
-
-  /* ---------------------------------------------------------
-     4) تحسين عام للبحث بالضغط على Enter، دون تغيير البحث الموجود.
-     --------------------------------------------------------- */
-  document.addEventListener('keydown',function(e){
-    if(e.key!=='Enter') return;
-    const el=e.target;
-    if(!el || el.id!=='globalStudentSearchInput') return;
-    if(typeof window.globalSearchStudent==='function'){
-      e.preventDefault();
-      try{ window.globalSearchStudent(); }catch(err){ console.error('Global search:',err); }
-    }
-  },{passive:false});
-
-  /* ---------------------------------------------------------
-     5) منع الضغط المزدوج السريع على أزرار العمليات الحساسة فقط.
-        لا نطبقه على كل أزرار النظام حتى لا يؤثر على التنقل.
-     --------------------------------------------------------- */
-  const sensitiveWords=['حفظ','حذف','ترسيت','إرسال','اعتماد','تأكيد','استعادة'];
-  document.addEventListener('click',function(e){
-    const btn=e.target?.closest?.('button');
-    if(!btn || btn.dataset.schoolV2Guard==='1') return;
-    const text=String(btn.innerText||btn.textContent||'').replace(/\s+/g,' ').trim();
-    if(!sensitiveWords.some(w=>text.includes(w))) return;
-    const now=Date.now();
-    const last=Number(btn.dataset.schoolV2LastClick||0);
-    if(now-last<550){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return;
-    }
-    btn.dataset.schoolV2LastClick=String(now);
-  },true);
-
-  /* ---------------------------------------------------------
-     6) مراقبة الأداء بشكل خفيف للتشخيص فقط.
-        لا يرسل أي بيانات ولا يخزنها.
-     --------------------------------------------------------- */
-  window.SchoolSystemV2.getDiagnostics=function(){
-    return {
-      version:V2.version,
-      uptimeMs:Date.now()-V2.startedAt,
-      cloudReady:!!window.cloudReady,
-      firebaseOnline:!!window.firebaseOnline,
-      studentIndexReady:!!V2.studentIndex,
-      studentIndexSize:V2.studentIndex?.size||0
-    };
-  };
-
-  /* بعد تحميل الصفحة، نبني الفهرس في وقت خامل حتى لا يؤخر شاشة الدخول. */
-  const build=()=>{
-    try{
-      if(Array.isArray(window.schoolData) && window.schoolData.length) V2.rebuildStudentIndex();
-    }catch(e){ console.warn('School V2 student index:',e); }
-  };
-  if('requestIdleCallback' in window) requestIdleCallback(build,{timeout:1800});
-  else setTimeout(build,900);
-
-  window.addEventListener('load',()=>{
-    setTimeout(tryFirebaseGuard,0);
-    setTimeout(build,500);
-  },{once:true});
 })();
 </script>
 </body>
