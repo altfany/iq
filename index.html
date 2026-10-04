@@ -3541,7 +3541,7 @@ function updateCloudStatus(text, color) {
                 startFactoryResetControlSync();
                 startRealtimeCloudSync();
                 scheduleAutomaticBackup();
-                updateCloudStatus('متصل   ☁️  ', '#16803c');
+                updateCloudStatus('متصل بـ Firebase ☁️ — البيانات من السحابة فقط', '#16803c');
             } else {
                 // Firebase فارغة: ننشئ النسخة الأولى من القيم الافتراضية، وليس من التخزين المحلي.
                 const initialPayload = getCloudPayload();
@@ -6651,7 +6651,6 @@ function updateCloudStatus(text, color) {
 
         const classObj=schoolData[ci];
         if(!Array.isArray(classObj.desks)){ alert('لا توجد رحلات في هذا الصف.'); return; }
-
         const students=getClassStudentsForTripTransfer(ci);
         const sourceIndex=Number(document.getElementById('tripTransferStudentSelect')?.value);
         const source=students[sourceIndex];
@@ -6659,10 +6658,10 @@ function updateCloudStatus(text, color) {
         const targetSlot=Number(document.getElementById('tripTransferSlotSelect')?.value||1);
         const sourceDesk=source ? classObj.desks[source.di] : null;
         const targetDesk=Number.isInteger(targetDi) ? classObj.desks[targetDi] : null;
-
         if(!source || !sourceDesk || !targetDesk){ alert('تعذر تحديد الطالب أو الرحلة الهدف. أغلق النافذة وافتحها من جديد ثم حاول مرة أخرى.'); return; }
         if(source.di===targetDi && source.slot===targetSlot){ alert('الطالب موجود أصلاً في هذا المقعد.'); return; }
 
+        const mode=askStudentTransferDataMode('نقل الطالب بين الرحلات');
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
         const copySlotFields=(from,to,fromSlot,toSlot)=>{
             ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
@@ -6673,36 +6672,55 @@ function updateCloudStatus(text, color) {
 
         if(occupant){
             if(!confirm(`الرحلة ${targetDesk.deskNumber??(targetDi+1)} / ${targetSlot===1?'يمين':'يسار'} مشغولة بالطالب «${occupant}».\n\nهل تريد استبداله بالطالب «${source.name}»؟`)) return;
+            const occupantSlot=targetSlot;
+            const occupantName=occupant;
+            const occupantStudentId=targetDesk[`student${occupantSlot}Id`]||'';
             const temp={};
             copySlotFields(targetDesk,temp,targetSlot,1);
             copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
             copySlotFields(temp,sourceDesk,1,source.slot);
+            if(mode==='full'){
+                // في حالة الاستبدال نلتقط السجلين قبل تغيير المفاتيح حتى لا يختلط
+                // سجل الطالب الأول مع سجل الطالب الموجود في المقعد الهدف.
+                const sourceOldKey=getStudentHistoryKey(classObj,source.di,source.slot,source.name,sourceDesk);
+                const targetOldKey=getStudentHistoryKey(classObj,targetDi,targetSlot,occupantName,targetDesk);
+                const cloneValue=v=>{try{return v===undefined?undefined:JSON.parse(JSON.stringify(v));}catch(_){return v;}};
+                const sourceBehavior=cloneValue(classObj.behaviorNotes?.[sourceOldKey]);
+                const targetBehavior=cloneValue(classObj.behaviorNotes?.[targetOldKey]);
+                const sourceLevels=cloneValue(classObj.studentLevels?.[sourceOldKey]);
+                const targetLevels=cloneValue(classObj.studentLevels?.[targetOldKey]);
+                if(!classObj.behaviorNotes||typeof classObj.behaviorNotes!=='object')classObj.behaviorNotes={};
+                if(!classObj.studentLevels||typeof classObj.studentLevels!=='object')classObj.studentLevels={};
+                if(sourceBehavior!==undefined) classObj.behaviorNotes[targetOldKey]=sourceBehavior; else delete classObj.behaviorNotes[targetOldKey];
+                if(targetBehavior!==undefined) classObj.behaviorNotes[sourceOldKey]=targetBehavior; else delete classObj.behaviorNotes[sourceOldKey];
+                if(sourceLevels!==undefined) classObj.studentLevels[targetOldKey]=sourceLevels; else delete classObj.studentLevels[targetOldKey];
+                if(targetLevels!==undefined) classObj.studentLevels[sourceOldKey]=targetLevels; else delete classObj.studentLevels[sourceOldKey];
+
+                const grades=ensureStudentGrades(classObj);
+                const sourceGradeKey=`${source.di}:${source.slot}`, targetGradeKey=`${targetDi}:${targetSlot}`;
+                const movingGrades=grades.filter(g=>String(g.studentKey)===sourceGradeKey||String(g.studentKey)===targetGradeKey).map(g=>cloneValue(g));
+                classObj.studentGrades=grades.filter(g=>String(g.studentKey)!==sourceGradeKey&&String(g.studentKey)!==targetGradeKey);
+                movingGrades.forEach(g=>{
+                    const wasSource=String(g.studentKey)===sourceGradeKey;
+                    g.studentKey=wasSource?targetGradeKey:sourceGradeKey;
+                    g.studentName=wasSource?source.name:occupantName;
+                    classObj.studentGrades.push(g);
+                });
+            }
         }else{
+            const sourceName=source.name;
             copySlotFields(sourceDesk,targetDesk,source.slot,targetSlot);
+            if(mode==='full') migrateStudentClassHistory(classObj,source.di,source.slot,sourceName,classObj,targetDi,targetSlot,sourceName,mode);
             ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>{
                 sourceDesk[`${f}${source.slot}`]=f==='separated'?false:'';
             });
         }
 
         if(!Array.isArray(classObj.transfers)) classObj.transfers=[];
-        classObj.transfers.push({
-            type:'trip',
-            studentName:source.name,
-            fromTrip:source.deskNumber,
-            toTrip:targetDesk.deskNumber,
-            fromSide:source.side,
-            toSide:targetSlot===1?'يمين':'يسار',
-            swapped:!!occupant,
-            swappedWith:occupant||'',
-            date:new Date().toISOString(),
-            by:currentUser.name||'المدير'
-        });
-
+        classObj.transfers.push({type:'trip',studentName:source.name,fromTrip:source.deskNumber,toTrip:targetDesk.deskNumber,fromSide:source.side,toSide:targetSlot===1?'يمين':'يسار',swapped:!!occupant,swappedWith:occupant||'',transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
         saveData();
-        closeModal('tripTransferModal');
-        renderDesks();
-        renderClassesNav();
-        alert(occupant ? 'تم استبدال الطالبين ونقل كل طالب إلى المقعد الآخر بنجاح.' : 'تم نقل الطالب إلى الرحلة الجديدة بنجاح.');
+        closeModal('tripTransferModal'); renderDesks(); renderClassesNav();
+        alert(occupant ? `تم استبدال الطالبين بنجاح. نمط النقل: ${mode==='full'?'مع كل السجلات':'البيانات الأساسية فقط'}.` : `تم نقل الطالب إلى الرحلة الجديدة بنجاح. نمط النقل: ${mode==='full'?'مع كل السجلات':'البيانات الأساسية فقط'}.`);
     }
 
     // ===== نقل صف كامل مع إمكانية استثناء طلاب محددين =====
@@ -6744,11 +6762,17 @@ function updateCloudStatus(text, color) {
         const checks=[...document.querySelectorAll('.whole-class-transfer-check')];
         const selected=checks.filter(c=>c.checked).map(c=>all[Number(c.value)]).filter(Boolean);
         if(!selected.length){alert('لم تحدد أي طالب للنقل.');return;}
-        if(!confirm(`سيتم نقل ${selected.length} طالب من «${fromCls.name||`الصف ${fromIndex+1}`}» إلى «${toCls.name||`الصف ${toIndex+1}`}».\
-\
-الطلاب الذين رفعت عنهم علامة الصح لن يتم نقلهم.\
-هل أنت متأكد؟`))return;
-        const payloads=selected.map(x=>({source:x,payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))}));
+        const mode=askStudentTransferDataMode(`نقل ${selected.length} طالب من «${fromCls.name||`الصف ${fromIndex+1}`}» إلى «${toCls.name||`الصف ${toIndex+1}`}»`);
+        if(!confirm(`سيتم نقل ${selected.length} طالب إلى «${toCls.name||`الصف ${toIndex+1}`}».\n\n${mode==='full'?'سيتم نقل كل سجلات الطلاب معهم.':'سيتم نقل بيانات الطلاب الأساسية فقط.'}\n\nالطلاب الذين رفعت عنهم علامة الصح لن يتم نقلهم.\nهل أنت متأكد؟`))return;
+
+        // نلتقط المصدر والمعلومات قبل تعديل الصف المصدر حتى لا تتغير الفهارس أثناء العملية.
+        const payloads=selected.map(x=>({
+            source:x,
+            sourceClassIndex:fromIndex,
+            sourceDeskIndex:x.di,
+            sourceSlot:x.slot,
+            payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))
+        }));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
             let targetDi=empty;
@@ -6758,18 +6782,17 @@ function updateCloudStatus(text, color) {
             }
             const target=toCls.desks[targetDi];
             const targetSlot=!String(target.student1||'').trim()?1:2;
+            const targetName=String(item.payload.student||item.source.name||'').trim();
             Object.entries(item.payload).forEach(([f,v])=>target[`${f}${targetSlot}`]=v);
+            if(mode==='full') migrateStudentClassHistory(fromCls,item.sourceDeskIndex,item.sourceSlot,item.source.name,toCls,targetDi,targetSlot,targetName,mode);
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
-            toCls.transfers.push({type:'wholeClassStudent',studentName:item.source.name,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,date:new Date().toISOString(),by:currentUser.name||'المدير'});
+            toCls.transfers.push({type:'wholeClassStudent',studentName:targetName,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
             ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
         }
-        // إبقاء أرقام الرحلات مرتبة بعد إضافة رحلات جديدة.
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
-        saveData();
-        renderDesks(); renderClassesNav();
-        openWholeClassTransferControls();
-        alert(`تم نقل ${selected.length} طالب إلى الصف «${toCls.name||`الصف ${toIndex+1}`}» بنجاح.`);
+        saveData(); renderDesks(); renderClassesNav(); openWholeClassTransferControls();
+        alert(`تم نقل ${selected.length} طالب إلى الصف «${toCls.name||`الصف ${toIndex+1}`}» بنجاح.\nنمط النقل: ${mode==='full'?'مع كل السجلات':'البيانات الأساسية فقط'}.`);
     }
 
 
@@ -6827,6 +6850,71 @@ function updateCloudStatus(text, color) {
         return oldName;
     }
 
+    // ===== خيارات نقل بيانات الطالب: نقل أساسي أو نقل كامل للسجل =====
+    function askStudentTransferDataMode(actionLabel){
+        const full=confirm(`🔄 ${actionLabel}\n\nهل تريد نقل الطالب مع كل ما يخصه؟\n\nموافق = نقل الطالب + السلوك + المستوى + الدرجات + السجلات المرتبطة به.\nإلغاء = نقل بيانات الطالب الأساسية فقط (الاسم، الكود، الهاتف، العنوان، الجنس والصورة إن وجدت).\n\nلن يتم تنفيذ النقل إلا بعد اختيارك.`);
+        return full ? 'full' : 'basic';
+    }
+
+    function getStudentHistoryKey(cls, deskIndex, slot, name, desk){
+        const deskNumber=desk?.deskNumber ?? (Number(deskIndex)+1);
+        return `${deskNumber}_${slot===1?'يمين':'يسار'}_${name}`;
+    }
+
+    function migrateStudentClassHistory(sourceCls, sourceDeskIndex, sourceSlot, sourceName, targetCls, targetDeskIndex, targetSlot, targetName, mode){
+        if(mode!=='full') return;
+        if(!sourceCls || !targetCls) return;
+
+        const sourceDesk=sourceCls.desks?.[sourceDeskIndex];
+        const targetDesk=targetCls.desks?.[targetDeskIndex];
+        const oldKey=getStudentHistoryKey(sourceCls,sourceDeskIndex,sourceSlot,sourceName,sourceDesk);
+        const newKey=getStudentHistoryKey(targetCls,targetDeskIndex,targetSlot,targetName,targetDesk);
+        const oldGradeKey=`${sourceDeskIndex}:${sourceSlot}`;
+        const newGradeKey=`${targetDeskIndex}:${targetSlot}`;
+
+        // السلوك والمستوى: نقل السجل من مفتاح المكان القديم إلى المكان الجديد.
+        ['behaviorNotes','studentLevels'].forEach(field=>{
+            const src=sourceCls[field];
+            if(!src || typeof src!=='object') return;
+            const value=src[oldKey];
+            if(value!==undefined){
+                if(!targetCls[field] || typeof targetCls[field]!=='object') targetCls[field]={};
+                targetCls[field][newKey]=value;
+                if(sourceCls!==targetCls || oldKey!==newKey) delete src[oldKey];
+            }
+        });
+
+        // الدرجات: مفتاح الدرجة الحالي هو موقع المقعد (deskIndex:slot)، لذلك ننقله للموقع الجديد.
+        const sourceGrades=ensureStudentGrades(sourceCls);
+        if(sourceGrades.length){
+            const targetGrades=ensureStudentGrades(targetCls);
+            const moving=sourceGrades.filter(g=>String(g.studentKey)===oldGradeKey);
+            moving.forEach(g=>{
+                const clone=Object.assign({},g,{studentKey:newGradeKey,studentName:targetName});
+                if(sourceCls===targetCls){
+                    const idx=sourceGrades.indexOf(g);
+                    if(idx>=0) sourceGrades[idx]=clone;
+                }else{
+                    targetGrades.push(clone);
+                }
+            });
+            if(sourceCls!==targetCls){
+                sourceCls.studentGrades=sourceGrades.filter(g=>String(g.studentKey)!==oldGradeKey);
+            }else if(oldGradeKey!==newGradeKey){
+                sourceCls.studentGrades=sourceGrades;
+            }
+        }
+
+        // الحضور الاحترافي مرتبط بـ studentId وليس بمكان المقعد، لذلك لا نعيد بناءه؛
+        // يبقى مع الطالب نفسه ما دام studentId انتقل معه.
+        if(!Array.isArray(targetCls.studentHistoryTransfers)) targetCls.studentHistoryTransfers=[];
+        targetCls.studentHistoryTransfers.push({
+            type:'fullStudentHistoryMove',studentId:String(targetDesk?.[`student${targetSlot}Id`]||''),
+            studentName:targetName,fromClass:sourceCls.name||'',toClass:targetCls.name||'',
+            fromKey:oldKey,toKey:newKey,date:new Date().toISOString(),by:currentUser?.name||'المدير'
+        });
+    }
+
     function executeStudentTransfer(){
         if(!currentUser || currentUser.role!=='admin')return;
         if(!requireAdminSensitiveAction('نقل طالب')) return;
@@ -6837,15 +6925,18 @@ function updateCloudStatus(text, color) {
         const type=document.getElementById('transferType')?.value||'class';
         const oldCls=schoolData[student.ci];
         const desk=student.desk;
+        const mode=askStudentTransferDataMode('نقل الطالب');
         if(type==='school'){
             const schoolName=String(document.getElementById('transferSchoolName')?.value||'').trim();
             if(!schoolName){alert('اكتب اسم المدرسة الجديدة.');return;}
-            if(!confirm(`سيتم نقل الطالب «${student.name}» من «${student.className}» إلى «${schoolName}».\nهل أنت متأكد؟`))return;
+            if(!confirm(`سيتم نقل الطالب «${student.name}» من «${student.className}» إلى «${schoolName}».\n\nنمط النقل: ${mode==='full'?'مع كل سجلاته وبياناته المرتبطة':'البيانات الأساسية فقط'}.\n\nهل أنت متأكد؟`))return;
             if(!Array.isArray(oldCls.transfers))oldCls.transfers=[];
-            oldCls.transfers.push({studentName:student.name,studentId:desk[`student${student.slot}Id`]||'',fromClass:student.className,toSchool:schoolName,date:new Date().toISOString(),by:currentUser.name||'المدير'});
+            oldCls.transfers.push({studentName:student.name,studentId:desk[`student${student.slot}Id`]||'',fromClass:student.className,toSchool:schoolName,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
+            // المدرسة الأخرى غير موجودة داخل schoolData، لذلك يحتفظ النظام بسجل النقل.
+            // بيانات الطالب الأساسية تُحذف من الصف الحالي كما كان سابقاً.
             clearStudentFromDesk(student);
             saveData(); renderDesks(); renderClassesNav(); openTransferSeparationModal();
-            alert('تم نقل الطالب إلى المدرسة الجديدة وتسجيل العملية.');
+            alert(`تم نقل الطالب إلى المدرسة الجديدة وتسجيل العملية.\nنمط النقل: ${mode==='full'?'مع كل السجلات داخل سجل النقل':'البيانات الأساسية فقط'}.`);
             return;
         }
         const toIndex=Number(document.getElementById('transferClassSelect')?.value);
@@ -6855,22 +6946,25 @@ function updateCloudStatus(text, color) {
         if(!Array.isArray(target.desks))target.desks=[];
         let targetDesk=target.desks.find(d=>!String(d.student1||'').trim() || !String(d.student2||'').trim());
         if(!targetDesk){
-            targetDesk={deskNumber:target.desks.length+1,student1:'',student2:'',code1:'',code2:'',phone1:'',phone2:'',address1:'',address2:'',gender1:'',gender2:''};
+            targetDesk={id:createStableId('student'),deskNumber:target.desks.length+1,student1:'',student2:'',code1:'',code2:'',phone1:'',phone2:'',address1:'',address2:'',gender1:'',gender2:'',student1Id:'',student2Id:''};
             target.desks.push(targetDesk);
         }
+        const targetDi=target.desks.indexOf(targetDesk);
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
-        if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟`))return;
+        if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟\n\nنمط النقل: ${mode==='full'?'مع كل السجلات':'البيانات الأساسية فقط'}.`))return;
         const sourceSlot=student.slot;
         const fields=['student','code','phone','gender','address','studentId'];
         fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
+        if(mode==='full') migrateStudentClassHistory(oldCls,student.di,sourceSlot,student.name,target,targetDi,slot2,student.name,mode);
         clearStudentFromDesk(student);
         if(!Array.isArray(target.transfers))target.transfers=[];
-        target.transfers.push({studentName:student.name,studentId:targetDesk[`studentId${slot2}`]||'',fromClass:student.className,toClass:target.name||`الصف ${toIndex+1}`,date:new Date().toISOString(),by:currentUser.name||'المدير'});
+        target.transfers.push({studentName:student.name,studentId:targetDesk[`studentId${slot2}`]||'',fromClass:student.className,toClass:target.name||`الصف ${toIndex+1}`,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
         saveData(); renderDesks(); renderClassesNav(); openTransferSeparationModal();
-        alert('تم نقل الطالب إلى الصف الجديد.');
+        alert(`تم نقل الطالب إلى الصف الجديد.\nنمط النقل: ${mode==='full'?'تم نقل السلوك والمستوى والدرجات والسجلات المرتبطة':'تم نقل بيانات الطالب الأساسية فقط'}.`);
     }
+
 
     function executeStudentSeparation(){
         if(!currentUser || currentUser.role!=='admin')return;
