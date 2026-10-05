@@ -2309,13 +2309,14 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <div class="form-group pro-field"><label>المستخدم الحالي</label><input id="adminCurrentUserName" readonly></div>
                 <div class="form-group pro-field"><label>اسم المدير للطباعة على النتائج</label><input type="text" id="printManagerNameInput" placeholder="مثال: الأستاذ أحمد"></div>
                 <div class="form-group pro-field"><label>اسم المدرسة للطباعة على النتائج</label><input type="text" id="printSchoolNameInput" placeholder="مثال: مدرسة التسامي"></div>
-                <div class="form-group pro-field"><label>السنة الدراسية للطباعة على النتائج</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label style="font-size:12px;margin-bottom:5px">من سنة</label><input type="number" id="printAcademicYearFromInput" min="2000" max="2100" step="1" placeholder="2025" dir="ltr"></div><div><label style="font-size:12px;margin-bottom:5px">إلى سنة</label><input type="number" id="printAcademicYearToInput" min="2000" max="2100" step="1" placeholder="2026" dir="ltr"></div></div></div>
+                <div class="form-group pro-field"><label>السنة الدراسية — من سنة</label><input type="number" id="studyYearFromInput" min="2000" max="2100" placeholder="2025"></div>
+                <div class="form-group pro-field"><label>السنة الدراسية — إلى سنة</label><input type="number" id="studyYearToInput" min="2000" max="2100" placeholder="2026"></div>
                 <div class="form-group pro-field"><label>الكود الجديد</label><input type="password" id="adminNewPasswordInput" inputmode="numeric" autocomplete="new-password" placeholder="مثال: 5678"></div>
                 <div class="form-group pro-field"><label>تأكيد الكود الجديد</label><input type="password" id="adminConfirmPasswordInput" inputmode="numeric" autocomplete="new-password" placeholder="أعد كتابة الكود"></div>
             </div>
             <div class="pro-primary-action"><button onclick="changeCurrentAdminPassword()" style="background:var(--success)">💾 حفظ الكود الجديد</button></div>
-            <div class="pro-primary-action"><button onclick="savePrintPrintSettings()" style="background:var(--blue)">🖨️ حفظ بيانات الطباعة</button></div>
-            <div style="font-size:11px;color:#718294;text-align:center;margin-top:6px">يتم حفظ اسم المدير واسم المدرسة والسنة الدراسية مرة واحدة، وتظهر تلقائياً عند طباعة أي نتيجة.</div>
+            <div class="pro-primary-action"><button onclick="savePrintPrintSettings()" style="background:var(--blue)">🖨️ حفظ اسم المدير واسم المدرسة للطباعة</button></div>
+            <div style="font-size:11px;color:#718294;text-align:center;margin-top:6px">يتم حفظ اسم المدير واسم المدرسة والسنة الدراسية مرة واحدة في Firebase، وتظهر تلقائياً عند طباعة أي نتيجة.</div>
         </div>
 
         <div class="pro-form-panel" id="assistantManagementPanel">
@@ -3038,10 +3039,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let adminCredentials = { name: 'مدير النظام', password: DEFAULT_ADMIN_LOGIN_CODE };
     let printManagerName = String(cloudOnlyStorage.getItem('printManagerName') || '').trim();
     let printSchoolName = String(cloudOnlyStorage.getItem('printSchoolName') || '').trim();
-    let printAcademicYear = String(cloudOnlyStorage.getItem('printAcademicYear') || '').trim();
-    let printAcademicYearFrom = String(cloudOnlyStorage.getItem('printAcademicYearFrom') || '').trim();
-    let printAcademicYearTo = String(cloudOnlyStorage.getItem('printAcademicYearTo') || '').trim();
-    if((!printAcademicYearFrom || !printAcademicYearTo) && /^\d{4}\s*-\s*\d{4}$/.test(printAcademicYear)){ [printAcademicYearFrom, printAcademicYearTo] = printAcademicYear.split(/\s*-\s*/); }
+    let studyYearFrom = String(cloudOnlyStorage.getItem('studyYearFrom') || '').trim();
+    let studyYearTo = String(cloudOnlyStorage.getItem('studyYearTo') || '').trim();
     let assistantsData = [];
     let managerNotesData = [];
     let assistantActionNotificationsData = [];
@@ -3405,9 +3404,8 @@ function acknowledgeAnnouncement(id) {
             adminName: String(adminCredentials.name || 'مدير النظام'),
             printManagerName: String(printManagerName || ''),
             printSchoolName: String(printSchoolName || ''),
-            printAcademicYear: String(printAcademicYear || ''),
-            printAcademicYearFrom: String(printAcademicYearFrom || ''),
-            printAcademicYearTo: String(printAcademicYearTo || ''),
+            studyYearFrom: String(studyYearFrom || ''),
+            studyYearTo: String(studyYearTo || ''),
             assistantsData,
             managerNotesData,
             assistantActionNotificationsData,
@@ -3625,18 +3623,10 @@ function updateCloudStatus(text, color) {
         if (cloud.subjectsData !== undefined) subjectsData = Array.isArray(cloud.subjectsData) ? cloud.subjectsData : [];
         if (cloud.adminCode !== undefined && String(cloud.adminCode).trim()) adminCredentials.password = String(cloud.adminCode).trim();
         if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
-        // بيانات الطباعة يجب أن تُستعاد من Firebase عند كل تشغيل للنظام.
         if (cloud.printManagerName !== undefined) printManagerName = String(cloud.printManagerName || '').trim();
         if (cloud.printSchoolName !== undefined) printSchoolName = String(cloud.printSchoolName || '').trim();
-        if (cloud.printAcademicYearFrom !== undefined) printAcademicYearFrom = String(cloud.printAcademicYearFrom || '').trim();
-        if (cloud.printAcademicYearTo !== undefined) printAcademicYearTo = String(cloud.printAcademicYearTo || '').trim();
-        if (cloud.printAcademicYear !== undefined) printAcademicYear = String(cloud.printAcademicYear || '').trim();
-        if ((!printAcademicYearFrom || !printAcademicYearTo) && /^\d{4}\s*-\s*\d{4}$/.test(printAcademicYear)) {
-            [printAcademicYearFrom, printAcademicYearTo] = printAcademicYear.split(/\s*-\s*/);
-        }
-        if (!printAcademicYear && printAcademicYearFrom && printAcademicYearTo) {
-            printAcademicYear = printAcademicYearFrom + ' - ' + printAcademicYearTo;
-        }
+        if (cloud.studyYearFrom !== undefined) studyYearFrom = String(cloud.studyYearFrom || '').trim();
+        if (cloud.studyYearTo !== undefined) studyYearTo = String(cloud.studyYearTo || '').trim();
         if (cloud.assistantsData !== undefined) assistantsData = Array.isArray(cloud.assistantsData) ? cloud.assistantsData : [];
                 if (cloud.managerNotesData !== undefined) managerNotesData = Array.isArray(cloud.managerNotesData) ? cloud.managerNotesData : [];
                 if (cloud.assistantActionNotificationsData !== undefined) assistantActionNotificationsData = Array.isArray(cloud.assistantActionNotificationsData) ? cloud.assistantActionNotificationsData : [];
@@ -3659,9 +3649,8 @@ function updateCloudStatus(text, color) {
             cloudOnlyStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
             cloudOnlyStorage.setItem('printManagerName', JSON.stringify(printManagerName));
             cloudOnlyStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
-            cloudOnlyStorage.setItem('printAcademicYear', JSON.stringify(printAcademicYear));
-            cloudOnlyStorage.setItem('printAcademicYearFrom', JSON.stringify(printAcademicYearFrom));
-            cloudOnlyStorage.setItem('printAcademicYearTo', JSON.stringify(printAcademicYearTo));
+            cloudOnlyStorage.setItem('studyYearFrom', JSON.stringify(studyYearFrom));
+            cloudOnlyStorage.setItem('studyYearTo', JSON.stringify(studyYearTo));
             cloudOnlyStorage.setItem('assistantsData', JSON.stringify(assistantsData));
             cloudOnlyStorage.setItem('monitorsData', JSON.stringify(monitorsData));
             cloudOnlyStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
@@ -3826,7 +3815,7 @@ function updateCloudStatus(text, color) {
         return {
             format:'school-system-backup', version:3, exportedAt:new Date().toISOString(),
             resetGeneration:String(factoryResetGeneration || '0'),
-            schoolData, teachersData, teachersAbsenceData, announcementsData, homeworkData, subjectsData, adminCredentials, printManagerName, printSchoolName, assistantsData, guestSupervisorsData, monitorsData, monitorNotesData, monitorInventoryReportsData, monitorMessagesData,
+            schoolData, teachersData, teachersAbsenceData, announcementsData, homeworkData, subjectsData, adminCredentials, printManagerName, printSchoolName, studyYearFrom, studyYearTo, assistantsData, guestSupervisorsData, monitorsData, monitorNotesData, monitorInventoryReportsData, monitorMessagesData,
             attendanceData:(typeof window.__professionalAttendanceDataForCloud==='function'?window.__professionalAttendanceDataForCloud():[]),
             auditLog:(typeof window.__professionalAuditLogForCloud==='function'?window.__professionalAuditLogForCloud():[])
         };
@@ -5124,8 +5113,10 @@ function updateCloudStatus(text, color) {
         if (printNameEl) printNameEl.value = printManagerName || adminCredentials.name || '';
         const printSchoolEl = document.getElementById('printSchoolNameInput');
         if (printSchoolEl) printSchoolEl.value = printSchoolName || '';
-        const printYearEl = document.getElementById('printAcademicYearInput');
-        if (printYearEl) printYearEl.value = printAcademicYear || '';
+        const yearFromEl = document.getElementById('studyYearFromInput');
+        const yearToEl = document.getElementById('studyYearToInput');
+        if (yearFromEl) yearFromEl.value = studyYearFrom || '';
+        if (yearToEl) yearToEl.value = studyYearTo || '';
         if (assistantPanel) assistantPanel.style.display = isPrimaryAdminUser() ? 'block' : 'none';
         document.getElementById('adminNewPasswordInput').value = '';
         document.getElementById('adminConfirmPasswordInput').value = '';
@@ -5138,21 +5129,13 @@ function updateCloudStatus(text, color) {
         if(!isPrimaryAdminUser()){ alert('تعديل بيانات الطباعة متاح لمدير النظام الأساسي فقط.'); return; }
         const manager=String(document.getElementById('printManagerNameInput')?.value||'').trim();
         const school=String(document.getElementById('printSchoolNameInput')?.value||'').trim();
-        const academicYearFrom=String(document.getElementById('printAcademicYearFromInput')?.value||'').trim();
-        const academicYearTo=String(document.getElementById('printAcademicYearToInput')?.value||'').trim();
-        if(!manager || !school || !academicYearFrom || !academicYearTo){ alert('يجب كتابة اسم المدير واسم المدرسة واختيار السنة الدراسية من سنة إلى سنة قبل الحفظ.'); return; }
-        if(!/^\d{4}$/.test(academicYearFrom) || !/^\d{4}$/.test(academicYearTo)){ alert('اختر سنة صحيحة من 4 أرقام.'); return; }
-        if(Number(academicYearTo)!==Number(academicYearFrom)+1){ alert('يجب أن تكون سنة «إلى» بعد سنة «من» بسنة واحدة.'); return; }
+        if(!manager || !school){ alert('يجب كتابة اسم المدير واسم المدرسة قبل الحفظ.'); return; }
         printManagerName=manager;
         printSchoolName=school;
-        printAcademicYearFrom=academicYearFrom;
-        printAcademicYearTo=academicYearTo;
-        printAcademicYear=academicYearFrom+' - '+academicYearTo;
         cloudOnlyStorage.setItem('printManagerName', JSON.stringify(printManagerName));
         cloudOnlyStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
-        cloudOnlyStorage.setItem('printAcademicYearFrom', JSON.stringify(printAcademicYearFrom));
-        cloudOnlyStorage.setItem('printAcademicYearTo', JSON.stringify(printAcademicYearTo));
-        cloudOnlyStorage.setItem('printAcademicYear', JSON.stringify(printAcademicYear));
+        cloudOnlyStorage.setItem('studyYearFrom', JSON.stringify(studyYearFrom));
+        cloudOnlyStorage.setItem('studyYearTo', JSON.stringify(studyYearTo));
         saveData();
         if(window.ProfessionalModules?.addAudit) window.ProfessionalModules.addAudit('تعديل بيانات الطباعة',`${printManagerName} — ${printSchoolName}`);
         alert('تم حفظ اسم المدير واسم المدرسة والسنة الدراسية ومزامنتها مع Firebase.');
@@ -7391,7 +7374,7 @@ function updateCloudStatus(text, color) {
             [1,2].forEach(slot=>{
                 const name=String(desk && desk['student'+slot] || '').trim();
                 if(!name) return;
-                out.push({studentKey:`${deskIndex}:${slot}`,deskIndex,slot,name,code:String(desk['code'+slot]||'').trim()});
+                out.push({studentKey:`${deskIndex}:${slot}`,deskIndex,slot,name,code:String(desk['code'+slot]||'').trim(),gender:String(desk['gender'+slot]||'').trim().toLowerCase()});
             });
         });
         return out;
@@ -7548,10 +7531,7 @@ function updateCloudStatus(text, color) {
         const lesson=document.getElementById('resultPrintLesson')?.value||'all';
         const schoolName=String(printSchoolName||'').trim();
         const managerName=String(printManagerName||'').trim();
-        const academicYearFrom=String(printAcademicYearFrom||'').trim();
-        const academicYearTo=String(printAcademicYearTo||'').trim();
-        const academicYear=(academicYearFrom && academicYearTo) ? (academicYearFrom+' - '+academicYearTo) : String(printAcademicYear||'').trim();
-        if(!managerName || !schoolName || !academicYearFrom || !academicYearTo || !academicYear){alert('يجب كتابة اسم المدير واسم المدرسة واختيار السنة الدراسية من سنة إلى سنة في «إدارة المدير والمعاون» قبل الطباعة.');return;}
+        if(!managerName || !schoolName){alert('يجب كتابة اسم المدير واسم المدرسة في «إدارة المدير والمعاون» قبل الطباعة.');return;}
         if(type==='daily'&&!wantedDate){alert('حدد اليوم والتاريخ.');return;}
         let grades=ensureStudentGrades(cls).filter(g=>String(g.studentKey)===String(student.studentKey));
         if(type==='daily') grades=grades.filter(g=>String(g.period||'')===String(wantedDate));
@@ -7559,35 +7539,36 @@ function updateCloudStatus(text, color) {
         else if(type==='final') grades=grades.filter(g=>['final','year','آخر السنة','اخر السنة'].includes(String(g.periodType||'').toLowerCase()) || /آخر السنة|اخر السنة/.test(String(getGradePeriodLabel(g.periodType)||'')));
         if(lesson!=='all') grades=grades.filter(g=>String(g.subject||'')===String(lesson));
         if(!grades.length){alert('لا توجد درجات مطابقة للاختيارات المحددة.');return;}
-        const rows=grades.map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><strong>${escapeGlobalSearchHTML(g.score)}</strong> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('');
+        const rows=grades.map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><strong>${escapeGlobalSearchHTML(g.score)}</strong> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td></tr>`).join('');
         const resultLabel={daily:'النتيجة اليومية',midyear:'نتيجة نصف السنة',final:'نتيجة آخر السنة',all:'كشف النتائج'}[type]||'نتيجة الطالب';
+        const genderText=String(student.gender||'').trim().toLowerCase();
+        const genderClass=(genderText==='female'||genderText==='أنثى'||genderText==='بنت'||genderText==='female_student')?'female':'male';
+        const studyYearText=(studyYearFrom&&studyYearTo)?`السنة الدراسية: ${studyYearFrom} - ${studyYearTo}`:'';
         const periodText=type==='daily'?`اليوم والتاريخ: ${wantedDate}`:resultLabel;
         const root=document.createElement('div');
         root.id='mobileStudentResultPrint';
         root.innerHTML=`<style>
 @page{size:A4 portrait;margin:0}
 #mobileStudentResultPrint{position:fixed;inset:0;z-index:2147483647;background:#fff;overflow:auto;direction:rtl}
-#mobileStudentResultPrint .print-sheet{position:relative;width:210mm;min-height:297mm;box-sizing:border-box;overflow:hidden;background:#fff;margin:0 auto;color:#16283d;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#mobileStudentResultPrint .print-sheet{position:relative;width:210mm;height:297mm;min-height:297mm;box-sizing:border-box;overflow:hidden;background:#fff;margin:0 auto;color:#16283d;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#mobileStudentResultPrint .page-content{height:297mm;display:flex;flex-direction:column}
+#mobileStudentResultPrint .print-sheet.male .school,#mobileStudentResultPrint .print-sheet.male .title{color:#075ea8;border-color:#1f78bd}
+#mobileStudentResultPrint .print-sheet.male .meta,#mobileStudentResultPrint .print-sheet.male table{border-color:rgba(31,120,189,.65)}
+#mobileStudentResultPrint .print-sheet.male th{background:#1976b9}
+#mobileStudentResultPrint .print-sheet.female .school,#mobileStudentResultPrint .print-sheet.female .title{color:#c21870;border-color:#e58ab8}
+#mobileStudentResultPrint .print-sheet.female .meta,#mobileStudentResultPrint .print-sheet.female table{border-color:rgba(229,138,184,.72)}
+#mobileStudentResultPrint .print-sheet.female th{background:#d94d91}
 #mobileStudentResultPrint .watermark{position:absolute;inset:0;width:210mm;height:297mm;object-fit:fill;opacity:.32;filter:saturate(1.55) contrast(1.08) brightness(1.02);z-index:0;pointer-events:none}
-#mobileStudentResultPrint .page-content{position:relative;z-index:1;box-sizing:border-box;min-height:297mm;padding:16mm 15mm 14mm}
+#mobileStudentResultPrint .page-content{position:relative;z-index:1;box-sizing:border-box;height:297mm;min-height:297mm;padding:16mm 15mm 14mm;display:flex;flex-direction:column}
 #mobileStudentResultPrint .school{font-size:31px;font-weight:900;text-align:center;margin:0 0 12px;padding:15px;border:4px double #155fa0;border-radius:16px;background:rgba(255,255,255,.88);color:#12395c;letter-spacing:1px}
-#mobileStudentResultPrint .academic-year{font-size:15px;font-weight:800;margin-top:7px;color:#8a5a00;letter-spacing:0}
 #mobileStudentResultPrint .title{text-align:center;font-size:25px;font-weight:900;color:#0e4777;margin:8px}.period{text-align:center;color:#b57900;font-weight:900;margin-bottom:15px}
 #mobileStudentResultPrint .meta{display:grid;grid-template-columns:1fr 1fr;border:2px solid rgba(21,95,160,.42);padding:11px;border-radius:12px;margin-bottom:15px;background:rgba(255,255,255,.9)}
-#mobileStudentResultPrint table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;border-spacing:0;overflow:hidden;border:2px solid rgba(21,95,160,.45);border-radius:12px;background:rgba(255,255,255,.92);margin:0}
-#mobileStudentResultPrint th,#mobileStudentResultPrint td{width:20%;min-width:20%;max-width:20%;box-sizing:border-box;border-left:1px solid rgba(21,95,160,.22);border-bottom:1px solid rgba(21,95,160,.22);padding:9px 6px;text-align:center;vertical-align:middle;word-break:break-word;overflow-wrap:anywhere}#mobileStudentResultPrint th{font-weight:900;background:rgba(19,91,145,.93);color:#fff}#mobileStudentResultPrint td{background:rgba(255,255,255,.82)}#mobileStudentResultPrint tr:last-child td{border-bottom:0}#mobileStudentResultPrint th:last-child,#mobileStudentResultPrint td:last-child{border-left:0}
+#mobileStudentResultPrint table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:2px solid rgba(21,95,160,.45);border-radius:12px;background:rgba(255,255,255,.92)}
+#mobileStudentResultPrint th,#mobileStudentResultPrint td{border-left:1px solid rgba(21,95,160,.22);border-bottom:1px solid rgba(21,95,160,.22);padding:10px;text-align:center}#mobileStudentResultPrint th{font-weight:900;background:rgba(19,91,145,.93);color:#fff}#mobileStudentResultPrint td{background:rgba(255,255,255,.82)}#mobileStudentResultPrint tr:last-child td{border-bottom:0}#mobileStudentResultPrint th:last-child,#mobileStudentResultPrint td:last-child{border-left:0}
 #mobileStudentResultPrint .print-manager-bottom{text-align:center;margin-top:22px;font-size:14px;color:#183b59;font-weight:900}
-#mobileStudentResultPrint .print-footer{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:30px;align-items:end;padding:0 8px}#mobileStudentResultPrint .footer-side{min-height:35mm;box-sizing:border-box;text-align:center;color:#183b59;background:transparent;border:0;padding:4px}#mobileStudentResultPrint .footer-title{font-weight:900;font-size:14px;color:#0e4777;margin-bottom:10px}#mobileStudentResultPrint .footer-sign-line{height:23mm;border-bottom:2px dotted #52697c;margin:0 18px 5px}#mobileStudentResultPrint .footer-caption{font-size:11px;color:#607487}#mobileStudentResultPrint .stamp-area{height:27mm;margin:0 22px}#mobileStudentResultPrint .note{margin-top:12px;text-align:center;font-size:11px;color:#536b80}
-@media print{
-  @page{size:A4 portrait;margin:10mm}
-  #mobileStudentResultPrint{width:100% !important;max-width:190mm !important;margin:0 auto !important;padding:0 !important;box-sizing:border-box !important}
-  #mobileStudentResultPrint table{width:100% !important;max-width:190mm !important;table-layout:fixed !important;margin:0 !important}
-  #mobileStudentResultPrint th,#mobileStudentResultPrint td{width:20% !important;max-width:20% !important;box-sizing:border-box !important}
-html,body{width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}body>*:not(#mobileStudentResultPrint){display:none!important}#mobileStudentResultPrint{position:static!important;display:block!important;overflow:visible!important;background:#fff!important;width:210mm!important}
-#mobileStudentResultPrint .page-content{width:190mm!important;margin:0 auto!important;box-sizing:border-box!important}
-#mobileStudentResultPrint table{width:100%!important;table-layout:fixed!important}
-#mobileStudentResultPrint th,#mobileStudentResultPrint td{width:20%!important;min-width:20%!important;max-width:20%!important;box-sizing:border-box!important;text-align:center!important;vertical-align:middle!important;word-break:break-word!important;overflow-wrap:anywhere!important}#mobileStudentResultPrint .print-sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important}.print-footer{break-inside:avoid}}
-</style><div class="print-sheet"><img class="watermark" src="https://raw.githubusercontent.com/madrasati-system/School/refs/heads/main/%D8%AE%D9%84%D9%81%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B4%D9%87%D8%A7%D8%AF%D8%A9%20.png" alt=""><div class="page-content"><div class="school">✦ ${escapeGlobalSearchHTML(schoolName)} ✦<div class="academic-year">السنة الدراسية: ${escapeGlobalSearchHTML(academicYear)}</div></div><div class="title">${escapeGlobalSearchHTML(resultLabel)}</div><div class="period">${escapeGlobalSearchHTML(periodText)}</div><div class="meta"><span><b>الطالب:</b> ${escapeGlobalSearchHTML(student.name)}</span><span><b>الصف:</b> ${escapeGlobalSearchHTML(cls.name||'')}</span></div><table><thead><tr><th>الدرس</th><th>الدرجة</th><th>نوع النتيجة</th><th>التاريخ / الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table><div class="print-manager-bottom"><b>اسم المدير:</b> ${escapeGlobalSearchHTML(managerName)}</div><div class="print-footer"><div class="footer-side stamp-side"><div class="footer-title">ختم المدير</div><div class="stamp-area"></div></div><div class="footer-side signature-side"><div class="footer-title">توقيع المدير</div><div class="footer-sign-line"></div><div class="footer-caption">التوقيع</div></div></div><div class="note">كشف رسمي لنتيجة الطالب</div></div></div>`;
+#mobileStudentResultPrint .print-footer{display:flex;flex-direction:row;gap:30px;margin-top:auto;align-items:end;padding:0 8px;direction:ltr;break-inside:avoid}#mobileStudentResultPrint .footer-side{width:50%;min-height:35mm;box-sizing:border-box;text-align:center;color:#183b59;background:transparent;border:0;padding:4px}#mobileStudentResultPrint .footer-title{font-weight:900;font-size:14px;color:#0e4777;margin-bottom:10px}#mobileStudentResultPrint .footer-sign-line{height:23mm;border-bottom:2px dotted #52697c;margin:0 18px 5px}#mobileStudentResultPrint .footer-caption{font-size:11px;color:#607487}#mobileStudentResultPrint .stamp-area{height:27mm;margin:0 22px}#mobileStudentResultPrint .note{margin-top:8px;text-align:center;font-size:11px;color:#536b80}
+@media print{html,body{width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}body>*:not(#mobileStudentResultPrint){display:none!important}#mobileStudentResultPrint{position:static!important;display:block!important;overflow:visible!important;background:#fff!important}#mobileStudentResultPrint .print-sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important}.print-footer{break-inside:avoid}}
+</style><div class="print-sheet ${genderClass}"><img class="watermark" src="https://raw.githubusercontent.com/madrasati-system/School/refs/heads/main/%D8%AE%D9%84%D9%81%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B4%D9%87%D8%A7%D8%AF%D8%A9%20.png" alt=""><div class="page-content"><div class="school">✦ ${escapeGlobalSearchHTML(schoolName)} ✦</div><div class="title">${escapeGlobalSearchHTML(resultLabel)}</div><div class="period">${escapeGlobalSearchHTML(periodText)}${studyYearText?` — ${escapeGlobalSearchHTML(studyYearText)}`:''}</div><div class="meta"><span><b>الطالب:</b> ${escapeGlobalSearchHTML(student.name)}</span><span><b>الصف:</b> ${escapeGlobalSearchHTML(cls.name||'')}</span></div><table><thead><tr><th>الدرس</th><th>الدرجة</th><th>نوع النتيجة</th><th>التاريخ / الفترة</th></tr></thead><tbody>${rows}</tbody></table><div class="print-manager-bottom"><b>اسم المدير:</b> ${escapeGlobalSearchHTML(managerName)}</div><div class="print-footer"><div class="footer-side stamp-side"><div class="footer-title">ختم المدير</div><div class="stamp-area"></div></div><div class="footer-side signature-side"><div class="footer-title">توقيع المدير</div><div class="footer-sign-line"></div><div class="footer-caption">التوقيع</div></div></div><div class="note">كشف رسمي لنتيجة الطالب</div></div></div>`;
         document.body.appendChild(root);
         closeModal('studentResultPrintModal');
         const restore=()=>{try{root.remove();document.documentElement.classList.remove('printingStudentResult');document.body.style.overflow='';}catch(e){}};
@@ -9687,10 +9668,8 @@ window.addEventListener('unhandledrejection', function (event) {
       if(p.adminCredentials?.password) adminCredentials={name:p.adminCredentials.name||'مدير النظام',password:String(p.adminCredentials.password).trim()};
       if(p.printManagerName!==undefined) printManagerName=String(p.printManagerName||'').trim();
       if(p.printSchoolName!==undefined) printSchoolName=String(p.printSchoolName||'').trim();
-      if(p.printAcademicYear!==undefined) printAcademicYear=String(p.printAcademicYear||'').trim();
-      if(p.printAcademicYearFrom!==undefined) printAcademicYearFrom=String(p.printAcademicYearFrom||'').trim();
-      if(p.printAcademicYearTo!==undefined) printAcademicYearTo=String(p.printAcademicYearTo||'').trim();
-      if((!printAcademicYearFrom || !printAcademicYearTo) && /^\d{4}\s*-\s*\d{4}$/.test(printAcademicYear)){ [printAcademicYearFrom, printAcademicYearTo] = printAcademicYear.split(/\s*-\s*/); }
+      if(p.studyYearFrom!==undefined) studyYearFrom=String(p.studyYearFrom||'').trim();
+      if(p.studyYearTo!==undefined) studyYearTo=String(p.studyYearTo||'').trim();
       attendanceData=Array.isArray(p.attendanceData)?p.attendanceData:[];
       auditLog=Array.isArray(p.auditLog)?p.auditLog:[];
       ensureStableIds();
