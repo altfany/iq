@@ -7560,6 +7560,7 @@ function updateCloudStatus(text, color) {
         const root=document.createElement('div');
         root.id='mobileStudentResultPrint';
         root.innerHTML=`<style>
+#mobileStudentResultPrint .preview-toolbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483648;display:flex;gap:10px;align-items:center;background:rgba(18,40,61,.96);padding:8px 12px;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.22);direction:rtl}#mobileStudentResultPrint .preview-toolbar button{border:0;border-radius:10px;padding:10px 18px;font-family:Tahoma,Arial,sans-serif;font-weight:900;font-size:14px;cursor:pointer;color:#fff}#mobileStudentResultPrint .preview-print-btn{background:#198754}#mobileStudentResultPrint .preview-close-btn{background:#dc3545}#mobileStudentResultPrint .preview-toolbar span{color:#fff;font-size:13px;font-weight:800;white-space:nowrap}
 @page{size:A4 portrait;margin:0}
 #mobileStudentResultPrint{position:fixed;inset:0;z-index:2147483647;background:#fff;overflow:auto;direction:rtl}
 #mobileStudentResultPrint .print-sheet{position:relative;width:210mm;height:297mm;min-height:297mm;box-sizing:border-box;overflow:hidden;background:#fff;margin:0 auto;color:#16283d;font-family:Tahoma,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -7579,16 +7580,34 @@ function updateCloudStatus(text, color) {
 #mobileStudentResultPrint th,#mobileStudentResultPrint td{border-left:1px solid rgba(21,95,160,.22);border-bottom:1px solid rgba(21,95,160,.22);padding:10px;text-align:center}#mobileStudentResultPrint th{font-weight:900;background:rgba(19,91,145,.93);color:#fff}#mobileStudentResultPrint td{background:rgba(255,255,255,.82)}#mobileStudentResultPrint tr:last-child td{border-bottom:0}#mobileStudentResultPrint th:last-child,#mobileStudentResultPrint td:last-child{border-left:0}
 #mobileStudentResultPrint .print-manager-bottom{text-align:center;margin-top:6px;font-size:14px;color:#183b59;font-weight:900}
 #mobileStudentResultPrint .print-footer{display:flex;flex-direction:row;gap:30px;margin-top:auto;align-items:end;padding:0 8px;direction:ltr;break-inside:avoid}#mobileStudentResultPrint .footer-side{width:50%;min-height:35mm;box-sizing:border-box;text-align:center;color:#183b59;background:transparent;border:0;padding:4px}#mobileStudentResultPrint .footer-title{font-weight:900;font-size:14px;color:#0e4777;margin-bottom:10px}#mobileStudentResultPrint .footer-sign-line{height:23mm;border-bottom:2px dotted #52697c;margin:0 18px 5px}#mobileStudentResultPrint .footer-caption{font-size:11px;color:#607487}#mobileStudentResultPrint .stamp-area{height:27mm;margin:0 22px}#mobileStudentResultPrint .note{margin-top:8px;text-align:center;font-size:11px;color:#536b80}
-@media print{html,body{width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}body>*:not(#mobileStudentResultPrint){display:none!important}#mobileStudentResultPrint{position:static!important;display:block!important;overflow:visible!important;background:#fff!important}#mobileStudentResultPrint .print-sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important}.print-footer{break-inside:avoid}}
-</style><div class="print-sheet ${genderClass}"><img class="watermark" src="https://raw.githubusercontent.com/madrasati-system/School/refs/heads/main/%D8%AE%D9%84%D9%81%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B4%D9%87%D8%A7%D8%AF%D8%A9%20.png" alt=""><div class="page-content"><div class="school">✦ ${escapeGlobalSearchHTML(schoolName)} ✦</div><div class="title">${escapeGlobalSearchHTML(resultLabel)}</div><div class="period"><span>${escapeGlobalSearchHTML(periodText)}</span>${studyYearText?`<span class="study-year">${escapeGlobalSearchHTML(studyYearText.replace('السنة الدراسية:','السنة الدراسية: من').replace(' - ',' إلى '))}</span>`:''}</div><div class="meta"><span><b>الطالب:</b> ${escapeGlobalSearchHTML(student.name)}</span><span><b>الصف:</b> ${escapeGlobalSearchHTML(cls.name||'')}</span></div><table><thead><tr><th>الدرس</th><th>الدرجة</th><th>نوع النتيجة</th><th>التاريخ / الفترة</th></tr></thead><tbody>${rows}</tbody></table><div class="print-manager-bottom"><b>اسم المدير:</b> ${escapeGlobalSearchHTML(managerName)}</div><div class="print-footer"><div class="footer-side stamp-side"><div class="footer-title">ختم المدير</div><div class="stamp-area"></div></div><div class="footer-side signature-side"><div class="footer-title">توقيع المدير</div><div class="footer-sign-line"></div><div class="footer-caption">التوقيع</div></div></div><div class="note">كشف رسمي لنتيجة الطالب</div></div></div>`;
+@media print{html,body{width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}body>*:not(#mobileStudentResultPrint){display:none!important}#mobileStudentResultPrint .preview-toolbar{display:none!important}#mobileStudentResultPrint{position:static!important;display:block!important;overflow:visible!important;background:#fff!important}#mobileStudentResultPrint .print-sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important}.print-footer{break-inside:avoid}}
+</style><div class="preview-toolbar"><span>معاينة النتيجة</span><button type="button" class="preview-print-btn" onclick="printStudentResultPreview()">🖨️ طباعة</button><button type="button" class="preview-close-btn" onclick="closeStudentResultPreview()">✕ إغلاق</button></div><div class="print-sheet ${genderClass}"><img class="watermark" src="https://raw.githubusercontent.com/madrasati-system/School/refs/heads/main/%D8%AE%D9%84%D9%81%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B4%D9%87%D8%A7%D8%AF%D8%A9%20.png" alt=""><div class="page-content"><div class="school">✦ ${escapeGlobalSearchHTML(schoolName)} ✦</div><div class="title">${escapeGlobalSearchHTML(resultLabel)}</div><div class="period"><span>${escapeGlobalSearchHTML(periodText)}</span>${studyYearText?`<span class="study-year">${escapeGlobalSearchHTML(studyYearText.replace('السنة الدراسية:','السنة الدراسية: من').replace(' - ',' إلى '))}</span>`:''}</div><div class="meta"><span><b>الطالب:</b> ${escapeGlobalSearchHTML(student.name)}</span><span><b>الصف:</b> ${escapeGlobalSearchHTML(cls.name||'')}</span></div><table><thead><tr><th>الدرس</th><th>الدرجة</th><th>نوع النتيجة</th><th>التاريخ / الفترة</th></tr></thead><tbody>${rows}</tbody></table><div class="print-manager-bottom"><b>اسم المدير:</b> ${escapeGlobalSearchHTML(managerName)}</div><div class="print-footer"><div class="footer-side stamp-side"><div class="footer-title">ختم المدير</div><div class="stamp-area"></div></div><div class="footer-side signature-side"><div class="footer-title">توقيع المدير</div><div class="footer-sign-line"></div><div class="footer-caption">التوقيع</div></div></div><div class="note">كشف رسمي لنتيجة الطالب</div></div></div>`;
         document.body.appendChild(root);
         closeModal('studentResultPrintModal');
-        const restore=()=>{try{root.remove();document.documentElement.classList.remove('printingStudentResult');document.body.style.overflow='';}catch(e){}};
-        window.addEventListener('afterprint',restore,{once:true});
-        document.documentElement.classList.add('printingStudentResult');
         document.body.style.overflow='hidden';
-        // Allow the watermark and print layout to render before invoking the native print dialog.
-        setTimeout(()=>{try{window.print();}catch(e){restore();alert('تعذر فتح نافذة الطباعة على هذا الجهاز.');}},700);
+        window.__studentResultPreviewRoot = root;
+        window.scrollTo(0,0);
+    }
+
+    function closeStudentResultPreview(){
+        const root=document.getElementById('mobileStudentResultPrint');
+        if(root) root.remove();
+        window.__studentResultPreviewRoot=null;
+        document.documentElement.classList.remove('printingStudentResult');
+        document.body.style.overflow='';
+    }
+
+    function printStudentResultPreview(){
+        const root=document.getElementById('mobileStudentResultPrint');
+        if(!root){alert('لا توجد معاينة جاهزة للطباعة.');return;}
+        document.documentElement.classList.add('printingStudentResult');
+        const finish=()=>{
+            document.documentElement.classList.remove('printingStudentResult');
+            window.removeEventListener('afterprint',finish);
+            document.body.style.overflow='hidden';
+        };
+        window.addEventListener('afterprint',finish);
+        setTimeout(()=>{try{window.print();}catch(e){finish();alert('تعذر فتح نافذة الطباعة على هذا الجهاز.');}},120);
     }
 
     function renderStudentsTable() {
