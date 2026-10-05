@@ -9145,32 +9145,26 @@ function updateCloudStatus(text, color) {
         });
 
         // تحديث جرد المراقب فوراً في الذاكرة حتى يظهر التغيير دون خروج/دخول.
+        // بعض التقارير القديمة تستخدم students وبعضها absentStudents، لذلك نحدّث القائمتين.
         (monitorInventoryReportsData||[]).forEach(report=>{
-            if(String(report.date)!==String(date) || String(report.classId||'')!==String(found.classObj.id||'')) return;
-            if(!Array.isArray(report.absentStudents)) report.absentStudents=[];
-            let item=report.absentStudents.find(x=>
-                (sid && String(x.studentId||'')===sid) ||
-                String(x.studentId||'')===String(found.studentId) ||
-                String(x.name||'')===String(found.name)
-            );
-            if(normalized==='present'){
-                report.absentStudents=report.absentStudents.filter(x=>
-                    String(x.studentId||'')!==String(found.studentId) && String(x.name||'')!==String(found.name)
-                );
-            }else{
-                if(!item){
-                    item={studentId:found.studentId,name:found.name};
-                    report.absentStudents.push(item);
+            if(String(report.date)!==String(date)) return;
+            const sameClass = !report.classId || String(report.classId)===String(found.classObj.id||'') || String(report.className||'')===String(found.classObj.name||'');
+            if(!sameClass) return;
+            const lists=[];
+            if(Array.isArray(report.students)) lists.push(report.students);
+            if(Array.isArray(report.absentStudents)) lists.push(report.absentStudents);
+            if(!lists.length){ report.students=[]; report.absentStudents=[]; lists.push(report.students,report.absentStudents); }
+            lists.forEach(list=>{
+                let item=list.find(x=>(sid && String(x.studentId||'')===sid) || String(x.studentId||'')===String(found.studentId) || String(x.name||'')===String(found.name));
+                if(normalized==='present'){
+                    for(let i=list.length-1;i>=0;i--){ const x=list[i]; if(String(x.studentId||'')===String(found.studentId) || String(x.name||'')===String(found.name)) list.splice(i,1); }
+                }else{
+                    if(!item){ item={studentId:found.studentId,name:found.name}; list.push(item); }
+                    item.studentId=found.studentId; item.name=found.name; item.status=normalized;
+                    item.changedBy=currentUser?.isAssistant ? 'المعاون' : 'المدير'; item.changedByName=actorName(); item.changedAt=changedAt;
+                    if(normalized==='leave') item.changeText=`تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`; else delete item.changeText;
                 }
-                item.studentId=found.studentId;
-                item.name=found.name;
-                item.status=normalized;
-                item.changedBy=currentUser?.isAssistant ? 'المعاون' : 'المدير';
-                item.changedByName=actorName();
-                item.changedAt=changedAt;
-                if(normalized==='leave') item.changeText=`تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`;
-                else delete item.changeText;
-            }
+            });
         });
 
         if(normalized==='leave') addAudit('تغيير حالة الغياب إلى مجاز',`${found.name} - ${date} - تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`);
