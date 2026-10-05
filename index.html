@@ -3160,11 +3160,12 @@ function getStudentById(studentId) {
     for (let di=0; di<(cls.desks||[]).length; di++) {
       const desk=cls.desks[di];
       for (const slot of [1,2]) {
-        const storedStudentId=String(desk?.['student'+slot+'Id']||desk?.id||`${ci}_${di}_${slot}`);
+        const explicitStudentId=String(desk?.['student'+slot+'Id']||'').trim();
+        const storedStudentId=explicitStudentId || String(desk?.id||`${ci}_${di}_${slot}`);
         if (storedStudentId !== String(studentId)) continue;
         const name=String(desk['student'+slot]||'').trim();
         if(!name) return null;
-        return {student:{id:desk['student'+slot+'Id'],name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
+        return {student:{id:storedStudentId,name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
       }
     }
   }
@@ -9047,6 +9048,20 @@ function updateCloudStatus(text, color) {
                 statusByDate[String(r.date)] = r.status==='leave' ? 'leave' : r.status==='absent' ? 'absent' : r.status==='late' ? 'late' : 'present';
             });
 
+            // جرد المراقب: نستخدمه أيضاً كمصدر حتى تظهر «متأخر» ووقت الدخول وسبب التأخير
+            // حتى لو كان السجل الاحترافي القديم غير موجود في بيانات الطالب.
+            (monitorInventoryReportsData||[]).forEach(report=>{
+                if(String(report.date||'').slice(0,7)!==month) return;
+                const list=Array.isArray(report.students)?report.students:(Array.isArray(report.absentStudents)?report.absentStudents:[]);
+                list.forEach(item=>{
+                    const sameId=String(item?.studentId||'')===String(found.studentId);
+                    const sameName=String(item?.name||'').trim()===String(found.name).trim();
+                    if(!sameId && !sameName) return;
+                    const st=item?.status;
+                    if(['absent','leave','late'].includes(st)) statusByDate[String(report.date)] = st;
+                });
+            });
+
             // سجل «الحضور والغياب» القديم، ويكون له أولوية إذا كان يحتوي على مجاز/غياب.
             const records=found.classObj?.absenceRecords||{};
             const deskNo=Number(found.deskIndex)+1;
@@ -9170,7 +9185,21 @@ function updateCloudStatus(text, color) {
             });
         });
 
-        if(normalized==='leave') addAudit('تغيير حالة الغياب إلى مجاز',`${found.name} - ${date} - تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`);
+        // ضمان وجود سجل في تقرير اليوم حتى لو كان التقرير قديماً ولا يحتوي students.
+        const matchingReports=(monitorInventoryReportsData||[]).filter(r=>String(r.date)===String(date));
+        matchingReports.forEach(report=>{
+            if(String(report.classId||'')!==String(found.classObj.id||'') && String(report.className||'')!==String(found.classObj.name||'')) return;
+            if(!Array.isArray(report.students)) report.students=[];
+            let item=report.students.find(x=>String(x.studentId||'')===String(found.studentId)||String(x.name||'')===String(found.name));
+            if(!item){ item={studentId:found.studentId,name:found.name}; report.students.push(item); }
+            item.studentId=found.studentId; item.name=found.name; item.status=normalized; item.date=date;
+            item.changedBy=currentUser?.isAssistant ? 'المعاون' : 'المدير';
+            item.changedByName=actorName(); item.changedAt=changedAt;
+            if(normalized==='leave') item.changeText=`تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`;
+            else delete item.changeText;
+        });
+
+        if(normalized==='leave') addAudit('تغيير حالة الغياب إلى مجاز',`${found.name} - ${date} - تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`);
         saveData();
 
         // تحديث الواجهة فوراً داخل نفس الجلسة.
