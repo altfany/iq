@@ -8573,7 +8573,7 @@ function updateCloudStatus(text, color) {
                 const lateTime=String(sel.dataset.lateTime||'').trim();
                 const lateReason=String(sel.dataset.lateReason||'').trim();
                 const note=status==='late' ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
-                const saved = window.ProfessionalModules?.recordAttendance ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note) : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note) : false);
+                const saved = window.ProfessionalModules?.recordAttendance ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : false);
                 // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور والغياب» في كارت الصف.
                 if (student.classObj) {
                     if (!student.classObj.absenceRecords) student.classObj.absenceRecords = {};
@@ -8591,7 +8591,7 @@ function updateCloudStatus(text, color) {
                     }
                 }
                 if(status==='absent') absent.push({studentId:student.student.id,name:student.student.name,status:'absent'});
-                reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:''});
+                reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',date});
             });
             const report={
                 id:createStableId('minv'),
@@ -9064,7 +9064,10 @@ function updateCloudStatus(text, color) {
             });
 
             Object.entries(statusByDate).forEach(([date,status])=>{
-                rows.push({name:found.name,className:found.classObj?.name||'-',date,status,studentId:found.studentId,found});
+                const pro= (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(found.studentId)&&String(r.date)===String(date));
+                rows.push({name:found.name,className:found.classObj?.name||'-',date,status,studentId:found.studentId,found,
+                    lateTime:pro?.lateTime||'', lateReason:pro?.lateReason||'', note:pro?.note||'',
+                    changedBy:pro?.changedBy||'', changedAt:pro?.changedAt||pro?.updatedAt||''});
             });
         });
         return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
@@ -9215,9 +9218,11 @@ function updateCloudStatus(text, color) {
                 <div style="font-size:15px;font-weight:900;color:var(--danger);margin-bottom:8px">عدد أيام الغياب الفعلية: ${absentCount}</div>
                 ${rows.length
                   ? `<div style="font-size:12px;color:#667;margin-bottom:8px">الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</div>
-                     <div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة الحالية</th><th>تغيير الحالة للمدير</th></tr></thead><tbody>${rows.map(x=>`<tr>
+                     <div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>وقت الدخول</th><th>سبب التأخير</th><th>تغيير الحالة</th></tr></thead><tbody>${rows.map(x=>`<tr>
                         <td>${escapeGlobalSearchHTML(x.date)}</td>
                         <td><strong style="color:${statusColor(x.status)}">${statusText(x.status)}</strong></td>
+                        <td>${x.status==='late'?escapeGlobalSearchHTML(x.lateTime||'-'):'-'}</td>
+                        <td>${x.status==='late'?escapeGlobalSearchHTML(x.lateReason||x.note||'-'):'-'}</td>
                         <td><select onchange="window.updateDailyInventoryStudentStatus('${String(x.studentId||'').replace(/'/g,"\\'")}','${x.date}',this.value,'${String(x.name||'').replace(/'/g,"\\'")}')" style="padding:7px 10px;border-radius:8px;font-weight:700;min-width:125px">
                             <option value="absent" ${x.status==='absent'?'selected':''}>غائب ❌</option>
                             <option value="leave" ${x.status==='leave'?'selected':''}>مجاز 🏖️</option>
@@ -9463,8 +9468,8 @@ window.addEventListener('unhandledrejection', function (event) {
     return attendanceData.filter(x=>x.studentId===studentId);
   }
 
-  function recordAttendance(studentId,status,date,note=''){
-    // المراقب مسموح له فقط بحاضر/غائب؛ خيار مجاز يبقى للمدير فقط.
+  function recordAttendance(studentId,status,date,note='',lateTime='',lateReason=''){
+    // المراقب مسموح له فقط بحاضر/غائب/متأخر؛ خيار مجاز يبقى للمدير فقط.
     if(currentUser?.role==='monitor' && !['present','absent','late'].includes(status)) return false;
     const found=findStudent(studentId);
     if(!found) return false;
@@ -9477,6 +9482,8 @@ window.addEventListener('unhandledrejection', function (event) {
       date:day,
       status:status==='late'?'late':status==='absent'?'absent':status==='leave'?'leave':'present',
       note:String(note||'').trim(),
+      lateTime:status==='late' ? String(lateTime||existing?.lateTime||'').trim() : '',
+      lateReason:status==='late' ? String(lateReason||existing?.lateReason||'').trim() : '',
       createdAt:existing?.createdAt||new Date().toISOString(),
       updatedAt:new Date().toISOString()
     };
