@@ -3625,6 +3625,18 @@ function updateCloudStatus(text, color) {
         if (cloud.subjectsData !== undefined) subjectsData = Array.isArray(cloud.subjectsData) ? cloud.subjectsData : [];
         if (cloud.adminCode !== undefined && String(cloud.adminCode).trim()) adminCredentials.password = String(cloud.adminCode).trim();
         if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
+        // بيانات الطباعة يجب أن تُستعاد من Firebase عند كل تشغيل للنظام.
+        if (cloud.printManagerName !== undefined) printManagerName = String(cloud.printManagerName || '').trim();
+        if (cloud.printSchoolName !== undefined) printSchoolName = String(cloud.printSchoolName || '').trim();
+        if (cloud.printAcademicYearFrom !== undefined) printAcademicYearFrom = String(cloud.printAcademicYearFrom || '').trim();
+        if (cloud.printAcademicYearTo !== undefined) printAcademicYearTo = String(cloud.printAcademicYearTo || '').trim();
+        if (cloud.printAcademicYear !== undefined) printAcademicYear = String(cloud.printAcademicYear || '').trim();
+        if ((!printAcademicYearFrom || !printAcademicYearTo) && /^\d{4}\s*-\s*\d{4}$/.test(printAcademicYear)) {
+            [printAcademicYearFrom, printAcademicYearTo] = printAcademicYear.split(/\s*-\s*/);
+        }
+        if (!printAcademicYear && printAcademicYearFrom && printAcademicYearTo) {
+            printAcademicYear = printAcademicYearFrom + ' - ' + printAcademicYearTo;
+        }
         if (cloud.assistantsData !== undefined) assistantsData = Array.isArray(cloud.assistantsData) ? cloud.assistantsData : [];
                 if (cloud.managerNotesData !== undefined) managerNotesData = Array.isArray(cloud.managerNotesData) ? cloud.managerNotesData : [];
                 if (cloud.assistantActionNotificationsData !== undefined) assistantActionNotificationsData = Array.isArray(cloud.assistantActionNotificationsData) ? cloud.assistantActionNotificationsData : [];
@@ -3645,6 +3657,11 @@ function updateCloudStatus(text, color) {
             cloudOnlyStorage.setItem('homeworkData', JSON.stringify(homeworkData));
             cloudOnlyStorage.setItem('subjectsData', JSON.stringify(subjectsData));
             cloudOnlyStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
+            cloudOnlyStorage.setItem('printManagerName', JSON.stringify(printManagerName));
+            cloudOnlyStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
+            cloudOnlyStorage.setItem('printAcademicYear', JSON.stringify(printAcademicYear));
+            cloudOnlyStorage.setItem('printAcademicYearFrom', JSON.stringify(printAcademicYearFrom));
+            cloudOnlyStorage.setItem('printAcademicYearTo', JSON.stringify(printAcademicYearTo));
             cloudOnlyStorage.setItem('assistantsData', JSON.stringify(assistantsData));
             cloudOnlyStorage.setItem('monitorsData', JSON.stringify(monitorsData));
             cloudOnlyStorage.setItem('monitorNotesData', JSON.stringify(monitorNotesData));
