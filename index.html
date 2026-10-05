@@ -4248,11 +4248,33 @@ function updateCloudStatus(text, color) {
         }
     },30000);
 
-    function logoutSystem() {
+    async function logoutSystem() {
+        // إذا كان المستخدم مراقباً، أغلق مركز المراقب فوراً حتى لا تبقى الواجهة
+        // ظاهرة بعد تسجيل الخروج، ثم ألغِ أي جلسة/لوحة مفتوحة مرتبطة بالمستخدم.
+        const monitorModal = document.getElementById('monitorCenterModal');
+        if (monitorModal) monitorModal.remove();
+        const parentPortal = document.getElementById('parentPortalModal');
+        if (parentPortal) parentPortal.remove();
+
+        // أي تعديل سابق يجب أن يصل إلى Firebase قبل إنهاء الجلسة.
+        try {
+            if (currentUser && typeof saveData === 'function' && navigator.onLine) {
+                saveData();
+                if (window.FirebaseCloud?.enabled && cloudReady && typeof saveCurrentCloudPayload === 'function') {
+                    clearTimeout(cloudSaveTimer);
+                    await saveCurrentCloudPayload();
+                }
+            }
+        } catch (e) {
+            console.error('Logout cloud save failed:', e);
+        }
+
         cloudOnlyStorage.removeItem('currentUser');
         currentUser = null;
-        document.getElementById('loginCodeInput').value = '';
-        document.getElementById('loginOverlay').style.display = 'flex';
+        const codeInput = document.getElementById('loginCodeInput');
+        if (codeInput) codeInput.value = '';
+        const overlay = document.getElementById('loginOverlay');
+        if (overlay) overlay.style.display = 'flex';
         toggleLoginFields();
     }
 
@@ -8509,7 +8531,7 @@ function updateCloudStatus(text, color) {
         document.body.appendChild(modal);
     }
     function refreshMonitorCenter(){ renderMonitorSelectedClass(); }
-    function saveMonitorAttendance(){
+    async function saveMonitorAttendance(){
         if(!currentUser||currentUser.role!=='monitor')return;
         try{
             const select=document.getElementById('monitorClassSelect');
@@ -8558,7 +8580,22 @@ function updateCloudStatus(text, color) {
             const same=monitorInventoryReportsData.findIndex(r=>String(r.monitorId)===String(report.monitorId)&&String(r.classId)===String(report.classId)&&String(r.date)===String(report.date));
             if(same>=0) monitorInventoryReportsData[same]=report; else monitorInventoryReportsData.unshift(report);
             if(monitorInventoryReportsData.length>500)monitorInventoryReportsData.length=500;
+            // الحفظ الأساسي يكون في Firebase مباشرة، ولا نعتمد على مهلة الحفظ المؤجلة.
+            // هذا يضمن بقاء غياب الطالب عند تسجيل الخروج ثم الدخول من جديد.
             saveData();
+            if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
+                try {
+                    await saveCurrentCloudPayload();
+                    lastAppliedCloudUpdatedAt = String(new Date().toISOString());
+                    cloudSavePending = false;
+                    cloudSaveExpectedRevision = '';
+                    updateCloudStatus('تم حفظ جرد المراقب في Firebase ✓', '#16803c');
+                } catch (cloudError) {
+                    console.error('Monitor attendance Firebase save failed:', cloudError);
+                    alert('⚠️ تم تحديث الحضور على الشاشة، لكن تعذر تأكيد الحفظ في Firebase. تحقق من الإنترنت ثم حاول مرة أخرى.');
+                    return;
+                }
+            }
             alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
         }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
