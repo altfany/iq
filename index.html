@@ -852,6 +852,12 @@ button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, in
   #professionalQuickMenu .pq-items button { min-width: min(230px, calc(100vw - 30px)); }
 }
 </style>
+<style id="notes-button-layout-only">
+#professionalQuickMenu #dev5QuickButtons{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px !important;align-items:stretch !important;}
+#professionalQuickMenu #dev5QuickButtons button{display:flex !important;align-items:center !important;gap:10px !important;min-width:0 !important;}
+#professionalQuickMenu #dev5QuickButtons .dev5-btn-title{flex:1;}
+@media(max-width:560px){#professionalQuickMenu #dev5QuickButtons{grid-template-columns:1fr !important;width:min(420px,calc(100vw - 28px)) !important;} }
+</style>
 <style id="professional-quick-menu-css">
 #professionalQuickMenu{
  position:fixed;left:16px;bottom:16px;z-index:99990;
@@ -11136,7 +11142,7 @@ function openDev5Performance(){
   d5open('🏫 نظام المدرسة الشامل',html,'dev5PerformanceModal');
 }
 window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
-const pq=document.querySelector('#professionalQuickMenu .pq-items');if(pq&&!document.getElementById('dev5QuickButtons')){const wrap=document.createElement('div');wrap.id='dev5QuickButtons';wrap.innerHTML='<button type="button" onclick="Dev5.performance()"><span class="dev5-btn-icon">🏫</span><span class="dev5-btn-title">نظام المدرسة الشامل</span><span class="dev5-btn-arrow">←</span></button>';pq.insertBefore(wrap,pq.firstChild);}
+const pq=document.querySelector('#professionalQuickMenu .pq-items');if(pq&&!document.getElementById('dev5QuickButtons')){const wrap=document.createElement('div');wrap.id='dev5QuickButtons';wrap.innerHTML='<button type="button" onclick="Dev5.performance()"><span class="dev5-btn-icon">🏫</span><span class="dev5-btn-title">نظام المدرسة الشامل</span><span class="dev5-btn-arrow">←</span></button><button type="button" onclick="openModal('managerNotesModal')"><span class="dev5-btn-icon">🗒️</span><span class="dev5-btn-title">ملاحظات</span><span class="dev5-btn-arrow">←</span></button>';pq.insertBefore(wrap,pq.firstChild);}
 window.addEventListener('load',()=>{rebuildD5Index();setTimeout(()=>{try{console.info('Development 5 modules ready:',dev5StudentIndex.length,'students')}catch(e){}},300);});
 })();
 </script>
@@ -11196,6 +11202,14 @@ body.parent-only-mode header { display:none !important; }
   </div>
 </div>
 </body>
+
+<style id="notes-button-final-layout">
+/* زر ملاحظات: تنسيق ومكان فقط، دون تغيير وظائف الأزرار */
+#professionalQuickMenu #dev5QuickButtons{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px !important;width:min(840px,calc(100vw - 28px)) !important;}
+#professionalQuickMenu #dev5QuickButtons button{display:flex !important;align-items:center !important;gap:10px !important;min-width:0 !important;}
+#professionalQuickMenu #dev5QuickButtons .dev5-btn-title{flex:1 !important;}
+@media(max-width:560px){#professionalQuickMenu #dev5QuickButtons{grid-template-columns:1fr !important;width:min(420px,calc(100vw - 28px)) !important;}}
+</style>
 </html>
 
 
