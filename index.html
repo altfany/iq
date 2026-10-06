@@ -6123,14 +6123,59 @@ function updateCloudStatus(text, color) {
         const internalKeys=new Set(['student'+slotN,'code'+slotN,'gender'+slotN,'age'+slotN,'birthDate'+slotN,'dateOfBirth'+slotN,'nationalId'+slotN,'phone'+slotN,'parentPhone'+slotN,'fatherPhone'+slotN,'motherPhone'+slotN,'address'+slotN,'student'+slotN+'Id','separated'+slotN,'separationReason'+slotN,'separatedAt'+slotN,'separatedBy'+slotN,'photo'+slotN,'photoData'+slotN,'image'+slotN,'imageData'+slotN]);
         const labels={notes:'ملاحظات الطالب',note:'ملاحظة الطالب',level:'المستوى',gradeLevel:'المستوى الدراسي',fatherPhone:'هاتف الأب',motherPhone:'هاتف الأم',parentPhone:'هاتف ولي الأمر'};
         const extras=Object.keys(student).filter(k=>k.endsWith(slotN)&&!internalKeys.has(k)&&student[k]!=null&&typeof student[k]!=='object'&&String(student[k]).trim()!=='').map(k=>{const base=k.slice(0,-slotN.length);return labels[base]?[''+labels[base],student[k]]:null;}).filter(Boolean);
-        const behaviorKey=`${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`;
-        const behavior=r.classObj?.behaviorNotes?.[behaviorKey];
-        const levels=Array.isArray(r.classObj?.studentLevels?.[behaviorKey])?r.classObj.studentLevels[behaviorKey]:[];
-        const behaviorRows=behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join(''):behavior?`<tr><td>السلوك</td><td>${esc(behavior)}</td></tr>`:'<tr><td colspan="2">لا توجد بيانات سلوك.</td></tr>';
-        const levelRows=levels.map(x=>`<tr><td>${esc(x.lesson||x.subject||'المادة')}</td><td>${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</td></tr>`).join('')||'<tr><td colspan="2">لا يوجد مستوى مسجل.</td></tr>';
+        // استخدم نفس مفاتيح البحث الموجودة في شاشة سجل الطالب، مع دعم السجلات القديمة والجديدة.
+        // هذا يمنع ظهور الخانات فارغة في الطباعة عندما تكون البيانات محفوظة بمفتاح قديم أو بمعرّف مختلف.
+        const behaviorMaps=r.classObj?.behaviorNotes&&typeof r.classObj.behaviorNotes==='object'?r.classObj.behaviorNotes:{};
+        const behaviorCandidates=[];
+        const normalizedStudentName=String(r.name||'').trim().toLocaleLowerCase('ar');
+        Object.entries(behaviorMaps).forEach(([key,val])=>{
+            const k=String(key||'').toLocaleLowerCase('ar');
+            if(k.includes(normalizedStudentName) && (k.includes(String(r.deskNumber||'').toLocaleLowerCase('ar')) || k.includes(String(r.deskIndex+1)))) behaviorCandidates.push(val);
+        });
+        const directBehaviorKey=`${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`;
+        if(behaviorMaps[directBehaviorKey]!==undefined) behaviorCandidates.unshift(behaviorMaps[directBehaviorKey]);
+        const behaviorSeen=new Set(), behaviorRowsList=[];
+        behaviorCandidates.forEach(value=>{
+            if(value&&typeof value==='object'&&!Array.isArray(value)) Object.entries(value).forEach(([k,v])=>{
+                const sig=String(k)+'|'+String(v); if(!behaviorSeen.has(sig)&&String(v||'').trim()){behaviorSeen.add(sig);behaviorRowsList.push([k,v]);}
+            });
+            else if(value!=null&&String(value).trim()){const sig='السلوك|'+String(value);if(!behaviorSeen.has(sig)){behaviorSeen.add(sig);behaviorRowsList.push(['السلوك',value]);}}
+        });
+        const behaviorRows=behaviorRowsList.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد بيانات سلوك.</td></tr>';
+        const levels=typeof getSearchedStudentLevels==='function' ? getSearchedStudentLevels(r.classObj,r) : [];
+        const levelRows=levels.map(x=>{
+            const n=Number(x.level); const stars=Number.isFinite(n)&&n>0?'⭐'.repeat(Math.max(1,Math.min(5,n))):esc(x.level||'غير محدد');
+            return `<tr><td>${esc(x.lesson||x.subject||x.lessonName||'المادة')}</td><td>${stars}</td></tr>`;
+        }).join('')||'<tr><td colspan="2">لا يوجد مستوى مسجل.</td></tr>';
+
         const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
         const studentId=String(r.studentId||student.id||'');
-        const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات غياب أو حضور.</td></tr>';
+        const studentNameForAttendance=String(r.name||'').trim();
+        const attendanceMap=new Map();
+        // السجل الاحترافي: بالمُعرّف أولاً، ثم بالاسم/الصف كحل توافق للسجلات القديمة.
+        att.forEach(a=>{
+            const idMatch=studentId && String(a?.studentId||'')===studentId;
+            const nameMatch=String(a?.studentName||'').trim()===studentNameForAttendance && (!a?.classId || String(a.classId)===String(r.classObj?.id||''));
+            if((idMatch||nameMatch)&&a?.date){attendanceMap.set(String(a.date),a);}
+        });
+        // سجل «الحضور والغياب» القديم: نفس المفتاح الذي تستخدمه الشاشة، مع دعم studentId.
+        const oldRecords=r.classObj?.absenceRecords&&typeof r.classObj.absenceRecords==='object'?r.classObj.absenceRecords:{};
+        const oldKeys=[
+            `${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`,
+            `${r.deskNumber}_${r.seat}_${r.name}`,
+            `${Number(r.deskIndex)+1}_${r.slot===1?'يمين':'يسار'}_${r.name}`,
+            String(studentId)
+        ];
+        Object.entries(oldRecords).forEach(([date,day])=>{
+            if(!day||typeof day!=='object')return;
+            let raw;
+            for(const k of oldKeys){if(Object.prototype.hasOwnProperty.call(day,k)){raw=day[k];break;}}
+            if(raw===undefined)return;
+            const status=raw===true?'absent':(['absent','leave','late','present'].includes(String(raw))?String(raw):null);
+            if(status) attendanceMap.set(String(date),{date:String(date),status});
+        });
+        const statusLabel=a=>a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر';
+        const attRows=Array.from(attendanceMap.values()).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${esc(statusLabel(a))}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات غياب أو حضور.</td></tr>';
         const photo=student.photoData||student.photo||student.imageData||student.image||'';
         const win=window.open('','_blank','width=900,height=1100');
         if(!win){alert('تعذر فتح صفحة الطباعة. اسمح بالنوافذ المنبثقة للمتصفح.');return;}
