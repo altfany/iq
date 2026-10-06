@@ -1965,6 +1965,18 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
   #professionalQuickMenu .pq-main{width:55px !important;height:55px !important;border-radius:18px !important}
 }
 </style>
+<style id="dev5-clickable-results-css">
+.dev5-clickable-results{gap:12px;}
+.dev5-result-button{border:1px solid #dce4ec!important;border-radius:14px!important;background:#fff!important;color:#17202a!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;min-height:125px!important;cursor:pointer!important;transition:.18s!important;box-shadow:0 5px 14px rgba(0,0,0,.05)!important;}
+.dev5-result-button:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(0,0,0,.10)!important;}
+.dev5-result-button strong{font-size:34px;line-height:1;font-weight:1000;}
+.dev5-result-button b{font-size:15px;}
+.dev5-result-button em{font-size:11px;color:#667085;font-style:normal;text-align:center;}
+.dev5-result-button.top strong{color:#d89b00}.dev5-result-button.weak strong,.dev5-result-button.bad strong{color:#d64545}.dev5-result-button.good strong{color:#16a085}
+.dev5-detail-head{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:14px 4px 18px;border-bottom:1px solid #e7edf3;margin-bottom:14px}.dev5-detail-head h3{margin:4px 0 0;font-size:20px}.dev5-detail-kicker{font-size:12px;color:#667085}.dev5-detail-total{width:72px;height:72px;border-radius:18px;background:#f3f7fb;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:28px;font-weight:1000}.dev5-detail-total small{font-size:10px;color:#667085}.dev5-detail-class{border:1px solid #e1e7ee;border-radius:14px;margin:10px 0;overflow:hidden;background:#fff}.dev5-detail-class-title{padding:12px 14px;background:#f5f8fb;font-weight:1000;display:flex;justify-content:space-between;gap:10px}.dev5-detail-class-title span{font-size:11px;color:#667085;background:#fff;padding:4px 8px;border-radius:10px}.dev5-detail-students{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;padding:10px}.dev5-detail-student{padding:10px;border:1px solid #edf0f3;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:4px}.dev5-detail-student b{font-size:14px}.dev5-detail-student small{font-size:11px;color:#667085}.dev5-empty-detail{text-align:center;padding:30px;color:#667085;font-weight:800}
+@media(max-width:650px){.dev5-result-button{min-height:110px}.dev5-result-button strong{font-size:29px}.dev5-detail-students{grid-template-columns:1fr}}
+</style>
+
 
 
 <style id="global-search-medium-fix">
@@ -10755,6 +10767,54 @@ function openDev5StudentGrades(id){const st=d5studentById(id);if(!st)return;cons
 function openDev5StudentReport(id){const st=d5studentById(id);if(!st)return;const c=schoolData[st.classIndex];const grades=ensureStudentGrades(c).filter(g=>String(g.studentKey)===String(st.key));const att=(ProfessionalModules?.attendanceData||[]).filter(r=>String(r.studentId)===String(st.id));const w=window.open('','_blank','width=900,height=800');if(!w)return;w.document.write('<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير طالب</title><style>body{font-family:Arial;padding:25px}table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #bbb;padding:7px;text-align:center}th{background:#eee}</style></head><body><h2>تقرير الطالب: '+d5esc(st.name)+'</h2><p>الصف: '+d5esc(st.className)+' — المقعد: '+d5esc(st.deskNumber)+'</p><h3>الدرجات</h3><table><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th></tr>'+grades.map(g=>'<tr><td>'+d5esc(g.subject)+'</td><td>'+d5esc(g.score)+' / '+d5esc(g.maxScore)+'</td><td>'+d5esc(getGradePeriodLabel(g.periodType))+'</td><td>'+d5esc(g.period||'-')+'</td></tr>').join('')+'</table><h3>الحضور</h3><p>حاضر: '+att.filter(r=>r.status==='present').length+' | غائب: '+att.filter(r=>r.status==='absent').length+' | متأخر: '+att.filter(r=>r.status==='late').length+'</p></body></html>');w.document.close();setTimeout(()=>w.print(),300);}
 function openDev5AdminDashboard(){if(!isPrimaryAdminUser())return;rebuildD5Index();const grades=dev5StudentIndex.reduce((n,s)=>n+ensureStudentGrades(schoolData[s.classIndex]).filter(g=>String(g.studentKey)===String(s.key)).length,0);const att=ProfessionalModules?.attendanceData||[];const today=new Date().toISOString().slice(0,10);const present=new Set(att.filter(r=>r.date===today&&r.status==='present').map(r=>String(r.studentId))).size;const absent=new Set(att.filter(r=>r.date===today&&r.status==='absent').map(r=>String(r.studentId))).size;const late=new Set(att.filter(r=>r.date===today&&r.status==='late').map(r=>String(r.studentId))).size;const html='<div class="dev5-grid"><div class="dev5-card dev5-kpi"><div class="dev5-muted">الطلاب</div><div class="dev5-stat">'+dev5StudentIndex.length+'</div></div><div class="dev5-card dev5-kpi"><div class="dev5-muted">الصفوف</div><div class="dev5-stat">'+(schoolData||[]).length+'</div></div><div class="dev5-card dev5-kpi"><div class="dev5-muted">المعلمون</div><div class="dev5-stat">'+(teachersData||[]).length+'</div></div><div class="dev5-card"><div class="dev5-muted">درجات مسجلة</div><div class="dev5-stat">'+grades+'</div></div><div class="dev5-card"><div class="dev5-muted">حاضر اليوم</div><div class="dev5-stat">'+present+'</div></div><div class="dev5-card"><div class="dev5-muted">غائب اليوم</div><div class="dev5-stat">'+absent+'</div></div><div class="dev5-card"><div class="dev5-muted">متأخر اليوم</div><div class="dev5-stat">'+late+'</div></div></div><div class="dev5-card" style="margin-top:12px"><h3>⚡ إجراءات سريعة</h3><div class="dev5-actions"><button onclick="window.Dev5.studentSearch()">🔎 البحث عن طالب</button><button onclick="window.Dev5.gradeCenter()">📝 إدخال درجات</button><button onclick="window.Dev5.reports()">📊 التقارير</button></div></div>';d5open('📊 لوحة تحكم الإدارة',html,'dev5DashboardModal');}
 
+function openDev5StudentCategoryDetails(type){
+  if(!currentUser || currentUser.role!=='admin'){ alert('هذه التفاصيل متاحة للمدير فقط.'); return; }
+  const classes=Array.isArray(schoolData)?schoolData:[];
+  const goodSet=new Set(['جيد','جيد جدا','جيد جدًا','ممتاز']);
+  const badSet=new Set(['متوسط','ردئ','رديء']);
+  const groups=[];
+  const titleMap={top:'🏆 الصفوف والطلاب المتفوقون',weak:'⚠️ الصفوف والطلاب غير الجيدين دراسياً',goodBehavior:'😊 الصفوف والطلاب ذوو السلوك الجيد',badBehavior:'⚠️ الصفوف والطلاب ذوو السلوك غير الجيد'};
+  const descMap={top:'الطلاب الذين بلغ متوسط درجاتهم 90% فأعلى.',weak:'الطلاب الذين بلغ متوسط درجاتهم أقل من 50% من الدرجة الكاملة.',goodBehavior:'الطلاب الذين لديهم تقييم سلوكي: جيد، جيد جداً أو ممتاز.',badBehavior:'الطلاب الذين لديهم تقييم سلوكي: متوسط أو ردئ.'};
+  classes.forEach((cls,ci)=>{
+    const studentsInClass=[];
+    const desks=Array.isArray(cls?.desks)?cls.desks:[];
+    desks.forEach((desk,di)=>{
+      [1,2].forEach(slot=>{
+        const name=String(desk?.['student'+slot]||'').trim();
+        if(!name)return;
+        const studentKey=String(desk?.['key'+slot]||desk?.['studentKey'+slot]||name);
+        let qualifies=false, detail='';
+        if(type==='top' || type==='weak'){
+          let items=[];
+          try{
+            const gs=ensureStudentGrades(cls)||[];
+            items=gs.filter(g=>String(g?.studentKey||'')===studentKey || String(g?.studentName||'').trim()===name);
+          }catch(e){}
+          const vals=items.map(g=>{const score=Number(g?.score),max=Number(g?.maxScore);return Number.isFinite(score)&&Number.isFinite(max)&&max>0?score/max:null;}).filter(v=>v!==null);
+          if(vals.length){
+            const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+            qualifies=type==='top'?avg>=0.90:avg<0.50;
+            detail=`متوسط الدرجات: ${Math.round(avg*100)}%`;
+          }
+        }else{
+          const key=`${desk?.deskNumber??(di+1)}_${slot===1?'يمين':'يسار'}_${name}`;
+          const map=cls?.behaviorNotes?.[key];
+          const vals=map&&typeof map==='object'?Object.values(map).map(v=>String(v||'').trim()).filter(Boolean):String(map||'').trim()?[String(map).trim()]:[];
+          const hasBad=vals.some(v=>badSet.has(v)), hasGood=vals.some(v=>goodSet.has(v));
+          qualifies=type==='goodBehavior'?(!hasBad&&hasGood):hasBad;
+          detail=vals.length?`السلوك: ${vals.join('، ')}`:'السلوك غير محدد';
+        }
+        if(qualifies)studentsInClass.push({name,detail});
+      });
+    });
+    if(studentsInClass.length)groups.push({name:String(cls?.name||`الصف ${ci+1}`),students:studentsInClass});
+  });
+  const total=groups.reduce((n,g)=>n+g.students.length,0);
+  const body=groups.length?groups.map(g=>`<div class="dev5-detail-class"><div class="dev5-detail-class-title">🏫 ${d5esc(g.name)} <span>${g.students.length} طالب</span></div><div class="dev5-detail-students">${g.students.map(st=>`<div class="dev5-detail-student"><b>👤 ${d5esc(st.name)}</b><small>${d5esc(st.detail)}</small></div>`).join('')}</div></div>`).join(''):`<div class="dev5-empty-detail">لا توجد نتائج مطابقة حالياً في بيانات النظام.</div>`;
+  const html=`<div class="dev5-detail-head"><div><div class="dev5-detail-kicker">${d5esc(descMap[type]||'')}</div><h3>${d5esc(titleMap[type]||'التفاصيل')}</h3></div><div class="dev5-detail-total">${total}<small>طالب</small></div></div>${body}`;
+  d5open(titleMap[type]||'تفاصيل الطلاب',html,'dev5StudentCategoryModal');
+}
+
 function openDev5Performance(){
   if(!currentUser || currentUser.role!=='admin'){
     alert('نظام المدرسة الشامل متاح للمدير فقط.');
@@ -10890,11 +10950,11 @@ function openDev5Performance(){
 
     <div class="school-command-section">
       <div class="school-command-section-title"><span>🏆</span><div><b>التحصيل الدراسي والسلوك</b><small>المتفوقون وغير الجيدين حسب الدرجات والسلوك المسجل</small></div></div>
-      <div class="school-command-status-grid">
-        <div><b>🏆 المتفوقون</b><strong>${topStudents}</strong><em>متوسط 90% فأعلى</em></div>
-        <div><b>⚠️ غير الجيدين دراسياً</b><strong>${weakStudents}</strong><em>متوسط أقل من 50%</em></div>
-        <div><b>😊 السلوك الجيد</b><strong>${goodBehavior}</strong><em>جيد / جيد جداً / ممتاز</em></div>
-        <div><b>⚠️ السلوك غير الجيد</b><strong>${badBehavior}</strong><em>متوسط / ردئ</em></div>
+      <div class="school-command-status-grid dev5-clickable-results">
+        <button type="button" class="dev5-result-button top" onclick="openDev5StudentCategoryDetails('top')"><b>🏆 المتفوقون</b><strong>${topStudents}</strong><em>اضغط لعرض الصفوف وأسماء المتفوقين</em></button>
+        <button type="button" class="dev5-result-button weak" onclick="openDev5StudentCategoryDetails('weak')"><b>⚠️ غير الجيدين دراسياً</b><strong>${weakStudents}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
+        <button type="button" class="dev5-result-button good" onclick="openDev5StudentCategoryDetails('goodBehavior')"><b>😊 السلوك الجيد</b><strong>${goodBehavior}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
+        <button type="button" class="dev5-result-button bad" onclick="openDev5StudentCategoryDetails('badBehavior')"><b>⚠️ السلوك غير الجيد</b><strong>${badBehavior}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
       </div>
     </div>
 
@@ -10904,8 +10964,7 @@ function openDev5Performance(){
         <div><b>📌 نسبة الغياب</b><strong>${monthlyAbsencePct}%</strong><em>${monthAbsent} غياب من ${monthAttendance.length} سجل حضور</em></div>
         <div><b>📝 إجمالي السجلات</b><strong>${monthAttendance.length}</strong><em>سجل خلال آخر 30 يوماً</em></div>
         <div><b>📚 المواد الموجودة</b><strong>${allSubjectNames.size}</strong><em>مادة فريدة في النظام والجداول</em></div>
-        <div><b>➕ المواد المضافة</b><strong>${addedSubjectNames.size}</strong><em>مادة فريدة في قائمة المواد</em></div>
-      </div>
+              </div>
     </div>
 
     <div class="school-command-section">
@@ -10927,8 +10986,7 @@ function openDev5Performance(){
         <div><span>الإناث</span><b>${femaleStudents}</b></div>
         <div><span>المعلمون</span><b>${teachers.length}</b></div>
         <div><span>عدد المواد</span><b>${allSubjectNames.size}</b></div>
-        <div><span>المواد المضافة</span><b>${addedSubjectNames.size}</b></div>
-        <div><span>المواد الظاهرة في الجداول</span><b>${scheduledSubjectNames.size}</b></div>
+                <div><span>المواد الظاهرة في الجداول</span><b>${scheduledSubjectNames.size}</b></div>
         <div><span>الرحلات</span><b>${trips}</b></div>
         <div><span>المقاعد</span><b>${totalSeats}</b></div>
         <div><span>المقاعد المشغولة</span><b>${occupiedSeats}</b></div>
