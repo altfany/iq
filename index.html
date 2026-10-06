@@ -4938,6 +4938,8 @@ function updateCloudStatus(text, color) {
         if(!requireAdminSensitiveAction(`إضافة الدرس «${name}» إلى النظام`)) return;
         if(getSystemLessonNames().some(x=>x===name)){alert('هذا الدرس موجود مسبقاً.');return;}
         subjectsData.push({id:createStableId('subject'),name,className:'عام',teacherId:'',teacherName:'',isSystemLesson:true,createdAt:new Date().toISOString()});
+        const lessonAddedAt=new Date().toISOString();
+        getAllStudentsForAnnouncements().forEach(st=>addParentNotification(st, schoolData[st.classIndex]||{}, 'lesson', '📚 درس جديد في المدرسة', `تمت إضافة درس جديد إلى دروس المدرسة: ${name}. تاريخ الإضافة: ${new Date(lessonAddedAt).toLocaleDateString('ar-IQ')}.`));
         saveData(); input.value=''; populateTeacherSpecSelect(); populateTeacherExtraLessonSelect(); renderSchoolLessonsManager(); alert(`تمت إضافة الدرس (${name}) إلى دروس المدرسة.`);
     }
     function openDeleteSchoolLessonModal(){
@@ -8102,7 +8104,7 @@ function updateCloudStatus(text, color) {
         rec.updatedAt=new Date().toISOString();
         if(Number(oldScore)!==Number(score)){
             addGradeModificationLog({studentName:rec.studentName,subject:rec.subject,oldScore,newScore:score,actorName:currentUser.name||'مدير النظام',actorRole:'admin',className:cls?.name||'',maxScore:max});
-            const studentObj=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()}))).find(x=>x.name===String(rec.studentName||'').trim());
+            const studentObj=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===String(rec.studentName||'').trim());
             addParentNotification(studentObj||{name:rec.studentName},cls,'grade','تعديل درجة الطالب',`${currentUser.name||'مدير النظام'} عدّل درجة الطالب ${rec.studentName}: القديمة ${oldScore}، الجديدة ${score}.`);
         }
         rec.modifiedById=String(currentUser.id||currentUser.uid||currentUser.name||'');
@@ -8331,7 +8333,7 @@ function updateCloudStatus(text, color) {
         let record={lesson:spec,level:level,teacherName:currentUser.name||'',teacherId:currentUser.teacherId||null,updatedAt:new Date().toISOString()};
         if(idx>=0) list[idx]=Object.assign({},list[idx],record); else list.push(record);
         const studentName=String(document.getElementById('behaviorStudentNameLabel')?.innerText||'').replace(/^الطالب:\s*/,'').split(' (اختصاصك:')[0].trim();
-        const studentObj=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()}))).find(x=>x.name===studentName);
+        const studentObj=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===studentName);
         addParentNotification(studentObj||{name:studentName},cls,'behavior','تحديث سلوك الطالب',`تم تسجيل/تحديث سلوك الطالب ${studentName} في مادة ${spec}: ${behavior} — المستوى ${level}/5 بواسطة ${currentUser.name||'المعلم'}.`);
         saveData(); closeModal('behaviorModal'); renderBehaviorTable();
     }
@@ -8476,6 +8478,9 @@ function updateCloudStatus(text, color) {
             let spec = getCurrentTeacherSpec();
             let selectEl = document.querySelector('.lesson-level-select');
             let levelVal = selectEl ? selectEl.value : 'جيد';
+            const clsBeforeLevelSave=cls;
+            const studentNameForLevel=String(document.getElementById('studentLevelStudentName')?.innerText||document.getElementById('behaviorStudentNameLabel')?.innerText||'').replace(/^الطالب:\s*/,'').trim();
+            const studentObjForLevel=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===studentNameForLevel);
 
             if (!cls.studentLevels[currentSelectedStudentKey]) cls.studentLevels[currentSelectedStudentKey] = [];
             let list = cls.studentLevels[currentSelectedStudentKey];
@@ -8508,6 +8513,20 @@ function updateCloudStatus(text, color) {
             cls.studentLevels[currentSelectedStudentKey] = newList;
         }
 
+        if(currentUser.role==='teacher'){
+            const key=String(currentSelectedStudentKey||'');
+            const parts=key.split('_');
+            let targetStudent=null;
+            if(parts.length>=3){
+                const deskNo=String(parts[0]), seat=String(parts[1]), nameKey=parts.slice(2).join('_');
+                (cls?.desks||[]).forEach(d=>{ if(String(d?.deskNumber||'')===deskNo){ const slot=seat==='يمين'?1:2; const name=String(d?.['student'+slot]||'').trim(); if(name===nameKey) targetStudent={id:String(d?.['student'+slot+'Id']||d?.id||''),name}; }});
+            }
+            if(!targetStudent){
+                const label=String(document.getElementById('studentLevelStudentName')?.innerText||document.getElementById('behaviorStudentNameLabel')?.innerText||'').replace(/^الطالب:\s*/,'').trim();
+                targetStudent=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===label);
+            }
+            if(targetStudent) addParentNotification(targetStudent,cls,'level','📈 تحديث مستوى الطالب',`تم تحديث مستوى الطالب ${targetStudent.name} في مادة ${getCurrentTeacherSpec()||'المادة'} بواسطة ${currentUser.name||'المعلم'}.`);
+        }
         saveData();
         closeModal('studentLevelDetailModal');
         renderStudentLevelTable();
