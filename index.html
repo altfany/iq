@@ -1374,6 +1374,11 @@ table td,table th { line-height:1.55; }
 .desk-seated-separated{opacity:.48;filter:grayscale(.15);}
 .separated-student-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;background:rgba(255,255,255,.9);color:#c0392b;font-weight:900;font-size:18px;padding:5px 14px;border-radius:9px;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12);}
 </style>
+<style id="parent-session-and-a4-css">
+.admin-student-a4-sheet{width:min(210mm,100%);min-height:260mm;margin:0 auto;background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:14px;box-shadow:0 5px 18px rgba(31,45,61,.08)}
+.admin-student-a4-preview{background:#f8fbfd;border:1px solid #cfd8e3;border-radius:10px;padding:12px}
+@media print{.admin-student-a4-sheet,.admin-student-a4-preview{box-shadow:none}}
+</style>
 </style>
 <style id="modal-front-layer-fix">
 #studentsLogModal,#behaviorModalBox,#parentModalBox,#studentLevelModalBox,#scheduleModalBox,#absenceModalBox,#behaviorModal,#parentModal,#studentLevelDetailModal,#gradesModalBox,#systemGradesModal{
@@ -1418,94 +1423,6 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
     lastGoodCloudUpdatedAt: '',
     lastGoodCloudSnapshot: null
   };
-
-  // ===== حماية جلسة ولي الأمر =====
-  // الجلسة تستمر 5 دقائق فقط، وبعدها يجب إعادة إدخال كود ولي الأمر.
-  // ويسمح لكل كود بحد أقصى 10 دخولات ناجحة في اليوم الواحد.
-  const PARENT_SESSION_MS = 5 * 60 * 1000;
-  const PARENT_DAILY_LOGIN_LIMIT = 10;
-  let parentSessionTimer = null;
-  let parentReauthRequired = false;
-
-  function getParentAccessDayKey(date = new Date()) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-  function getParentStudentDesk(match) {
-    if (!match) return null;
-    const cls = schoolData?.[Number(match.classIndex)] || match.classObj;
-    const desk = cls?.desks?.[Number(match.deskIndex)];
-    return desk || null;
-  }
-
-  function registerParentDailyLogin(match) {
-    if (!match || !match.student) return { allowed: false, count: 0 };
-    const desk = getParentStudentDesk(match);
-    // نستخدم بيانات الطالب نفسها كمصدر للعدّاد حتى تبقى ضمن بيانات Firebase.
-    const holder = desk || match.student;
-    const today = getParentAccessDayKey();
-    const savedDay = String(holder.parentAccessDay || '').trim();
-    let count = savedDay === today ? Number(holder.parentAccessCount || 0) : 0;
-    if (!Number.isFinite(count) || count < 0) count = 0;
-
-    if (count >= PARENT_DAILY_LOGIN_LIMIT) {
-      alert('لا يمكن الدخول لانكم دخلتم اكثر من 10 مرات غدا حاول الدخول');
-      return { allowed: false, count };
-    }
-
-    count += 1;
-    holder.parentAccessDay = today;
-    holder.parentAccessCount = count;
-    saveData();
-    return { allowed: true, count };
-  }
-
-  function clearParentSessionTimer() {
-    if (parentSessionTimer) {
-      clearTimeout(parentSessionTimer);
-      parentSessionTimer = null;
-    }
-  }
-
-  function startParentSessionTimer() {
-    clearParentSessionTimer();
-    if (currentUser?.role !== 'parent') return;
-    parentSessionTimer = setTimeout(expireParentSession, PARENT_SESSION_MS);
-  }
-
-  function expireParentSession() {
-    parentSessionTimer = null;
-    if (currentUser?.role !== 'parent') return;
-    parentReauthRequired = true;
-    document.getElementById('studentRoleDashboardModal')?.remove();
-    const overlay = document.getElementById('loginOverlay');
-    const input = document.getElementById('loginCodeInput');
-    const title = document.querySelector('#loginOverlay .login-card h2');
-    const hint = document.getElementById('parentReauthHint');
-    if (title) title.textContent = 'إعادة التحقق من ولي الأمر';
-    if (hint) {
-      hint.textContent = 'انتهت مدة الجلسة (5 دقائق). أدخل كود ولي الأمر مرة أخرى للمتابعة.';
-      hint.style.display = 'block';
-    }
-    if (input) {
-      input.value = '';
-      input.placeholder = 'أدخل كود ولي الأمر مرة أخرى';
-      input.focus();
-    }
-    if (overlay) overlay.style.display = 'flex';
-  }
-
-  function resetParentLoginOverlayText() {
-    const title = document.querySelector('#loginOverlay .login-card h2');
-    const hint = document.getElementById('parentReauthHint');
-    const input = document.getElementById('loginCodeInput');
-    if (title) title.textContent = 'تسجيل الدخول للنظام';
-    if (hint) hint.style.display = 'none';
-    if (input) input.placeholder = 'أدخل كود الذي خصص لك من قبل الاداره';
-  }
 
   // يحول بيانات Firebase القديمة/المفهرسة بمفاتيح رقمية إلى مصفوفات.
   // Realtime Database قد يعيد المصفوفة ككائن إذا كانت الفهارس غير متصلة.
@@ -2136,7 +2053,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     <div class="login-card">
         <h2>تسجيل الدخول للنظام</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 15px;">اكتب الكود المخصص لك فقط</p>
-        <p id="parentReauthHint" style="display:none;font-size:12px;background:#fff4d6;color:#8a5a00;border:1px solid #efd487;border-radius:10px;padding:9px;margin:0 0 12px;font-weight:800;"></p>
 <p style="font-size: 14px; background: linear-gradient(to right, #ce1126, #000000, #078930); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; margin-bottom: 15px;">مدرسة التفاني الابتدائية </p>
         <div class="form-group">
             <label></label>
@@ -2646,6 +2562,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         <div id="globalSearchExtraActions" style="display: none; margin-top: 10px; gap: 8px; justify-content: center; flex-wrap: wrap;">
             <button type="button" onclick="showSearchedStudentLevel(); return false;" style="background: var(--indigo); font-size: 12px; padding: 6px 12px;">📈 عرض المستوى الدراسي</button>
             <button onclick="showSearchedStudentAbsence()" id="btnGlobalSearchAbsence" style="background: var(--pink); font-size: 12px; padding: 6px 12px;">📌 سجل الغيابات</button>
+            <button onclick="printGlobalSearchedStudentA4()" id="btnGlobalSearchStudentPrint" style="background:var(--indigo);font-size:12px;padding:6px 12px;">🖨️ طباعة ملف الطالب A4</button>
         </div>
 
         <!-- نتائج البحث عن اسم الصف -->
@@ -3214,6 +3131,12 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let currentAnnouncementTab = 'teachers';
     
     let currentUser = null;
+    // ===== حماية بوابة ولي الأمر: 5 دقائق للجلسة + 10 دخولات ناجحة يومياً =====
+    const PARENT_SESSION_MS = 5 * 60 * 1000;
+    const PARENT_DAILY_LOGIN_LIMIT = 10;
+    let parentSessionTimer = null;
+    let parentSessionCountdownTimer = null;
+    let parentLoginUsage = {};
     let showTeacherCodes = false;
     let monitorsData = [];
     let monitorNotesData = [];
@@ -3548,6 +3471,7 @@ function acknowledgeAnnouncement(id) {
             updatedAt: new Date().toISOString(),
             adminCode: String(adminCredentials.password || DEFAULT_ADMIN_LOGIN_CODE),
             adminName: String(adminCredentials.name || 'مدير النظام'),
+            parentLoginUsage: parentLoginUsage || {},
             printManagerName: String(printManagerName || ''),
             printSchoolName: String(printSchoolName || ''),
             studyYearFrom: String(studyYearFrom || ''),
@@ -3769,6 +3693,7 @@ function updateCloudStatus(text, color) {
         if (cloud.subjectsData !== undefined) subjectsData = Array.isArray(cloud.subjectsData) ? cloud.subjectsData : [];
         if (cloud.adminCode !== undefined && String(cloud.adminCode).trim()) adminCredentials.password = String(cloud.adminCode).trim();
         if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
+        if (cloud.parentLoginUsage !== undefined && cloud.parentLoginUsage && typeof cloud.parentLoginUsage === 'object') parentLoginUsage = cloud.parentLoginUsage;
         if (cloud.printManagerName !== undefined) printManagerName = String(cloud.printManagerName || '').trim();
         if (cloud.printSchoolName !== undefined) printSchoolName = String(cloud.printSchoolName || '').trim();
         if (cloud.studyYearFrom !== undefined) studyYearFrom = String(cloud.studyYearFrom || '').trim();
@@ -4324,46 +4249,83 @@ function updateCloudStatus(text, color) {
         alert(`تم رفع التعليق عن «${name}».\nيمكن لولي الأمر الدخول مرة أخرى بالكود.`);
     }
 
-    function performLogin() {
+    function parentUsageDateKey(){
+        const d=new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function getParentLoginUsageRecord(code){
+        const key=String(code||'').trim();
+        const rec=parentLoginUsage && parentLoginUsage[key];
+        const today=parentUsageDateKey();
+        if(!rec || String(rec.date||'')!==today) return {date:today,count:0};
+        return {date:today,count:Math.max(0,Number(rec.count)||0)};
+    }
+    async function reserveParentLoginEntry(code){
+        const key=String(code||'').trim();
+        if(!key) return {allowed:false,count:0};
+        const local=getParentLoginUsageRecord(key);
+        if(local.count>=PARENT_DAILY_LOGIN_LIMIT) return {allowed:false,count:local.count};
+        // عدّاد ذري في Firebase حتى لا يتجاوز ولي الأمر الحد بسهولة عند استخدام أكثر من جهاز.
+        if(firebaseDB && cloudReady){
+            try{
+                const pathKey=encodeURIComponent(key).replace(/\./g,'%2E');
+                const ref=firebaseDB.ref(`schoolSystem/parentLoginUsage/${pathKey}`);
+                let committedCount=local.count;
+                const result=await ref.transaction(current=>{
+                    const today=parentUsageDateKey();
+                    const currentCount=current && String(current.date||'')===today ? Math.max(0,Number(current.count)||0) : 0;
+                    if(currentCount>=PARENT_DAILY_LOGIN_LIMIT) return; // abort transaction
+                    committedCount=currentCount+1;
+                    return {date:today,count:committedCount,updatedAt:new Date().toISOString()};
+                });
+                if(!result.committed){
+                    const fresh=result.snapshot?.val?.()||{};
+                    const count=String(fresh.date||'')===parentUsageDateKey()?Number(fresh.count)||PARENT_DAILY_LOGIN_LIMIT:local.count;
+                    parentLoginUsage[key]={date:parentUsageDateKey(),count};
+                    return {allowed:false,count};
+                }
+                parentLoginUsage[key]=result.snapshot.val();
+                return {allowed:true,count:committedCount};
+            }catch(err){
+                console.warn('Parent login usage transaction failed; using current synchronized counter.',err);
+            }
+        }
+        // احتياطي عند تعذر العملية الذرية: يعتمد على آخر عداد متزامن.
+        if(local.count>=PARENT_DAILY_LOGIN_LIMIT) return {allowed:false,count:local.count};
+        parentLoginUsage[key]={date:local.date,count:local.count+1,updatedAt:new Date().toISOString()};
+        return {allowed:true,count:local.count+1};
+    }
+    function parentDailyLimitMessage(){
+        return 'لا يمكنم الدخول لقد تجاوزتم عدد دخولكم للسستم اكثر من 10 مرات في اليوم الواحد\nيمكنكم الدخول غداً.';
+    }
+    function clearParentSessionTimers(){
+        if(parentSessionTimer){clearTimeout(parentSessionTimer);parentSessionTimer=null;}
+        if(parentSessionCountdownTimer){clearInterval(parentSessionCountdownTimer);parentSessionCountdownTimer=null;}
+    }
+    function startParentSessionTimer(){
+        clearParentSessionTimers();
+        if(!currentUser || currentUser.role!=='parent') return;
+        currentUser.parentSessionStartedAt=Date.now();
+        currentUser.parentSessionExpiresAt=Date.now()+PARENT_SESSION_MS;
+        parentSessionTimer=setTimeout(()=>{
+            if(!currentUser || currentUser.role!=='parent') return;
+            const portal=document.getElementById('studentRoleDashboardModal'); if(portal) portal.remove();
+            currentUser=null;
+            const input=document.getElementById('loginCodeInput'); if(input) input.value='';
+            const overlay=document.getElementById('loginOverlay'); if(overlay) overlay.style.display='flex';
+            toggleLoginFields();
+            alert('انتهت مدة الدخول المسموح بها لولي الأمر (5 دقائق).\nيرجى إدخال الكود مرة أخرى للمتابعة.');
+        },PARENT_SESSION_MS);
+    }
+    function getParentSessionRemaining(){
+        if(!currentUser || currentUser.role!=='parent' || !currentUser.parentSessionExpiresAt) return 0;
+        return Math.max(0,currentUser.parentSessionExpiresAt-Date.now());
+    }
+
+    async function performLogin() {
         const enteredCode = String(document.getElementById('loginCodeInput')?.value || '').trim();
         if (!enteredCode) { alert('الرجاء إدخال كود الدخول.'); return; }
         if (loginIsLocked()) return;
-
-        // إعادة التحقق بعد انتهاء جلسة ولي الأمر: نفس الكود فقط، مع احتساب دخول جديد من الحد اليومي.
-        if (parentReauthRequired && currentUser?.role === 'parent') {
-            if (enteredCode !== String(currentUser.code || '').trim()) {
-                recordFailedLoginAttempt();
-                alert('الكود غير صحيح. أدخل كود ولي الأمر الصحيح للمتابعة.');
-                return;
-            }
-            const match = findStudentBySecretCode(enteredCode);
-            if (!match) {
-                recordFailedLoginAttempt();
-                alert('تعذر التحقق من كود ولي الأمر.');
-                return;
-            }
-            const suspensionRecord=getStudentSuspensionRecord(match);
-            if(suspensionRecord?.suspended){
-                currentUser=null;
-                parentReauthRequired=false;
-                clearParentSessionTimer();
-                document.getElementById('loginOverlay').style.display='flex';
-                showStudentSuspensionOverlay(suspensionRecord);
-                return;
-            }
-            const access = registerParentDailyLogin(match);
-            if (!access.allowed) return;
-            currentUser = { ...currentUser, name: match.student.name || currentUser.name, classIndex: match.classIndex, studentId: match.student.id || currentUser.studentId, studentSnapshot: { ...match.student }, classSnapshot: match.classObj, deskIndex: match.deskIndex };
-            parentReauthRequired = false;
-            APP_SECURITY.failedAttempts = 0;
-            APP_SECURITY.lockedUntil = 0;
-            resetParentLoginOverlayText();
-            document.getElementById('loginOverlay').style.display = 'none';
-            startParentSessionTimer();
-            setTimeout(function(){ try { openStudentDashboard(); } catch (err) { console.error('Parent dashboard error:', err); } }, 100);
-            return;
-        }
-
         // المدير: الكود الشخصي المحفوظ في Firebase.
         if (enteredCode === String(adminCredentials.password || DEFAULT_ADMIN_LOGIN_CODE).trim()) {
             currentUser = { role: 'admin', name: adminCredentials.name || 'مدير النظام', isPrimaryAdmin: true };
@@ -4411,8 +4373,13 @@ function updateCloudStatus(text, color) {
                         showStudentSuspensionOverlay(suspensionRecord);
                         return;
                     }
-                    const parentAccess = registerParentDailyLogin(match);
-                    if (!parentAccess.allowed) return;
+                    const parentLoginReservation=await reserveParentLoginEntry(enteredCode);
+                    if(!parentLoginReservation.allowed){
+                        currentUser=null;
+                        document.getElementById('loginOverlay').style.display='flex';
+                        alert(parentDailyLimitMessage());
+                        return;
+                    }
                     currentUser = {
                         role: 'parent',
                         name: match.student.name || 'الطالب',
@@ -4434,11 +4401,8 @@ function updateCloudStatus(text, color) {
         applyUserPermissions();
         document.getElementById('loginOverlay').style.display = 'none';
         if (currentUser?.role === 'parent') {
-            parentReauthRequired = false;
-            resetParentLoginOverlayText();
-            startParentSessionTimer();
             setTimeout(function(){
-                try { openStudentDashboard(); } catch (err) { console.error('Parent dashboard error:', err); alert('حدث خطأ في فتح صفحة ولي الأمر.'); }
+                try { openStudentDashboard(); startParentSessionTimer(); } catch (err) { console.error('Parent dashboard error:', err); alert('حدث خطأ في فتح صفحة ولي الأمر.'); }
             }, 180);
         }
 
@@ -4556,15 +4520,13 @@ function updateCloudStatus(text, color) {
     },30000);
 
     async function logoutSystem() {
-        clearParentSessionTimer();
-        parentReauthRequired = false;
+        clearParentSessionTimers();
         // إذا كان المستخدم مراقباً، أغلق مركز المراقب فوراً حتى لا تبقى الواجهة
         // ظاهرة بعد تسجيل الخروج، ثم ألغِ أي جلسة/لوحة مفتوحة مرتبطة بالمستخدم.
         const monitorModal = document.getElementById('monitorCenterModal');
         if (monitorModal) monitorModal.remove();
         const parentPortal = document.getElementById('parentPortalModal');
         if (parentPortal) parentPortal.remove();
-        document.getElementById('studentRoleDashboardModal')?.remove();
 
         // أي تعديل سابق يجب أن يصل إلى Firebase قبل إنهاء الجلسة.
         try {
@@ -4585,7 +4547,6 @@ function updateCloudStatus(text, color) {
         if (codeInput) codeInput.value = '';
         const overlay = document.getElementById('loginOverlay');
         if (overlay) overlay.style.display = 'flex';
-        resetParentLoginOverlayText();
         toggleLoginFields();
     }
 
@@ -6025,13 +5986,11 @@ function updateCloudStatus(text, color) {
                 if(!label) return '';
                 return `<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(label)}</small><b>${esc(student[k])}</b></div>`;
             }).join('');
-            html+=`<div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${arabicStudentFields.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraHtml}</div>`;
+            html+=`<div class="admin-student-a4-sheet"><div style="font-weight:900;font-size:18px;color:var(--primary);margin-bottom:10px;text-align:center">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${arabicStudentFields.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraHtml}</div>`;
             const photo=student.photoData||student.photo||student.imageData||student.image||'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
-            html+=`<div style="margin-top:10px;padding:9px;background:#f8fbfd;border:1px solid #e1e7ec;border-radius:10px"><b>📅 حصص الصف اليوم — ${esc(dayName)}</b>${renderTodaySchedule(r.classObj)}</div>`;
-            html+=`<div style="margin-top:10px"><b>⭐ السلوك والمستوى</b><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
-            html+=`<div style="margin-top:10px"><b>📝 الدرجات (${grades.length})</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>المعلم</th></tr></thead><tbody>${grades.slice(0,30).map(g=>`<tr><td>${esc(g.subject||'-')}</td><td>${esc(g.score)} / ${esc(g.maxScore)}</td><td>${esc(getGradePeriodLabel(g.periodType))}</td><td>${esc(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد درجات.</td></tr>'}</tbody></table></div></div>`;
-            html+=`<div style="margin-top:10px"><b>📌 سجل الحضور</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows.map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات احترافية.</td></tr>'}</tbody></table></div></div>`;
+            html+=`<div class="admin-student-a4-preview" style="margin-top:10px"><div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">⭐ السلوك والمستوى</div><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
+            html+=`<div style="margin-top:10px"><b>📌 سجل الحضور والغياب</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows.map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات احترافية.</td></tr>'}</tbody></table></div></div></div>`;
             contentDiv.innerHTML=html; extraActions.style.display='flex';
             if(matches.length>1)contentDiv.insertAdjacentHTML('beforeend',`<div style="margin-top:8px;color:#666">تم العثور على ${matches.length} طالب مطابق؛ تم عرض أول نتيجة ويمكنك تضييق البحث بالاسم الكامل.</div>`);
         }
@@ -6050,6 +6009,44 @@ function updateCloudStatus(text, color) {
         else contentDiv.innerHTML='<div style="text-align:center"><p style="font-weight:bold;color:var(--primary)">تم العثور على صف مطابق للبحث.</p></div>';
         const title=document.querySelector('#globalSearchResultModal h3'); if(title)title.textContent='🔍 نتيجة البحث الشامل';
         document.getElementById('globalSearchResultModal').style.display='flex';
+    }
+
+    function printGlobalSearchedStudentA4(){
+        const r=lastFoundSearchResult;
+        if(!r || !r.student){alert('ابحث عن طالب أولاً.');return;}
+        const student=r.student||{};
+        const esc=escapeGlobalSearchHTML;
+        const slotN=String(r.slot===2?2:1);
+        const slotValue=(base)=>{
+            const v=student[base+slotN];
+            if(v!==undefined&&v!==null&&String(v).trim()!=='') return v;
+            const alt={birthDate:'dateOfBirth',phone:'parentPhone'}[base];
+            return alt && student[alt+slotN]!==undefined ? student[alt+slotN] : '';
+        };
+        const gender=slotValue('gender');
+        const fields=[
+            ['اسم الطالب',r.name],['الصف',r.className],['الرحلة / المقعد',`رقم ${r.deskNumber} — ${r.seat}`],
+            ['الجنس',gender==='female'?'مؤنث':gender==='male'?'ذكر':(gender||'—')],['العمر',slotValue('age')||'—'],
+            ['تاريخ الميلاد',slotValue('birthDate')||'—'],['الرقم الوطني',slotValue('nationalId')||'—'],
+            ['هاتف ولي الأمر',slotValue('phone')||'—'],['العنوان',slotValue('address')||'—'],['كود الطالب',slotValue('code')||r.code||'—']
+        ];
+        const internalKeys=new Set(['student'+slotN,'code'+slotN,'gender'+slotN,'age'+slotN,'birthDate'+slotN,'dateOfBirth'+slotN,'nationalId'+slotN,'phone'+slotN,'parentPhone'+slotN,'fatherPhone'+slotN,'motherPhone'+slotN,'address'+slotN,'student'+slotN+'Id','separated'+slotN,'separationReason'+slotN,'separatedAt'+slotN,'separatedBy'+slotN,'photo'+slotN,'photoData'+slotN,'image'+slotN,'imageData'+slotN]);
+        const labels={notes:'ملاحظات الطالب',note:'ملاحظة الطالب',level:'المستوى',gradeLevel:'المستوى الدراسي',fatherPhone:'هاتف الأب',motherPhone:'هاتف الأم',parentPhone:'هاتف ولي الأمر'};
+        const extras=Object.keys(student).filter(k=>k.endsWith(slotN)&&!internalKeys.has(k)&&student[k]!=null&&typeof student[k]!=='object'&&String(student[k]).trim()!=='').map(k=>{const base=k.slice(0,-slotN.length);return labels[base]?[''+labels[base],student[k]]:null;}).filter(Boolean);
+        const behaviorKey=`${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`;
+        const behavior=r.classObj?.behaviorNotes?.[behaviorKey];
+        const levels=Array.isArray(r.classObj?.studentLevels?.[behaviorKey])?r.classObj.studentLevels[behaviorKey]:[];
+        const behaviorRows=behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join(''):behavior?`<tr><td>السلوك</td><td>${esc(behavior)}</td></tr>`:'<tr><td colspan="2">لا توجد بيانات سلوك.</td></tr>';
+        const levelRows=levels.map(x=>`<tr><td>${esc(x.lesson||x.subject||'المادة')}</td><td>${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</td></tr>`).join('')||'<tr><td colspan="2">لا يوجد مستوى مسجل.</td></tr>';
+        const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
+        const studentId=String(r.studentId||student.id||'');
+        const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات غياب أو حضور.</td></tr>';
+        const photo=student.photoData||student.photo||student.imageData||student.image||'';
+        const win=window.open('','_blank','width=900,height=1100');
+        if(!win){alert('تعذر فتح صفحة الطباعة. اسمح بالنوافذ المنبثقة للمتصفح.');return;}
+        win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>ملف الطالب - ${esc(r.name)}</title><style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:"Noto Sans Arabic",Arial,sans-serif;color:#1f2937;margin:0;background:#fff;font-size:12px;line-height:1.6}.sheet{width:100%;min-height:270mm}.head{border:2px solid #26384a;border-radius:10px;padding:12px;text-align:center;margin-bottom:12px}.head h1{margin:0;font-size:22px}.head p{margin:4px 0 0;color:#64748b}.section{border:1px solid #cfd8e3;border-radius:8px;padding:9px;margin-bottom:10px}.section h2{font-size:14px;margin:0 0 8px;color:#243b53;border-bottom:1px solid #e5e7eb;padding-bottom:5px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.field{border:1px solid #e2e8f0;border-radius:6px;padding:7px;background:#fafcff}.field small{display:block;color:#64748b;font-size:10px}.field b{font-size:12px}.photo{text-align:center;margin:8px}.photo img{max-width:100px;max-height:100px;border:1px solid #cbd5e1;border-radius:8px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px;text-align:center}th{background:#f1f5f9}.footer{margin-top:12px;text-align:center;color:#64748b;font-size:10px}</style></head><body><div class="sheet"><div class="head"><h1>ملف الطالب</h1><p>تقرير صادر من نظام المدرسة الشامل</p></div><div class="section"><h2>👨‍🎓 معلومات الطالب</h2><div class="grid">${fields.concat(extras).map(x=>`<div class="field"><small>${esc(x[0])}</small><b>${esc(x[1]||'—')}</b></div>`).join('')}</div>${photo?`<div class="photo"><img src="${esc(photo)}" alt="صورة الطالب"></div>`:''}</div><div class="two"><div class="section"><h2>⭐ السلوك</h2><table><thead><tr><th>النوع</th><th>التقييم</th></tr></thead><tbody>${behaviorRows}</tbody></table></div><div class="section"><h2>📈 المستوى</h2><table><thead><tr><th>المادة</th><th>المستوى</th></tr></thead><tbody>${levelRows}</tbody></table></div></div><div class="section"><h2>📌 سجل الحضور والغياب</h2><table><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows}</tbody></table></div><div class="footer">لا تظهر في هذا التقرير حصص اليوم. تاريخ الطباعة: ${esc(new Date().toLocaleString('ar-IQ'))}</div></div></body></html>`);
+        win.document.close();
+        setTimeout(()=>{try{win.focus();win.print();}catch(e){}},350);
     }
 
     // فتح الصف من نتيجة البحث وإظهاره كصفحة داخلية كاملة.
@@ -8746,7 +8743,7 @@ function updateCloudStatus(text, color) {
         const leaveDates=myAtt.filter(r=>r.status==='leave').map(r=>({date:r.date,status:'leave'})).concat(legacyDates.filter(x=>x.status==='leave')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
         const todayRecord=myAtt.find(r=>String(r.date)===String(today)); const todayStatus=todayRecord?.status||legacyMap?.[today]?.[legacyKey]||'present';
         const todayMessage=todayStatus==='absent'?'<div class="parent-alert parent-alert-absent">🚨 <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>غائباً</b>.</div>':todayStatus==='leave'?'<div class="parent-alert parent-alert-leave">🏖️ <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>مجازاً</b>.</div>':todayStatus==='late'?'<div class="parent-alert parent-alert-late">⏰ <b>تنبيه:</b> تم تسجيل تأخر ابنك اليوم.</div>':'<div class="parent-alert parent-alert-ok">✅ حالة اليوم: <b>حاضر</b> أو لم يُسجّل عليه غياب.</div>';
-        const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><span class="parent-grade-score"><span class="grade-value">${escapeGlobalSearchHTML(g.score)}</span><span class="grade-separator">من</span><span class="grade-max">${escapeGlobalSearchHTML(g.maxScore)}</span></span></td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لابنك حالياً.</td></tr>';
+        const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لابنك حالياً.</td></tr>';
         const absenceRows=absentDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>غائب</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام غياب مسجلة.</td></tr>';
         const leaveRows=leaveDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>مجاز</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام إجازة مسجلة.</td></tr>';
         const parentBehaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
@@ -10684,39 +10681,99 @@ function openDev5Performance(){
   const classes=Array.isArray(schoolData)?schoolData:[];
   const students=dev5StudentIndex.length;
   const teachers=Array.isArray(teachersData)?teachersData:[];
-  const subjects=[...new Set((Array.isArray(subjectsData)?subjectsData:[]).map(x=>String(x?.name||'').trim()).filter(Boolean))];
   const assistants=Array.isArray(assistantsData)?assistantsData:[];
   const monitors=Array.isArray(monitorsData)?monitorsData:[];
-  const genderStudents=classes.flatMap(c=>(Array.isArray(c?.desks)?c.desks:[]).flatMap(d=>[1,2].map(slot=>({name:String(d?.['student'+slot]||'').trim(),gender:String(d?.['gender'+slot]||'')})).filter(x=>x.name)));
+  const attendance=Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[];
+  const today=(typeof getFormattedDate==='function')?getFormattedDate():new Date().toISOString().slice(0,10);
+
+  // المواد: نجمع المواد المضافة في قائمة المواد، وكذلك المواد الظاهرة فعلياً في جداول الصفوف.
+  const addedSubjectNames=new Set((Array.isArray(subjectsData)?subjectsData:[]).map(x=>String(x?.name||'').trim()).filter(Boolean));
+  const scheduledSubjectNames=new Set();
+  classes.forEach(c=>{
+    const sd=c?.scheduleData;
+    if(sd && typeof sd==='object') Object.values(sd).forEach(entry=>{const n=String(entry?.subject||'').trim();if(n)scheduledSubjectNames.add(n);});
+  });
+  const allSubjectNames=new Set([...addedSubjectNames,...scheduledSubjectNames]);
+
+  const genderStudents=classes.flatMap((c,ci)=>(Array.isArray(c?.desks)?c.desks:[]).flatMap((d,di)=>[1,2].map(slot=>({name:String(d?.['student'+slot]||'').trim(),gender:String(d?.['gender'+slot]||''),ci,di,slot})).filter(x=>x.name)));
   const maleStudents=genderStudents.filter(x=>x.gender==='male').length;
   const femaleStudents=genderStudents.filter(x=>x.gender==='female').length;
+
   let trips=0, occupiedSeats=0, emptySeats=0, grades=0;
   classes.forEach(c=>{
     const desks=Array.isArray(c?.desks)?c.desks:[];
     trips+=desks.length;
-    desks.forEach(d=>{
-      [1,2].forEach(slot=>{
-        const n=String(d?.['student'+slot]||'').trim();
-        if(n) occupiedSeats++; else emptySeats++;
-      });
-    });
+    desks.forEach(d=>[1,2].forEach(slot=>{if(String(d?.['student'+slot]||'').trim()) occupiedSeats++; else emptySeats++;}));
     try{grades+=ensureStudentGrades(c).length||0;}catch(e){}
   });
   const totalSeats=occupiedSeats+emptySeats;
-  const today=(typeof getFormattedDate==='function')?getFormattedDate():new Date().toISOString().slice(0,10);
+  const pct=(n,d)=>d?Math.round((n/d)*100):0;
+
+  // الحضور والغياب لليوم.
   let absent=0, leave=0, present=0;
-  const seen=new Set();
+  const seenToday=new Set();
   dev5StudentIndex.forEach(st=>{
     const key=String(st.classIndex)+'|'+String(st.key);
-    if(seen.has(key)) return;
-    seen.add(key);
+    if(seenToday.has(key)) return;
+    seenToday.add(key);
     let status='present';
     try{status=getStoredAttendanceStatus(classes[st.classIndex],today,st.key)||'present';}catch(e){}
-    if(status==='absent') absent++;
-    else if(status==='leave') leave++;
-    else present++;
+    if(status==='absent') absent++; else if(status==='leave') leave++; else present++;
   });
-  const pct=(n,d)=>d?Math.round((n/d)*100):0;
+
+  // نسبة الغياب خلال آخر 30 يوماً: الغياب المسجل ÷ جميع سجلات الحضور المسجلة في الفترة.
+  const nowMs=Date.now();
+  const cutoffMs=nowMs-30*24*60*60*1000;
+  const monthAttendance=attendance.filter(r=>{
+    const t=new Date(String(r?.date||'')).getTime();
+    return Number.isFinite(t) && t>=cutoffMs && t<=nowMs;
+  });
+  const monthAbsent=monthAttendance.filter(r=>r?.status==='absent').length;
+  const monthlyAbsencePct=pct(monthAbsent,monthAttendance.length);
+
+  // تجميع الدرجات لكل طالب. المتفوق = متوسط 90% فأعلى (أي النقص لا يتجاوز 10%).
+  // غير الجيد = متوسط أقل من 50% من الدرجة الكاملة.
+  const gradeByStudent=new Map();
+  dev5StudentIndex.forEach(st=>{
+    const key=String(st.classIndex)+'|'+String(st.key);
+    gradeByStudent.set(key,{student:st,items:[]});
+    try{
+      const gs=ensureStudentGrades(classes[st.classIndex])||[];
+      gs.forEach(g=>{
+        const sameKey=g?.studentKey!=null && String(g.studentKey)===String(st.key);
+        const sameName=String(g?.studentName||'').trim()===String(st.name||'').trim();
+        if(sameKey || sameName) gradeByStudent.get(key).items.push(g);
+      });
+    }catch(e){}
+  });
+  let topStudents=0, weakStudents=0;
+  gradeByStudent.forEach(rec=>{
+    const valid=rec.items.map(g=>{
+      const score=Number(g?.score),max=Number(g?.maxScore);
+      return Number.isFinite(score)&&Number.isFinite(max)&&max>0?score/max:null;
+    }).filter(v=>v!==null);
+    if(!valid.length)return;
+    const avg=valid.reduce((a,b)=>a+b,0)/valid.length;
+    if(avg>=0.90)topStudents++;
+    if(avg<0.50)weakStudents++;
+  });
+
+  // السلوك: جيد = ممتاز/جيد جداً/جيد، وغير جيد = متوسط/ردئ. العد حسب الطالب وليس حسب عدد المواد.
+  let goodBehavior=0, badBehavior=0;
+  const goodSet=new Set(['جيد','جيد جدا','جيد جدًا','ممتاز']);
+  const badSet=new Set(['متوسط','ردئ','رديء']);
+  genderStudents.forEach(st=>{
+    const cls=classes[st.ci];
+    const desk=cls?.desks?.[st.di];
+    const key=`${desk?.deskNumber??(st.di+1)}_${st.slot===1?'يمين':'يسار'}_${st.name}`;
+    const map=cls?.behaviorNotes?.[key];
+    const vals=map&&typeof map==='object'?Object.values(map).map(v=>String(v||'').trim()).filter(Boolean):String(map||'').trim()?[String(map).trim()]:[];
+    if(!vals.length)return;
+    const hasBad=vals.some(v=>badSet.has(v));
+    const hasGood=vals.some(v=>goodSet.has(v));
+    if(hasBad)badBehavior++; else if(hasGood)goodBehavior++;
+  });
+
   const teacherSubjects=[...new Set(teachers.flatMap(t=>{
     const a=[];
     if(Array.isArray(t?.specialties))a.push(...t.specialties);
@@ -10724,12 +10781,13 @@ function openDev5Performance(){
     if(t?.specialty)a.push(t.specialty);
     return a.map(x=>String(x||'').trim()).filter(Boolean);
   }))];
+
   const html=`
     <div class="school-command-hero">
       <div>
         <div class="school-command-kicker">لوحة القيادة الرئيسية</div>
         <h2>🏫 نظام المدرسة الشامل</h2>
-        <p>نظرة واحدة على مدرستك: الصفوف، الطلاب، المعلمين، المواد، الرحلات، الحضور، الدرجات وحالة البيانات.</p>
+        <p>إحصاءات المدرسة محسوبة مباشرة من البيانات الحالية داخل النظام.</p>
       </div>
       <div class="school-command-date">📅 ${d5esc(today)}</div>
     </div>
@@ -10740,11 +10798,31 @@ function openDev5Performance(){
       <div class="school-command-card teal"><span>👦</span><b>الذكور</b><strong>${maleStudents}</strong><small>عدد الطلاب الذكور</small></div>
       <div class="school-command-card purple"><span>👧</span><b>الإناث</b><strong>${femaleStudents}</strong><small>عدد الطالبات الإناث</small></div>
       <div class="school-command-card teal"><span>👨‍🏫</span><b>المعلمون</b><strong>${teachers.length}</strong><small>معلم مسجل بالنظام</small></div>
-      <div class="school-command-card purple"><span>📚</span><b>المواد</b><strong>${subjects.length}</strong><small>مادة متاحة في المدرسة</small></div>
+      <div class="school-command-card purple"><span>📚</span><b>عدد المواد</b><strong>${allSubjectNames.size}</strong><small>المواد الموجودة والمضافة في النظام</small></div>
       <div class="school-command-card orange"><span>🚌</span><b>الرحلات</b><strong>${trips}</strong><small>رحلة / مقعد مزدوج</small></div>
       <div class="school-command-card green"><span>💺</span><b>المقاعد المشغولة</b><strong>${occupiedSeats}</strong><small>من أصل ${totalSeats} مقعد</small></div>
       <div class="school-command-card red"><span>📊</span><b>الدرجات المسجلة</b><strong>${grades}</strong><small>سجل درجات محفوظ</small></div>
       <div class="school-command-card gold"><span>👥</span><b>طاقم النظام</b><strong>${assistants.length+monitors.length}</strong><small>معاونون ومراقبون</small></div>
+    </div>
+
+    <div class="school-command-section">
+      <div class="school-command-section-title"><span>🏆</span><div><b>التحصيل الدراسي والسلوك</b><small>المتفوقون وغير الجيدين حسب الدرجات والسلوك المسجل</small></div></div>
+      <div class="school-command-status-grid">
+        <div><b>🏆 المتفوقون</b><strong>${topStudents}</strong><em>متوسط 90% فأعلى</em></div>
+        <div><b>⚠️ غير الجيدين دراسياً</b><strong>${weakStudents}</strong><em>متوسط أقل من 50%</em></div>
+        <div><b>😊 السلوك الجيد</b><strong>${goodBehavior}</strong><em>جيد / جيد جداً / ممتاز</em></div>
+        <div><b>⚠️ السلوك غير الجيد</b><strong>${badBehavior}</strong><em>متوسط / ردئ</em></div>
+      </div>
+    </div>
+
+    <div class="school-command-section">
+      <div class="school-command-section-title"><span>📅</span><div><b>نسبة الغياب في المدرسة خلال شهر</b><small>آخر 30 يوماً من سجلات الحضور المحفوظة</small></div></div>
+      <div class="school-command-status-grid">
+        <div><b>📌 نسبة الغياب</b><strong>${monthlyAbsencePct}%</strong><em>${monthAbsent} غياب من ${monthAttendance.length} سجل حضور</em></div>
+        <div><b>📝 إجمالي السجلات</b><strong>${monthAttendance.length}</strong><em>سجل خلال آخر 30 يوماً</em></div>
+        <div><b>📚 المواد الموجودة</b><strong>${allSubjectNames.size}</strong><em>مادة فريدة في النظام والجداول</em></div>
+        <div><b>➕ المواد المضافة</b><strong>${addedSubjectNames.size}</strong><em>مادة فريدة في قائمة المواد</em></div>
+      </div>
     </div>
 
     <div class="school-command-section">
@@ -10765,7 +10843,9 @@ function openDev5Performance(){
         <div><span>الذكور</span><b>${maleStudents}</b></div>
         <div><span>الإناث</span><b>${femaleStudents}</b></div>
         <div><span>المعلمون</span><b>${teachers.length}</b></div>
-        <div><span>المواد</span><b>${subjects.length}</b></div>
+        <div><span>عدد المواد</span><b>${allSubjectNames.size}</b></div>
+        <div><span>المواد المضافة</span><b>${addedSubjectNames.size}</b></div>
+        <div><span>المواد الظاهرة في الجداول</span><b>${scheduledSubjectNames.size}</b></div>
         <div><span>الرحلات</span><b>${trips}</b></div>
         <div><span>المقاعد</span><b>${totalSeats}</b></div>
         <div><span>المقاعد المشغولة</span><b>${occupiedSeats}</b></div>
@@ -10778,16 +10858,16 @@ function openDev5Performance(){
     </div>
 
     <div class="school-command-section school-command-performance">
-      <div class="school-command-section-title"><span>⚡</span><div><b>محرك النظام والأداء</b><small>خصائص التطوير السابقة ما زالت تعمل داخل النظام الشامل</small></div></div>
+      <div class="school-command-section-title"><span>⚡</span><div><b>محرك النظام والأداء</b><small>الخصائص الحالية ما زالت تعمل داخل النظام الشامل</small></div></div>
       <div class="school-command-features">
-        <div>✅ <b>فهرس الطلاب السريع</b><small>يبقى مفهرساً لتسريع الوصول إلى بيانات الطلاب.</small></div>
-        <div>✅ <b>البحث المؤجل</b><small>يقلل العمليات أثناء الكتابة ويحسن الاستجابة.</small></div>
-        <div>✅ <b>إدارة البيانات السحابية</b><small>البيانات تبقى مرتبطة بآلية Firebase الحالية.</small></div>
-        <div>✅ <b>تنظيم الحفظ</b><small>يحافظ على خصائص الحفظ الحالية دون حذفها.</small></div>
+        <div>✅ <b>البحث عن الطالب</b><small>يمكنك البحث من شريط البحث في واجهة المدير وطباعة ملف A4.</small></div>
+        <div>✅ <b>تحليل الدرجات</b><small>المتفوقون 90% فأعلى، وغير الجيدين أقل من 50% من الدرجة الكاملة.</small></div>
+        <div>✅ <b>تحليل الغياب</b><small>نسبة الغياب محسوبة على آخر 30 يوماً من السجلات الموجودة.</small></div>
+        <div>✅ <b>تحليل السلوك</b><small>السلوك الجيد وغير الجيد محسوب حسب التقييمات المسجلة للطلاب.</small></div>
       </div>
     </div>
 
-    <div class="school-command-footer">👑 أنت الآن في مركز قيادة المدرسة — كل الأرقام أعلاه مأخوذة من بيانات النظام الحالية.</div>
+    <div class="school-command-footer">👑 مركز قيادة المدرسة — جميع الأرقام أعلاه مأخوذة من بيانات النظام الحالية.</div>
   `;
   d5open('🏫 نظام المدرسة الشامل',html,'dev5PerformanceModal');
 }
@@ -10806,12 +10886,6 @@ body.parent-only-mode #globalSearchWrapper,
 body.parent-only-mode header { display:none !important; }
 </style>
 
-<style id="parent-grade-display-css">
-.parent-grade-score{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap;font-weight:900;}
-.parent-grade-score .grade-value{font-size:30px;line-height:1;color:#c0392b;font-weight:1000;}
-.parent-grade-score .grade-separator,.parent-grade-score .grade-max{font-size:14px;color:#536273;font-weight:800;}
-@media(max-width:700px){.parent-grade-score .grade-value{font-size:26px}.parent-grade-score .grade-separator,.parent-grade-score .grade-max{font-size:13px}}
-</style>
 <style id="parent-portal-professional-css">
 .parent-portal-hero{padding:22px 24px;background:linear-gradient(135deg,#16324f,#28779f);color:#fff;display:flex;justify-content:space-between;gap:15px;align-items:center}.parent-kicker{font-size:12px;opacity:.8;font-weight:800}.parent-portal-hero h2{margin:4px 0;font-size:26px}.parent-portal-hero p{margin:0;opacity:.9}.parent-logout{background:#d64545!important;border-radius:12px!important;padding:10px 15px!important;font-weight:900}.parent-alert{margin:14px 16px 0;padding:14px;border-radius:14px;font-size:14px;box-shadow:0 5px 15px rgba(0,0,0,.06)}.parent-alert-absent{background:#fff0f0;color:#b42318;border:1px solid #f3b4b0}.parent-alert-leave{background:#fff8df;color:#8a5a00;border:1px solid #efd487}.parent-alert-late{background:#fff5e7;color:#a85b00;border:1px solid #f1cf9c}.parent-alert-ok{background:#edf9f1;color:#176b3b;border:1px solid #bfe6cb}.parent-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px}.parent-stats>div{background:#fff;border:1px solid #e1e8ee;border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(25,55,80,.06)}.parent-stats span{font-size:22px;display:block}.parent-stats small{display:block;color:#778693;margin-top:5px}.parent-stats b{display:block;margin-top:4px;color:#20384c;font-size:18px}.parent-portal-actions{display:flex;gap:9px;flex-wrap:wrap;padding:0 16px 4px}.parent-portal-actions button{background:linear-gradient(135deg,#1f668f,#2980b9)!important;border-radius:12px!important;font-weight:900!important}.parent-portal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px 0}.parent-att-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.parent-att-summary div{padding:11px;border-radius:12px;background:#f7f9fb;text-align:center}.parent-att-summary b{display:block;font-size:23px;color:#1f4058}.parent-att-summary span{font-size:11px;color:#6e7d89}.parent-portal .pro-panel{margin:12px 16px}.parent-portal-grid .pro-panel{margin:0}.parent-portal .pro-table{font-size:12px}@media(max-width:700px){.parent-portal-hero{padding:17px;display:block}.parent-logout{margin-top:12px}.parent-stats{grid-template-columns:repeat(2,1fr);padding:12px}.parent-portal-grid{grid-template-columns:1fr;padding:8px 12px 0}.parent-portal .pro-panel{margin:10px 12px}.parent-att-summary{grid-template-columns:repeat(2,1fr)}}
 </style>
