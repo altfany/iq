@@ -1419,6 +1419,94 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
     lastGoodCloudSnapshot: null
   };
 
+  // ===== حماية جلسة ولي الأمر =====
+  // الجلسة تستمر 5 دقائق فقط، وبعدها يجب إعادة إدخال كود ولي الأمر.
+  // ويسمح لكل كود بحد أقصى 10 دخولات ناجحة في اليوم الواحد.
+  const PARENT_SESSION_MS = 5 * 60 * 1000;
+  const PARENT_DAILY_LOGIN_LIMIT = 10;
+  let parentSessionTimer = null;
+  let parentReauthRequired = false;
+
+  function getParentAccessDayKey(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function getParentStudentDesk(match) {
+    if (!match) return null;
+    const cls = schoolData?.[Number(match.classIndex)] || match.classObj;
+    const desk = cls?.desks?.[Number(match.deskIndex)];
+    return desk || null;
+  }
+
+  function registerParentDailyLogin(match) {
+    if (!match || !match.student) return { allowed: false, count: 0 };
+    const desk = getParentStudentDesk(match);
+    // نستخدم بيانات الطالب نفسها كمصدر للعدّاد حتى تبقى ضمن بيانات Firebase.
+    const holder = desk || match.student;
+    const today = getParentAccessDayKey();
+    const savedDay = String(holder.parentAccessDay || '').trim();
+    let count = savedDay === today ? Number(holder.parentAccessCount || 0) : 0;
+    if (!Number.isFinite(count) || count < 0) count = 0;
+
+    if (count >= PARENT_DAILY_LOGIN_LIMIT) {
+      alert('لا يمكن الدخول لانكم دخلتم اكثر من 10 مرات غدا حاول الدخول');
+      return { allowed: false, count };
+    }
+
+    count += 1;
+    holder.parentAccessDay = today;
+    holder.parentAccessCount = count;
+    saveData();
+    return { allowed: true, count };
+  }
+
+  function clearParentSessionTimer() {
+    if (parentSessionTimer) {
+      clearTimeout(parentSessionTimer);
+      parentSessionTimer = null;
+    }
+  }
+
+  function startParentSessionTimer() {
+    clearParentSessionTimer();
+    if (currentUser?.role !== 'parent') return;
+    parentSessionTimer = setTimeout(expireParentSession, PARENT_SESSION_MS);
+  }
+
+  function expireParentSession() {
+    parentSessionTimer = null;
+    if (currentUser?.role !== 'parent') return;
+    parentReauthRequired = true;
+    document.getElementById('studentRoleDashboardModal')?.remove();
+    const overlay = document.getElementById('loginOverlay');
+    const input = document.getElementById('loginCodeInput');
+    const title = document.querySelector('#loginOverlay .login-card h2');
+    const hint = document.getElementById('parentReauthHint');
+    if (title) title.textContent = 'إعادة التحقق من ولي الأمر';
+    if (hint) {
+      hint.textContent = 'انتهت مدة الجلسة (5 دقائق). أدخل كود ولي الأمر مرة أخرى للمتابعة.';
+      hint.style.display = 'block';
+    }
+    if (input) {
+      input.value = '';
+      input.placeholder = 'أدخل كود ولي الأمر مرة أخرى';
+      input.focus();
+    }
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  function resetParentLoginOverlayText() {
+    const title = document.querySelector('#loginOverlay .login-card h2');
+    const hint = document.getElementById('parentReauthHint');
+    const input = document.getElementById('loginCodeInput');
+    if (title) title.textContent = 'تسجيل الدخول للنظام';
+    if (hint) hint.style.display = 'none';
+    if (input) input.placeholder = 'أدخل كود الذي خصص لك من قبل الاداره';
+  }
+
   // يحول بيانات Firebase القديمة/المفهرسة بمفاتيح رقمية إلى مصفوفات.
   // Realtime Database قد يعيد المصفوفة ككائن إذا كانت الفهارس غير متصلة.
   function normalizeCloudArray(value) {
@@ -2048,6 +2136,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     <div class="login-card">
         <h2>تسجيل الدخول للنظام</h2>
         <p style="font-size: 12px; color: #666; margin-bottom: 15px;">اكتب الكود المخصص لك فقط</p>
+        <p id="parentReauthHint" style="display:none;font-size:12px;background:#fff4d6;color:#8a5a00;border:1px solid #efd487;border-radius:10px;padding:9px;margin:0 0 12px;font-weight:800;"></p>
 <p style="font-size: 14px; background: linear-gradient(to right, #ce1126, #000000, #078930); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; margin-bottom: 15px;">مدرسة التفاني الابتدائية </p>
         <div class="form-group">
             <label></label>
@@ -4239,6 +4328,42 @@ function updateCloudStatus(text, color) {
         const enteredCode = String(document.getElementById('loginCodeInput')?.value || '').trim();
         if (!enteredCode) { alert('الرجاء إدخال كود الدخول.'); return; }
         if (loginIsLocked()) return;
+
+        // إعادة التحقق بعد انتهاء جلسة ولي الأمر: نفس الكود فقط، مع احتساب دخول جديد من الحد اليومي.
+        if (parentReauthRequired && currentUser?.role === 'parent') {
+            if (enteredCode !== String(currentUser.code || '').trim()) {
+                recordFailedLoginAttempt();
+                alert('الكود غير صحيح. أدخل كود ولي الأمر الصحيح للمتابعة.');
+                return;
+            }
+            const match = findStudentBySecretCode(enteredCode);
+            if (!match) {
+                recordFailedLoginAttempt();
+                alert('تعذر التحقق من كود ولي الأمر.');
+                return;
+            }
+            const suspensionRecord=getStudentSuspensionRecord(match);
+            if(suspensionRecord?.suspended){
+                currentUser=null;
+                parentReauthRequired=false;
+                clearParentSessionTimer();
+                document.getElementById('loginOverlay').style.display='flex';
+                showStudentSuspensionOverlay(suspensionRecord);
+                return;
+            }
+            const access = registerParentDailyLogin(match);
+            if (!access.allowed) return;
+            currentUser = { ...currentUser, name: match.student.name || currentUser.name, classIndex: match.classIndex, studentId: match.student.id || currentUser.studentId, studentSnapshot: { ...match.student }, classSnapshot: match.classObj, deskIndex: match.deskIndex };
+            parentReauthRequired = false;
+            APP_SECURITY.failedAttempts = 0;
+            APP_SECURITY.lockedUntil = 0;
+            resetParentLoginOverlayText();
+            document.getElementById('loginOverlay').style.display = 'none';
+            startParentSessionTimer();
+            setTimeout(function(){ try { openStudentDashboard(); } catch (err) { console.error('Parent dashboard error:', err); } }, 100);
+            return;
+        }
+
         // المدير: الكود الشخصي المحفوظ في Firebase.
         if (enteredCode === String(adminCredentials.password || DEFAULT_ADMIN_LOGIN_CODE).trim()) {
             currentUser = { role: 'admin', name: adminCredentials.name || 'مدير النظام', isPrimaryAdmin: true };
@@ -4286,6 +4411,8 @@ function updateCloudStatus(text, color) {
                         showStudentSuspensionOverlay(suspensionRecord);
                         return;
                     }
+                    const parentAccess = registerParentDailyLogin(match);
+                    if (!parentAccess.allowed) return;
                     currentUser = {
                         role: 'parent',
                         name: match.student.name || 'الطالب',
@@ -4307,6 +4434,9 @@ function updateCloudStatus(text, color) {
         applyUserPermissions();
         document.getElementById('loginOverlay').style.display = 'none';
         if (currentUser?.role === 'parent') {
+            parentReauthRequired = false;
+            resetParentLoginOverlayText();
+            startParentSessionTimer();
             setTimeout(function(){
                 try { openStudentDashboard(); } catch (err) { console.error('Parent dashboard error:', err); alert('حدث خطأ في فتح صفحة ولي الأمر.'); }
             }, 180);
@@ -4426,12 +4556,15 @@ function updateCloudStatus(text, color) {
     },30000);
 
     async function logoutSystem() {
+        clearParentSessionTimer();
+        parentReauthRequired = false;
         // إذا كان المستخدم مراقباً، أغلق مركز المراقب فوراً حتى لا تبقى الواجهة
         // ظاهرة بعد تسجيل الخروج، ثم ألغِ أي جلسة/لوحة مفتوحة مرتبطة بالمستخدم.
         const monitorModal = document.getElementById('monitorCenterModal');
         if (monitorModal) monitorModal.remove();
         const parentPortal = document.getElementById('parentPortalModal');
         if (parentPortal) parentPortal.remove();
+        document.getElementById('studentRoleDashboardModal')?.remove();
 
         // أي تعديل سابق يجب أن يصل إلى Firebase قبل إنهاء الجلسة.
         try {
@@ -4452,6 +4585,7 @@ function updateCloudStatus(text, color) {
         if (codeInput) codeInput.value = '';
         const overlay = document.getElementById('loginOverlay');
         if (overlay) overlay.style.display = 'flex';
+        resetParentLoginOverlayText();
         toggleLoginFields();
     }
 
@@ -8612,7 +8746,7 @@ function updateCloudStatus(text, color) {
         const leaveDates=myAtt.filter(r=>r.status==='leave').map(r=>({date:r.date,status:'leave'})).concat(legacyDates.filter(x=>x.status==='leave')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
         const todayRecord=myAtt.find(r=>String(r.date)===String(today)); const todayStatus=todayRecord?.status||legacyMap?.[today]?.[legacyKey]||'present';
         const todayMessage=todayStatus==='absent'?'<div class="parent-alert parent-alert-absent">🚨 <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>غائباً</b>.</div>':todayStatus==='leave'?'<div class="parent-alert parent-alert-leave">🏖️ <b>تنبيه:</b> تم تسجيل ابنك اليوم <b>مجازاً</b>.</div>':todayStatus==='late'?'<div class="parent-alert parent-alert-late">⏰ <b>تنبيه:</b> تم تسجيل تأخر ابنك اليوم.</div>':'<div class="parent-alert parent-alert-ok">✅ حالة اليوم: <b>حاضر</b> أو لم يُسجّل عليه غياب.</div>';
-        const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لابنك حالياً.</td></tr>';
+        const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><span class="parent-grade-score"><span class="grade-value">${escapeGlobalSearchHTML(g.score)}</span><span class="grade-separator">من</span><span class="grade-max">${escapeGlobalSearchHTML(g.maxScore)}</span></span></td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لابنك حالياً.</td></tr>';
         const absenceRows=absentDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>غائب</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام غياب مسجلة.</td></tr>';
         const leaveRows=leaveDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>مجاز</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام إجازة مسجلة.</td></tr>';
         const parentBehaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
@@ -10672,6 +10806,12 @@ body.parent-only-mode #globalSearchWrapper,
 body.parent-only-mode header { display:none !important; }
 </style>
 
+<style id="parent-grade-display-css">
+.parent-grade-score{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap;font-weight:900;}
+.parent-grade-score .grade-value{font-size:30px;line-height:1;color:#c0392b;font-weight:1000;}
+.parent-grade-score .grade-separator,.parent-grade-score .grade-max{font-size:14px;color:#536273;font-weight:800;}
+@media(max-width:700px){.parent-grade-score .grade-value{font-size:26px}.parent-grade-score .grade-separator,.parent-grade-score .grade-max{font-size:13px}}
+</style>
 <style id="parent-portal-professional-css">
 .parent-portal-hero{padding:22px 24px;background:linear-gradient(135deg,#16324f,#28779f);color:#fff;display:flex;justify-content:space-between;gap:15px;align-items:center}.parent-kicker{font-size:12px;opacity:.8;font-weight:800}.parent-portal-hero h2{margin:4px 0;font-size:26px}.parent-portal-hero p{margin:0;opacity:.9}.parent-logout{background:#d64545!important;border-radius:12px!important;padding:10px 15px!important;font-weight:900}.parent-alert{margin:14px 16px 0;padding:14px;border-radius:14px;font-size:14px;box-shadow:0 5px 15px rgba(0,0,0,.06)}.parent-alert-absent{background:#fff0f0;color:#b42318;border:1px solid #f3b4b0}.parent-alert-leave{background:#fff8df;color:#8a5a00;border:1px solid #efd487}.parent-alert-late{background:#fff5e7;color:#a85b00;border:1px solid #f1cf9c}.parent-alert-ok{background:#edf9f1;color:#176b3b;border:1px solid #bfe6cb}.parent-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px}.parent-stats>div{background:#fff;border:1px solid #e1e8ee;border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(25,55,80,.06)}.parent-stats span{font-size:22px;display:block}.parent-stats small{display:block;color:#778693;margin-top:5px}.parent-stats b{display:block;margin-top:4px;color:#20384c;font-size:18px}.parent-portal-actions{display:flex;gap:9px;flex-wrap:wrap;padding:0 16px 4px}.parent-portal-actions button{background:linear-gradient(135deg,#1f668f,#2980b9)!important;border-radius:12px!important;font-weight:900!important}.parent-portal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px 0}.parent-att-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.parent-att-summary div{padding:11px;border-radius:12px;background:#f7f9fb;text-align:center}.parent-att-summary b{display:block;font-size:23px;color:#1f4058}.parent-att-summary span{font-size:11px;color:#6e7d89}.parent-portal .pro-panel{margin:12px 16px}.parent-portal-grid .pro-panel{margin:0}.parent-portal .pro-table{font-size:12px}@media(max-width:700px){.parent-portal-hero{padding:17px;display:block}.parent-logout{margin-top:12px}.parent-stats{grid-template-columns:repeat(2,1fr);padding:12px}.parent-portal-grid{grid-template-columns:1fr;padding:8px 12px 0}.parent-portal .pro-panel{margin:10px 12px}.parent-att-summary{grid-template-columns:repeat(2,1fr)}}
 </style>
