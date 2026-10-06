@@ -3375,28 +3375,72 @@ function openComplaintSenderModal(){
     modal.innerHTML=`<div class="modal-content" style="width:min(700px,97vw);max-height:94vh;overflow:auto;padding:20px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#8e44ad">${title}</h2><button onclick="document.getElementById('complaintSenderModal')?.remove()">✕</button></div><div class="pro-panel"><div style="margin-bottom:10px;color:#667">الصلاحية: <b>${limit}</b>. يتم حذف سجلات الشكاوى تلقائياً بعد 14 يوماً.</div><textarea id="complaintMessageInput" rows="8" maxlength="1500" placeholder="اكتب الشكوى بالتفصيل..."></textarea><div style="text-align:left;margin-top:10px"><button onclick="submitComplaint()" style="background:#8e44ad;color:#fff;font-weight:900">📨 إرسال الشكوى</button></div></div><div id="complaintSenderStatus" class="pro-panel"></div></div>`;
     document.body.appendChild(modal); renderComplaintSenderStatus();
 }
+function getUnreadAdminComplaints(){
+    if(!Array.isArray(complaintsData)) return [];
+    return complaintsData.filter(c=>c && !c.adminReadAt);
+}
+
+function markComplaintsAsReadByAdmin(){
+    if(!currentUser || currentUser.role!=='admin' || !Array.isArray(complaintsData)) return false;
+    const now=new Date().toISOString();
+    let changed=false;
+    complaintsData.forEach(c=>{
+        if(c && !c.adminReadAt){ c.adminReadAt=now; c.adminReadBy=String(currentUser.name||'المدير'); changed=true; }
+    });
+    if(changed) saveData();
+    return changed;
+}
+
 function updateComplaintsManagerIndicator(){
     const btn=document.getElementById('btnComplaintsNav'); if(!btn) return;
-    const hasComplaints=Array.isArray(complaintsData)&&complaintsData.length>0;
-    btn.classList.toggle('complaints-pending', hasComplaints && currentUser?.role==='admin');
-    if(hasComplaints && currentUser?.role==='admin'){
-        btn.title=`يوجد ${complaintsData.length} شكوى في صندوق الشكاوى`;
-        btn.setAttribute('aria-label',`يوجد ${complaintsData.length} شكوى في صندوق الشكاوى`);
+    const unread=getUnreadAdminComplaints();
+    const hasUnread=unread.length>0;
+    btn.classList.toggle('complaints-pending', hasUnread && currentUser?.role==='admin');
+    if(hasUnread && currentUser?.role==='admin'){
+        btn.title=`يوجد ${unread.length} شكوى جديدة غير مقروءة في صندوق الشكاوى`;
+        btn.setAttribute('aria-label',`يوجد ${unread.length} شكوى جديدة غير مقروءة في صندوق الشكاوى`);
     }else{btn.removeAttribute('title');btn.removeAttribute('aria-label');}
 }
 
 setInterval(updateComplaintsManagerIndicator, 10000);
 
+function deleteComplaint(id){
+    if(!currentUser || currentUser.role!=='admin') return;
+    const idx=complaintsData.findIndex(x=>String(x.id)===String(id));
+    if(idx<0) return;
+    const c=complaintsData[idx];
+    if(!confirm(`هل تريد حذف هذه الشكوى نهائياً من صندوق الشكاوى؟\n\n${String(c.message||'').slice(0,180)}`)) return;
+    complaintsData.splice(idx,1);
+    saveData();
+    renderComplaintsManager();
+    updateComplaintsManagerIndicator();
+}
+
+function deleteAllComplaints(){
+    if(!currentUser || currentUser.role!=='admin') return;
+    if(!Array.isArray(complaintsData) || !complaintsData.length){ alert('لا توجد شكاوى لحذفها.'); return; }
+    if(!confirm(`سيتم حذف جميع الشكاوى (${complaintsData.length}) نهائياً. هل أنت متأكد؟`)) return;
+    complaintsData=[];
+    saveData();
+    renderComplaintsManager();
+    updateComplaintsManagerIndicator();
+}
+
 function openComplaintsManagerModal(){
-    if(!currentUser || currentUser.role!=='admin') return; pruneExpiredComplaintsData(); updateComplaintsManagerIndicator();
+    if(!currentUser || currentUser.role!=='admin') return;
+    pruneExpiredComplaintsData();
+    // عند فتح المدير لصندوق الشكاوى تعتبر الشكاوى الحالية مقروءة، فيختفي الضوء.
+    // أي شكوى جديدة تصل بعد ذلك ستحتوي adminReadAt فارغاً فتضيء الزر من جديد.
+    markComplaintsAsReadByAdmin();
+    updateComplaintsManagerIndicator();
     const old=document.getElementById('complaintsManagerModal'); if(old) old.remove();
     const modal=document.createElement('div'); modal.id='complaintsManagerModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100110;background:rgba(0,0,0,.68);padding:10px;align-items:center;justify-content:center;direction:rtl;';
-    modal.innerHTML=`<div class="modal-content" style="width:min(1100px,98vw);max-height:95vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#8e44ad">📮 الشكاوي</h2><button onclick="document.getElementById('complaintsManagerModal')?.remove()">✕</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="pro-panel"><h3>👨‍👩‍👧 شكاوي أولياء الأمور</h3><div id="parentComplaintsList"></div></div><div class="pro-panel"><h3>👨‍🏫 شكاوي المعلمين</h3><div id="teacherComplaintsList"></div></div></div></div>`;
+    modal.innerHTML=`<div class="modal-content" style="width:min(1100px,98vw);max-height:95vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 style="margin:0;color:#8e44ad">📮 الشكاوي</h2><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><span id="complaintsReadStatus" style="font-size:12px;color:#16803c;font-weight:800">✓ تم فتح وقراءة الشكاوى الحالية</span><button onclick="deleteAllComplaints()" style="background:#c0392b;color:#fff;font-weight:900">🗑️ حذف جميع الشكاوي</button><button onclick="document.getElementById('complaintsManagerModal')?.remove()">✕</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="pro-panel"><h3>👨‍👩‍👧 شكاوي أولياء الأمور</h3><div id="parentComplaintsList"></div></div><div class="pro-panel"><h3>👨‍🏫 شكاوي المعلمين</h3><div id="teacherComplaintsList"></div></div></div></div>`;
     document.body.appendChild(modal); renderComplaintsManager();
 }
 function renderComplaintsManager(){
     const parentBox=document.getElementById('parentComplaintsList'), teacherBox=document.getElementById('teacherComplaintsList'); if(!parentBox||!teacherBox)return;
-    const make=(arr)=>arr.length?arr.map(c=>`<div style="border:1px solid #e4e9ef;border-radius:13px;padding:12px;margin-bottom:10px;background:#fff"><div><b>${escapeGlobalSearchHTML(c.senderName||'غير محدد')}</b> <span style="color:#777;font-size:12px">${escapeGlobalSearchHTML(new Date(c.createdAt).toLocaleString('ar-IQ'))}</span></div>${c.senderRole==='parent'?`<div style="font-size:12px;line-height:1.8;color:#445">الطالب: ${escapeGlobalSearchHTML(c.studentName||'-')}<br>الصف: ${escapeGlobalSearchHTML(c.className||'-')}<br>📞 الهاتف: ${escapeGlobalSearchHTML(c.phone||'-')}<br>📍 العنوان المسجل: ${escapeGlobalSearchHTML(c.address||'-')}</div>`:`<div style="font-size:12px;color:#445">📞 هاتف المعلم: ${escapeGlobalSearchHTML(c.phone||'-')}</div>`}<div style="white-space:pre-wrap;background:#f7f9fb;padding:10px;border-radius:10px;margin-top:7px">${escapeGlobalSearchHTML(c.message)}</div><div style="margin-top:8px"><textarea id="complaintReply_${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'_')}" rows="3" placeholder="اكتب رد المدير...">${escapeGlobalSearchHTML(c.response||'')}</textarea><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button onclick="replyToComplaint('${String(c.id).replace(/'/g,"\\'")}')" style="background:#16803c">📨 إرسال الرد</button>${c.response?`<span style="padding:8px;background:#eefaf3;border-radius:8px;color:#176b39">رد: ${escapeGlobalSearchHTML(new Date(c.responseAt).toLocaleString('ar-IQ'))} — ${c.responseReadAt?'✓ تمت القراءة: '+escapeGlobalSearchHTML(new Date(c.responseReadAt).toLocaleString('ar-IQ')):'لم تتم القراءة بعد'}</span>`:''}</div></div></div>`).join(''):'<div class="pro-empty">لا توجد شكاوى محفوظة.</div>';
+    const make=(arr)=>arr.length?arr.map(c=>`<div style="border:1px solid #e4e9ef;border-radius:13px;padding:12px;margin-bottom:10px;background:#fff"><div><b>${escapeGlobalSearchHTML(c.senderName||'غير محدد')}</b> <span style="color:#777;font-size:12px">${escapeGlobalSearchHTML(new Date(c.createdAt).toLocaleString('ar-IQ'))}</span></div>${c.senderRole==='parent'?`<div style="font-size:12px;line-height:1.8;color:#445">الطالب: ${escapeGlobalSearchHTML(c.studentName||'-')}<br>الصف: ${escapeGlobalSearchHTML(c.className||'-')}<br>📞 الهاتف: ${escapeGlobalSearchHTML(c.phone||'-')}<br>📍 العنوان المسجل: ${escapeGlobalSearchHTML(c.address||'-')}</div>`:`<div style="font-size:12px;color:#445">📞 هاتف المعلم: ${escapeGlobalSearchHTML(c.phone||'-')}</div>`}<div style="white-space:pre-wrap;background:#f7f9fb;padding:10px;border-radius:10px;margin-top:7px">${escapeGlobalSearchHTML(c.message)}</div><div style="margin-top:8px"><textarea id="complaintReply_${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'_')}" rows="3" placeholder="اكتب رد المدير...">${escapeGlobalSearchHTML(c.response||'')}</textarea><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button onclick="replyToComplaint('${String(c.id).replace(/'/g,"\\'")}')" style="background:#16803c">📨 إرسال الرد</button><button onclick="deleteComplaint('${String(c.id).replace(/'/g,"\\'")}')" style="background:#c0392b;color:#fff">🗑️ حذف</button>${c.response?`<span style="padding:8px;background:#eefaf3;border-radius:8px;color:#176b39">رد: ${escapeGlobalSearchHTML(new Date(c.responseAt).toLocaleString('ar-IQ'))} — ${c.responseReadAt?'✓ تمت القراءة: '+escapeGlobalSearchHTML(new Date(c.responseReadAt).toLocaleString('ar-IQ')):'لم تتم القراءة بعد'}</span>`:''}</div></div></div>`).join(''):'<div class="pro-empty">لا توجد شكاوى محفوظة.</div>';
     parentBox.innerHTML=make(complaintsData.filter(c=>c.senderRole==='parent')); teacherBox.innerHTML=make(complaintsData.filter(c=>c.senderRole==='teacher'));
 }
 function replyToComplaint(id){
