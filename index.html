@@ -9188,31 +9188,7 @@ function updateCloudStatus(text, color) {
 
         const normalized=status==='leave'?'leave':status==='absent'?'absent':status==='late'?'late':'present';
 
-        // تحويل الطالب من «غائب» إلى «مجاز» إجراء حساس خاص بالمدير:
-        // أولاً تأكيد العملية، ثم طلب كود المدير قبل تنفيذ أي تغيير.
-        if(normalized==='leave'){
-            const confirmed=confirm(`⚠️ تأكيد تغيير حالة الطالب\n\nالطالب: ${found.name}\nالتاريخ: ${date}\n\nهل أنت متأكد أنك تريد تحويل حالة الطالب من «غائب» إلى «مجاز»؟`);
-            if(!confirmed){
-                renderMonitorDailyInventory();
-                renderMonitorAbsenceRangeReport();
-                return false;
-            }
-
-            const adminCode=prompt('🔐 أدخل الرقم السري للمدير لتأكيد تحويل الطالب إلى «مجاز»:');
-            if(adminCode===null){
-                renderMonitorDailyInventory();
-                renderMonitorAbsenceRangeReport();
-                return false;
-            }
-
-            if(String(adminCode).trim()!==String(adminCredentials?.password||'').trim()){
-                alert('❌ الرقم السري للمدير غير صحيح.\nلم يتم تغيير حالة الطالب.');
-                renderMonitorDailyInventory();
-                renderMonitorAbsenceRangeReport();
-                return false;
-            }
-        }
-
+        // تغيير الحالة من لوحة المدير يتم مباشرة عند وضع علامة ✓، بدون تأكيد أو رقم سري.
         const changedAt=new Date().toISOString();
 
         // تحديث سجل الحضور الاحترافي فوراً، مع التأكد من نجاح العملية.
@@ -9308,6 +9284,19 @@ function updateCloudStatus(text, color) {
 
     window.updateDailyInventoryStudentStatus=updateDailyInventoryStudentStatus;
 
+    function renderManagerAttendanceCheckboxes(studentId,date,currentStatus,studentName){
+        const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const safeId=escAttr(studentId), safeDate=escAttr(date), safeName=escAttr(studentName);
+        const statuses=[['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
+        return `<div class="manager-status-checks" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${statuses.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border:1px solid #d8e0e8;border-radius:8px;background:#fff;cursor:pointer;font-weight:800;font-size:12px"><input type="checkbox" ${currentStatus===value?'checked':''} onchange="window.managerAttendanceCheckboxChanged(this,'${safeId}','${safeDate}','${value}','${safeName}')" style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer"><span>${icon} ${label}</span></label>`).join('')}<span style="font-size:10px;color:#667;font-weight:700">✓ اختر حالة واحدة</span></div>`;
+    }
+    window.managerAttendanceCheckboxChanged=function(box,studentId,date,status,studentName=''){
+        if(!box || !box.checked) return;
+        const group=box.closest('.manager-status-checks');
+        if(group) group.querySelectorAll('input[type="checkbox"]').forEach(cb=>{if(cb!==box) cb.checked=false;});
+        window.updateDailyInventoryStudentStatus(studentId,date,status,studentName);
+    };
+
     function renderMonitorDailyInventory(){
         if(!isPrimaryAdminUser()) return;
         const date=document.getElementById('dailyInventoryDate')?.value||getFormattedDate();
@@ -9333,12 +9322,7 @@ function updateCloudStatus(text, color) {
                         <td><strong style="color:${statusColor(x.status)}">${statusText(x.status)}</strong></td>
                         <td>${x.status==='late'?escapeGlobalSearchHTML(x.lateTime||'-'):'-'}</td>
                         <td>${x.status==='late'?escapeGlobalSearchHTML(x.lateReason||x.note||'-'):'-'}</td>
-                        <td><select onchange="window.updateDailyInventoryStudentStatus('${String(x.studentId||'').replace(/'/g,"\\'")}','${x.date}',this.value,'${String(x.name||'').replace(/'/g,"\\'")}')" style="padding:7px 10px;border-radius:8px;font-weight:700;min-width:125px">
-                            <option value="absent" ${x.status==='absent'?'selected':''}>غائب ❌</option>
-                            <option value="leave" ${x.status==='leave'?'selected':''}>مجاز 🏖️</option>
-                            <option value="late" ${x.status==='late'?'selected':''}>متأخر ⏰</option>
-                            <option value="present" ${x.status==='present'?'selected':''}>حضور ✔️</option>
-                        </select></td>
+                        <td>${renderManagerAttendanceCheckboxes(x.studentId,x.date,x.status,x.name)}</td>
                     </tr>`).join('')}</tbody></table></div>`
                   : '<div style="color:var(--success);font-weight:700">لا توجد سجلات حضور/غياب لهذا الطالب في الشهر المحدد.</div>'}
             </div>`;
@@ -9352,20 +9336,15 @@ const adminChangedStatus = (x.changedBy === 'المدير' || x.changedBy === '�
 const professionalStatus = (window.ProfessionalModules?.attendanceData||[])
     .find(a=>String(a.studentId)===String(x.studentId)&&String(a.date)===String(date));
 const currentStatus = adminChangedStatus || professionalStatus?.status || x.status || 'absent';
-                  if(currentStatus==='late'){
-                      const lt=professionalStatus?.lateTime || x.lateTime || '';
-                      const lr=professionalStatus?.lateReason || x.lateReason || professionalStatus?.note || x.note || '';
-                      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:3px 0;padding:6px 7px;border-radius:8px;background:#fff7e6"><span><strong>${escapeGlobalSearchHTML(x.name)}</strong> <span class="pro-badge late">متأخر ⏰</span> <small style="color:#8a5a00;font-weight:700">وقت الدخول: ${escapeGlobalSearchHTML(lt||'-')} — السبب: ${escapeGlobalSearchHTML(lr||'-')}</small></span><button type="button" onclick="return window.updateDailyInventoryStudentStatus('${String(x.studentId||'').replace(/'/g,"\\'")}','${String(date)}','present','${String(x.name||'').replace(/'/g,"\\'")}')" style="background:var(--success);padding:5px 8px;font-size:10px">حاضر</button></div>`;
-                  }
-                  if(currentStatus==='leave'){
-                      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:3px 0;padding:5px 7px;border-radius:8px;background:#fff8e8"><span><strong>${escapeGlobalSearchHTML(x.name)}</strong> <span class="pro-badge late">مجاز</span> <small style="color:#8a6a00;font-weight:700">${escapeGlobalSearchHTML(x.changeText || `تم التغير بواسطة ${x.changedBy||'المدير'}: ${x.changedByName||''}`)}</small></span><button type="button" onclick="return window.updateDailyInventoryStudentStatus('${String(x.studentId||'').replace(/'/g,"\\'")}','${String(date)}','absent','${String(x.name||'').replace(/'/g,"\\'")}')" style="background:var(--danger);padding:5px 8px;font-size:10px">إرجاع غائب</button></div>`;
-                  }
-                  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:3px 0;padding:5px 7px;border-radius:8px;background:#fff0f0"><span><strong>${escapeGlobalSearchHTML(x.name)}</strong> <span class="pro-badge absent">غائب</span></span><button type="button" onclick="return window.updateDailyInventoryStudentStatus('${String(x.studentId||'').replace(/'/g,"\\'")}','${String(date)}','leave','${String(x.name||'').replace(/'/g,"\\'")}')" style="background:var(--warning);color:#fff;padding:5px 8px;font-size:10px">تحويل إلى مجاز</button></div>`;
+                  const lt=professionalStatus?.lateTime || x.lateTime || '';
+                  const lr=professionalStatus?.lateReason || x.lateReason || professionalStatus?.note || x.note || '';
+                  const detail=currentStatus==='late' ? `<small style="color:#8a5a00;font-weight:700"> — وقت الدخول: ${escapeGlobalSearchHTML(lt||'-')} — السبب: ${escapeGlobalSearchHTML(lr||'-')}</small>` : '';
+                  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:3px 0;padding:6px 7px;border-radius:8px;background:${currentStatus==='leave'?'#fff8e8':currentStatus==='late'?'#fff7e6':'#fff0f0'}"><span><strong>${escapeGlobalSearchHTML(x.name)}</strong> ${detail}</span>${renderManagerAttendanceCheckboxes(x.studentId,date,currentStatus,x.name)}</div>`;
               }).join('')
               : '<span style="color:var(--success);font-weight:700">لا يوجد غائبون — الجميع حاضر</span>';
             return `<tr><td>${escapeGlobalSearchHTML(r.monitorName)}</td><td>${escapeGlobalSearchHTML(r.className)}</td><td style="min-width:360px;text-align:right">${studentRows}</td><td>${escapeGlobalSearchHTML(r.sentAt?new Date(r.sentAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):'-')}</td></tr>`;
         }).join('');
-        if(rb) rb.innerHTML=`<div class="pro-panel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📋 جرد ${escapeGlobalSearchHTML(date)}</h3><span style="font-size:12px;color:#667">عدد تقارير الصفوف: ${reports.length}</span></div><div style="font-size:12px;color:#667;margin-bottom:8px">يظهر أمام كل طالب وصف الحالة الحالية، ويمكن للمدير أو المعاون صاحب الصلاحية تحويل «غائب» إلى «مجاز»، مع تسجيل اسم منفذ العملية وتاريخها.</div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المراقب</th><th>الصف</th><th>حالة الطلاب</th><th>وقت الإرسال</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات جرد لهذا التاريخ.</td></tr>'}</tbody></table></div></div>`;
+        if(rb) rb.innerHTML=`<div class="pro-panel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📋 جرد ${escapeGlobalSearchHTML(date)}</h3><span style="font-size:12px;color:#667">عدد تقارير الصفوف: ${reports.length}</span></div><div style="font-size:12px;color:#667;margin-bottom:8px">يظهر أمام كل طالب وصف الحالة الحالية. يحدد المدير أو المعاون الحالة بعلامة ✓ (غائب / متأخر / مجاز)، وتنتقل الحالة مباشرة إلى جميع أجزاء النظام مع تسجيل اسم منفذ العملية وتاريخها.</div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المراقب</th><th>الصف</th><th>حالة الطلاب</th><th>وقت الإرسال</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات جرد لهذا التاريخ.</td></tr>'}</tbody></table></div></div>`;
     }
 
     function renderMonitorAbsenceRangeReport(){
