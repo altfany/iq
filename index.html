@@ -1530,7 +1530,7 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
     // الحقول الأساسية التي يحتاجها النظام تُعاد إلى أنواعها الصحيحة.
     const defaults = {
       teachersData: [], announcementsData: [], complaintsData: [], homeworkData: [],
-      subjectsData: [], gradeModificationLog: [], parentNotificationsData: [], assistantsData: [], managerNotesData: [],
+      subjectsData: [], assistantsData: [], managerNotesData: [],
       assistantActionNotificationsData: [], guestSupervisorsData: [], monitorsData: [],
       monitorNotesData: [], monitorInventoryReportsData: [], monitorMessagesData: [],
       attendanceData: [], auditLog: [], teachersAbsenceData: {}
@@ -2115,7 +2115,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         </div>
         <div class="header-actions">
             <div style="display: flex; gap: 4px;" id="globalSearchWrapper">
-                <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم الطالب أو رقم الهاتف أو الكود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
+                <input type="text" id="globalStudentSearchInput" placeholder="🔍" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
             <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 جرد الصفوف</button>
@@ -3135,8 +3135,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let homeworkData = JSON.parse(cloudOnlyStorage.getItem('homeworkData')) || [];
     if (!Array.isArray(homeworkData)) homeworkData = [];
     let subjectsData = JSON.parse(cloudOnlyStorage.getItem('subjectsData')) || [];
-    let gradeModificationLog = JSON.parse(cloudOnlyStorage.getItem('gradeModificationLog')) || [];
-    let parentNotificationsData = JSON.parse(cloudOnlyStorage.getItem('parentNotificationsData')) || [];
     if (!Array.isArray(subjectsData)) subjectsData = [];
     let savedAdminCredentials = JSON.parse(cloudOnlyStorage.getItem('adminCredentials') || 'null');
     if (savedAdminCredentials && savedAdminCredentials.password) {
@@ -3577,8 +3575,6 @@ function acknowledgeAnnouncement(id) {
             complaintsData,
             homeworkData,
             subjectsData,
-            gradeModificationLog,
-            parentNotificationsData,
             attendanceData: (typeof window.__professionalAttendanceDataForCloud === 'function' ? window.__professionalAttendanceDataForCloud() : []),
             auditLog: (typeof window.__professionalAuditLogForCloud === 'function' ? window.__professionalAuditLogForCloud() : [])
         };
@@ -3779,8 +3775,6 @@ function updateCloudStatus(text, color) {
                 pruneExpiredComplaintsData();
         if (cloud.homeworkData !== undefined) homeworkData = Array.isArray(cloud.homeworkData) ? cloud.homeworkData : [];
         if (cloud.subjectsData !== undefined) subjectsData = Array.isArray(cloud.subjectsData) ? cloud.subjectsData : [];
-        if (cloud.gradeModificationLog !== undefined) gradeModificationLog = Array.isArray(cloud.gradeModificationLog) ? cloud.gradeModificationLog : [];
-        if (cloud.parentNotificationsData !== undefined) parentNotificationsData = Array.isArray(cloud.parentNotificationsData) ? cloud.parentNotificationsData : [];
         if (cloud.adminCode !== undefined && String(cloud.adminCode).trim()) adminCredentials.password = String(cloud.adminCode).trim();
         if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
         if (cloud.parentLoginUsage !== undefined && cloud.parentLoginUsage && typeof cloud.parentLoginUsage === 'object') parentLoginUsage = cloud.parentLoginUsage;
@@ -3807,8 +3801,6 @@ function updateCloudStatus(text, color) {
         cloudOnlyStorage.setItem('complaintsData', JSON.stringify(complaintsData));
             cloudOnlyStorage.setItem('homeworkData', JSON.stringify(homeworkData));
             cloudOnlyStorage.setItem('subjectsData', JSON.stringify(subjectsData));
-            cloudOnlyStorage.setItem('gradeModificationLog', JSON.stringify(gradeModificationLog));
-            cloudOnlyStorage.setItem('parentNotificationsData', JSON.stringify(parentNotificationsData));
             cloudOnlyStorage.setItem('adminCredentials', JSON.stringify(adminCredentials));
             cloudOnlyStorage.setItem('printManagerName', JSON.stringify(printManagerName));
             cloudOnlyStorage.setItem('printSchoolName', JSON.stringify(printSchoolName));
@@ -3861,7 +3853,7 @@ function updateCloudStatus(text, color) {
         if (realtimeUnsubscribe) { try{realtimeUnsubscribe();}catch(_){} realtimeUnsubscribe=null; }
         try { if (typeof window.__loadProfessionalAttendanceFromCloud === 'function') window.__loadProfessionalAttendanceFromCloud([]); } catch(_) {}
         try { if (typeof window.__loadProfessionalAuditFromCloud === 'function') window.__loadProfessionalAuditFromCloud([]); } catch(_) {}
-        schoolData=[]; teachersData=[]; teachersAbsenceData={}; announcementsData=[]; complaintsData=[]; homeworkData=[]; subjectsData=[]; gradeModificationLog=[]; parentNotificationsData=[]; assistantsData=[]; guestSupervisorsData=[]; monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[];
+        schoolData=[]; teachersData=[]; teachersAbsenceData={}; announcementsData=[]; complaintsData=[]; homeworkData=[]; subjectsData=[]; assistantsData=[]; guestSupervisorsData=[]; monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[];
         alert('⚠️ تم تنفيذ ترسيت عام من جهاز آخر. تم تجاهل ومسح أي نسخة قديمة من هذا الجهاز لمنع رجوع البيانات.');
         window.location.reload();
     }
@@ -3978,7 +3970,7 @@ function updateCloudStatus(text, color) {
         return {
             format:'school-system-backup', version:3, exportedAt:new Date().toISOString(),
             resetGeneration:String(factoryResetGeneration || '0'),
-            schoolData, teachersData, teachersAbsenceData, announcementsData, homeworkData, subjectsData, gradeModificationLog, parentNotificationsData, adminCredentials, printManagerName, printSchoolName, studyYearFrom, studyYearTo, assistantsData, guestSupervisorsData, monitorsData, monitorNotesData, monitorInventoryReportsData, monitorMessagesData,
+            schoolData, teachersData, teachersAbsenceData, announcementsData, homeworkData, subjectsData, adminCredentials, printManagerName, printSchoolName, studyYearFrom, studyYearTo, assistantsData, guestSupervisorsData, monitorsData, monitorNotesData, monitorInventoryReportsData, monitorMessagesData,
             attendanceData:(typeof window.__professionalAttendanceDataForCloud==='function'?window.__professionalAttendanceDataForCloud():[]),
             auditLog:(typeof window.__professionalAuditLogForCloud==='function'?window.__professionalAuditLogForCloud():[])
         };
@@ -4494,7 +4486,7 @@ function updateCloudStatus(text, color) {
         document.getElementById('loginOverlay').style.display = 'none';
         if (currentUser?.role === 'parent') {
             setTimeout(function(){
-                try { openStudentDashboard(); startParentSessionTimer(); setTimeout(showParentNotificationsOnOpen, 220); } catch (err) { console.error('Parent dashboard error:', err); alert('حدث خطأ في فتح صفحة ولي الأمر.'); }
+                try { openStudentDashboard(); startParentSessionTimer(); } catch (err) { console.error('Parent dashboard error:', err); alert('حدث خطأ في فتح صفحة ولي الأمر.'); }
             }, 180);
         }
 
@@ -4938,8 +4930,6 @@ function updateCloudStatus(text, color) {
         if(!requireAdminSensitiveAction(`إضافة الدرس «${name}» إلى النظام`)) return;
         if(getSystemLessonNames().some(x=>x===name)){alert('هذا الدرس موجود مسبقاً.');return;}
         subjectsData.push({id:createStableId('subject'),name,className:'عام',teacherId:'',teacherName:'',isSystemLesson:true,createdAt:new Date().toISOString()});
-        const lessonAddedAt=new Date().toISOString();
-        getAllStudentsForAnnouncements().forEach(st=>addParentNotification(st, schoolData[st.classIndex]||{}, 'lesson', '📚 درس جديد في المدرسة', `تمت إضافة درس جديد إلى دروس المدرسة: ${name}. تاريخ الإضافة: ${new Date(lessonAddedAt).toLocaleDateString('ar-IQ')}.`));
         saveData(); input.value=''; populateTeacherSpecSelect(); populateTeacherExtraLessonSelect(); renderSchoolLessonsManager(); alert(`تمت إضافة الدرس (${name}) إلى دروس المدرسة.`);
     }
     function openDeleteSchoolLessonModal(){
@@ -6015,11 +6005,8 @@ function updateCloudStatus(text, color) {
             if(String(cls?.name||'').toLocaleLowerCase('ar').includes(query))classMatches.push({index:cIdx,name:cls.name});
             (cls?.desks||[]).forEach((d,di)=>[1,2].forEach(slot=>{
                 const name=String(d?.['student'+slot]||'').trim();
-                const phone=getStudentPhoneValue(d,slot);
-                const phoneQuery=normalizePhoneSearch(queryRaw);
-                const phoneMatch=phoneQuery.length>=3 && normalizePhoneSearch(phone).includes(phoneQuery);
-                if(name && (name.toLocaleLowerCase('ar').includes(query) || phoneMatch)){
-                    matches.push({name,className:cls.name,classObj:cls,classIndex:cIdx,deskIndex:di,deskNumber:d.deskNumber??(di+1),slot,seat:slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)',itemKey:`${d.deskNumber??(di+1)}_${slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)'}_${name}`,code:d?.['code'+slot],studentId:d?.['student'+slot+'Id']||d?.id||'' ,student:d,phone});
+                if(name && name.toLocaleLowerCase('ar').includes(query)){
+                    matches.push({name,className:cls.name,classObj:cls,classIndex:cIdx,deskIndex:di,deskNumber:d.deskNumber??(di+1),slot,seat:slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)',itemKey:`${d.deskNumber??(di+1)}_${slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)'}_${name}`,code:d?.['code'+slot],studentId:d?.['student'+slot+'Id']||d?.id||'' ,student:d});
                 }
             }));
         });
@@ -7666,7 +7653,7 @@ function updateCloudStatus(text, color) {
                 const name = String(desk && desk['student'+slot] || '').trim();
                 if (!name) return;
                 out.push({
-                    studentId: String(desk['student'+slot+'Id'] || desk.id || `${currentClassIndex}_${deskIndex}`),
+                    studentId: String(desk.id || `${currentClassIndex}_${deskIndex}`) + '_' + slot,
                     deskIndex, slot, name,
                     code: String(desk['code'+slot] || '').trim()
                 });
@@ -7764,57 +7751,6 @@ function updateCloudStatus(text, color) {
         updateGradeScoreLimit(); updateGradePeriodFields();
     }
 
-    function normalizePhoneSearch(v){
-        return String(v??'').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\D/g,'');
-    }
-    function getStudentPhoneValue(student, slot){
-        const n=String(slot===2?2:1);
-        const candidates=[student?.['phone'+n],student?.['parentPhone'+n],student?.['fatherPhone'+n],student?.['motherPhone'+n],student?.phone,student?.parentPhone];
-        return candidates.map(v=>String(v??'').trim()).find(Boolean)||'';
-    }
-    function addGradeModificationLog({studentName,subject,oldScore,newScore,actorName,actorRole,maxScore,className}){
-        if(Number(oldScore)===Number(newScore)) return;
-        if(!Array.isArray(gradeModificationLog)) gradeModificationLog=[];
-        gradeModificationLog.unshift({id:createStableId('gmod'),studentName:String(studentName||''),subject:String(subject||''),oldScore:Number(oldScore),newScore:Number(newScore),maxScore:Number(maxScore||0),actorName:String(actorName||'المستخدم'),actorRole:String(actorRole||''),className:String(className||''),time:new Date().toISOString()});
-        if(gradeModificationLog.length>300) gradeModificationLog.length=300;
-    }
-    function addParentNotification(student, classObj, type, title, message, extra={}){
-        const studentId=String(student?.id||extra.studentId||'');
-        if(!studentId && !String(student?.name||'').trim()) return;
-        if(!Array.isArray(parentNotificationsData)) parentNotificationsData=[];
-        parentNotificationsData.unshift({id:createStableId('pnot'),studentId,studentName:String(student?.name||extra.studentName||''),classId:String(classObj?.id||extra.classId||''),type:String(type||'update'),title:String(title||'تحديث جديد'),message:String(message||''),createdAt:new Date().toISOString(),read:false});
-        if(parentNotificationsData.length>1000) parentNotificationsData.length=1000;
-    }
-    function getCurrentParentNotifications(){
-        if(!currentUser || currentUser.role!=='parent') return [];
-        const sid=String(currentUser.studentId||currentUser.studentSnapshot?.id||'');
-        const code=String(currentUser.code||'');
-        const name=String(currentUser.name||currentUser.studentSnapshot?.name||'').trim();
-        return (parentNotificationsData||[]).filter(n=>String(n.studentId||'')===sid || (!sid && String(n.studentName||'').trim()===name) || String(n.studentCode||'')===code).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
-    }
-    function showParentNotificationsOnOpen(){
-        if(!currentUser || currentUser.role!=='parent') return;
-        const list=getCurrentParentNotifications();
-        const unread=list.filter(n=>!n.read);
-        if(!unread.length) return;
-        const old=document.getElementById('parentNotificationsModal'); if(old) old.remove();
-        const modal=document.createElement('div'); modal.id='parentNotificationsModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.62);padding:12px;align-items:center;justify-content:center;overflow:auto;';
-        const rows=unread.slice(0,30).map(n=>`<div style="padding:12px;border:1px solid #dbe4ea;border-radius:12px;background:#fff;margin-bottom:8px"><div style="font-weight:900;color:#173b57">${escapeGlobalSearchHTML(n.title||'تحديث جديد')}</div><div style="margin-top:5px;line-height:1.7">${escapeGlobalSearchHTML(n.message||'')}</div><small style="display:block;color:#7a8b98;margin-top:6px">${escapeGlobalSearchHTML(new Date(n.createdAt||Date.now()).toLocaleString('ar-IQ'))}</small></div>`).join('');
-        modal.innerHTML=`<div class="modal-content" style="width:min(650px,96vw);max-height:90vh;overflow:auto;padding:18px;direction:rtl"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#1976d2">🔔 تحديثات جديدة تخص ابنك</h2><button type="button" onclick="document.getElementById('parentNotificationsModal')?.remove()">✕</button></div><p style="color:#607d8b">هذه آخر التحديثات التي أضيفت إلى ملف الطالب.</p>${rows}<div style="text-align:left;margin-top:10px"><button type="button" onclick="markCurrentParentNotificationsRead()" style="background:#1976d2">✓ تم الاطلاع على التحديثات</button></div></div>`;
-        document.body.appendChild(modal);
-    }
-    function markCurrentParentNotificationsRead(){
-        const ids=new Set(getCurrentParentNotifications().filter(n=>!n.read).map(n=>String(n.id)));
-        (parentNotificationsData||[]).forEach(n=>{if(ids.has(String(n.id))) n.read=true;});
-        saveData(); document.getElementById('parentNotificationsModal')?.remove();
-    }
-    function renderParentNotificationsPanel(){
-        const list=getCurrentParentNotifications();
-        const unread=list.filter(n=>!n.read).length;
-        if(!list.length) return '<div class="pro-empty">لا توجد تحديثات جديدة حالياً.</div>';
-        return `<div class="pro-panel" id="parentNotificationsPanel" style="border-color:#b9d9f5"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">🔔 تحديثات تخص الطالب</h3><strong style="color:#1976d2">${unread} غير مقروء</strong></div>${list.slice(0,30).map(n=>`<div style="padding:10px;border:1px solid #e1e8ef;border-radius:10px;background:${n.read?'#fff':'#eef7ff'};margin-top:7px"><b>${escapeGlobalSearchHTML(n.title||'تحديث جديد')}</b><div style="margin-top:4px">${escapeGlobalSearchHTML(n.message||'')}</div><small style="display:block;color:#7b8a96;margin-top:4px">${escapeGlobalSearchHTML(new Date(n.createdAt||Date.now()).toLocaleString('ar-IQ'))}</small></div>`).join('')}${unread?'<div style="text-align:left;margin-top:8px"><button type="button" onclick="markCurrentParentNotificationsRead()" style="background:#1976d2">✓ تحديد التحديثات كمقروءة</button></div>':''}</div>`;
-    }
-
     function saveStudentGrade() {
         if (!currentUser || currentUser.role !== 'teacher') return;
         const cls=schoolData[currentClassIndex];
@@ -7844,18 +7780,8 @@ function updateCloudStatus(text, color) {
         const stableStudentKey=`${student.deskIndex}:${student.slot}`;
         // الدرجة لنفس الطالب + المادة + المعلم + نوع النتيجة + الفترة: تعديل للسجل نفسه بدلاً من تكراره.
         let rec=grades.find(g=>String(g.studentKey)===stableStudentKey && String(g.teacherId)===teacherId && String(g.subject)===spec && String(g.periodType)===type && String(g.period)===String(period));
-        const oldScore=rec?.score;
         const payload={studentKey:stableStudentKey,studentName:student.name,teacherId,teacherName:String(currentUser.name||teacher.name||''),subject:spec,score,maxScore:max,periodType:type,period:String(period),notes,updatedAt:new Date().toISOString()};
-        if(rec){
-            if(Number(oldScore)!==Number(score)){
-                addGradeModificationLog({studentName:student.name,subject:spec,oldScore,newScore:score,actorName:currentUser.name||teacher.name||'المعلم',actorRole:currentUser.role,className:cls.name,maxScore:max});
-                addParentNotification({id:student.studentId,name:student.name},cls,'grade','درجة جديدة/معدلة',`${currentUser.name||'المعلم'} عدّل درجة ${student.name} في مادة ${spec}: القديمة ${oldScore}، الجديدة ${score}.`);
-            }
-            Object.assign(rec,payload);
-        } else {
-            grades.push({...payload,id:createStableId('grade'),createdAt:new Date().toISOString()});
-            addParentNotification({id:student.studentId,name:student.name},cls,'grade','إضافة درجة جديدة',`تمت إضافة درجة جديدة لـ${student.name} في مادة ${spec}: ${score}/${max} بواسطة ${currentUser.name||'المعلم'}.`);
-        }
+        if(rec) Object.assign(rec,payload); else grades.push({...payload,id:createStableId('grade'),createdAt:new Date().toISOString()});
         saveData();
         renderGradesTable();
         clearGradeForm();
@@ -8097,16 +8023,10 @@ function updateCloudStatus(text, color) {
             alert(`أدخل درجة صحيحة من 0 إلى ${max||'الدرجة الكاملة'}.`);
             return;
         }
-        const oldScore=rec.score;
         rec.score=score;
         rec.maxScore=max;
         rec.notes=String(document.getElementById('systemEditGradeNotes').value||'').trim();
         rec.updatedAt=new Date().toISOString();
-        if(Number(oldScore)!==Number(score)){
-            addGradeModificationLog({studentName:rec.studentName,subject:rec.subject,oldScore,newScore:score,actorName:currentUser.name||'مدير النظام',actorRole:'admin',className:cls?.name||'',maxScore:max});
-            const studentObj=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===String(rec.studentName||'').trim());
-            addParentNotification(studentObj||{name:rec.studentName},cls,'grade','تعديل درجة الطالب',`${currentUser.name||'مدير النظام'} عدّل درجة الطالب ${rec.studentName}: القديمة ${oldScore}، الجديدة ${score}.`);
-        }
         rec.modifiedById=String(currentUser.id||currentUser.uid||currentUser.name||'');
         rec.modifiedByName=String(currentUser.name||'مدير النظام');
         rec.modifiedAt=rec.updatedAt;
@@ -8332,9 +8252,6 @@ function updateCloudStatus(text, color) {
         let list=cls.studentLevels[currentSelectedStudentKey], idx=list.findIndex(i=>i.lesson===spec);
         let record={lesson:spec,level:level,teacherName:currentUser.name||'',teacherId:currentUser.teacherId||null,updatedAt:new Date().toISOString()};
         if(idx>=0) list[idx]=Object.assign({},list[idx],record); else list.push(record);
-        const studentName=String(document.getElementById('behaviorStudentNameLabel')?.innerText||'').replace(/^الطالب:\s*/,'').split(' (اختصاصك:')[0].trim();
-        const studentObj=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===studentName);
-        addParentNotification(studentObj||{name:studentName},cls,'behavior','تحديث سلوك الطالب',`تم تسجيل/تحديث سلوك الطالب ${studentName} في مادة ${spec}: ${behavior} — المستوى ${level}/5 بواسطة ${currentUser.name||'المعلم'}.`);
         saveData(); closeModal('behaviorModal'); renderBehaviorTable();
     }
 
@@ -8478,9 +8395,6 @@ function updateCloudStatus(text, color) {
             let spec = getCurrentTeacherSpec();
             let selectEl = document.querySelector('.lesson-level-select');
             let levelVal = selectEl ? selectEl.value : 'جيد';
-            const clsBeforeLevelSave=cls;
-            const studentNameForLevel=String(document.getElementById('studentLevelStudentName')?.innerText||document.getElementById('behaviorStudentNameLabel')?.innerText||'').replace(/^الطالب:\s*/,'').trim();
-            const studentObjForLevel=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===studentNameForLevel);
 
             if (!cls.studentLevels[currentSelectedStudentKey]) cls.studentLevels[currentSelectedStudentKey] = [];
             let list = cls.studentLevels[currentSelectedStudentKey];
@@ -8513,20 +8427,6 @@ function updateCloudStatus(text, color) {
             cls.studentLevels[currentSelectedStudentKey] = newList;
         }
 
-        if(currentUser.role==='teacher'){
-            const key=String(currentSelectedStudentKey||'');
-            const parts=key.split('_');
-            let targetStudent=null;
-            if(parts.length>=3){
-                const deskNo=String(parts[0]), seat=String(parts[1]), nameKey=parts.slice(2).join('_');
-                (cls?.desks||[]).forEach(d=>{ if(String(d?.deskNumber||'')===deskNo){ const slot=seat==='يمين'?1:2; const name=String(d?.['student'+slot]||'').trim(); if(name===nameKey) targetStudent={id:String(d?.['student'+slot+'Id']||d?.id||''),name}; }});
-            }
-            if(!targetStudent){
-                const label=String(document.getElementById('studentLevelStudentName')?.innerText||document.getElementById('behaviorStudentNameLabel')?.innerText||'').replace(/^الطالب:\s*/,'').trim();
-                targetStudent=(cls?.desks||[]).flatMap(d=>[1,2].map(slot=>({slot,d}))).map(x=>({id:String(x.d?.['student'+x.slot+'Id']||x.d?.id||''),name:String(x.d?.['student'+x.slot]||'').trim()})).find(x=>x.name===label);
-            }
-            if(targetStudent) addParentNotification(targetStudent,cls,'level','📈 تحديث مستوى الطالب',`تم تحديث مستوى الطالب ${targetStudent.name} في مادة ${getCurrentTeacherSpec()||'المادة'} بواسطة ${currentUser.name||'المعلم'}.`);
-        }
         saveData();
         closeModal('studentLevelDetailModal');
         renderStudentLevelTable();
@@ -9019,7 +8919,7 @@ function updateCloudStatus(text, color) {
         if(todayIndex<daysCount||!daysCount){for(let l=0;l<lessons;l++){const e=getScheduleEntryData(liveClass,`${todayIndex}_${l}`);if(!e.subject)continue;const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');scheduleRows.push(`<tr><td><b>الحصة ${l+1}</b></td><td>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</td><td>${escapeGlobalSearchHTML(t||'-')}</td></tr>`);}}
         const scheduleHtml=`<div class="pro-panel" id="parentTodaySchedulePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 جدول صف ${childPossessive} — اليوم: ${todayName}</h3><strong>${scheduleRows.length} حصة</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الحصة</th><th>المادة</th><th>المعلم</th></tr></thead><tbody>${scheduleRows.join('')||'<tr><td colspan="3" class="pro-empty">لا توجد حصص مسجلة لهذا اليوم.</td></tr>'}</tbody></table></div></div>`;
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${renderParentNotificationsPanel()}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div><div><span>❌</span><small>عدد الغيابات</small><b>${absentDates.length}</b></div><div><span>🏖️</span><small>عدد المجازات</small><b>${leaveDates.length}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="document.getElementById('parentTodaySchedulePanel')?.scrollIntoView({behavior:'smooth'})">📅 جدول اليوم</button><button type="button" onclick="document.getElementById('parentAbsencePanel')?.scrollIntoView({behavior:'smooth'})">📌 الغيابات</button><button type="button" onclick="document.getElementById('parentGradesPanel')?.scrollIntoView({behavior:'smooth'})">📝 الدرجات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff">📮 شكوى إلى المدير</button></div><div class="parent-portal-grid"><div class="pro-panel"><h3>👤 بيانات ${childPossessive}</h3><div class="pro-mini-grid"><div class="pro-info"><small>الاسم</small>${escapeGlobalSearchHTML(studentName)}</div><div class="pro-info"><small>الصف</small>${escapeGlobalSearchHTML(liveClass.name||'-')}</div><div class="pro-info"><small>المقعد</small>${escapeGlobalSearchHTML(f.student.deskNumber||'-')}</div><div class="pro-info"><small>الجنس</small>${f.student.gender==='female'?'مؤنث':f.student.gender==='male'?'ذكر':'-'}</div></div></div><div class="pro-panel"><h3>📊 ملخص الحضور</h3><div class="parent-att-summary"><div><b>${myAtt.filter(r=>r.status==='present').length}</b><span>حاضر</span></div><div><b>${absentDates.length}</b><span>غائب</span></div><div><b>${leaveDates.length}</b><span>مجاز</span></div><div><b>${myAtt.filter(r=>r.status==='late').length}</b><span>متأخر</span></div></div></div></div>${scheduleHtml}<div class="pro-panel" id="parentAbsencePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 عدد غيابات الطالب والتواريخ</h3><strong style="color:#c0392b">${absentDates.length} يوم</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${absenceRows}</tbody></table></div></div><div class="pro-panel"><h3>🏖️ تواريخ المجاز</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${leaveRows}</tbody></table></div></div><div class="pro-panel" id="parentHomeworkPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📚 واجبات ${childWord}</h3><strong style="color:#d35400">${parentHomework.length} واجب</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div><div class="pro-panel"><div class="pro-toolbar"><h3 style="margin:0">⭐ السلوك والمستوى</h3></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h4>📝 السلوك</h4>${parentBehaviorText}</div><div><h4>⭐ المستوى</h4>${parentLevelRows}</div></div></div><div class="pro-panel" id="parentGradesPanel"><h3>📝 درجات ${childWord}</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div><div style="text-align:center;padding:12px;color:#6b7b88;font-size:11px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div><div><span>❌</span><small>عدد الغيابات</small><b>${absentDates.length}</b></div><div><span>🏖️</span><small>عدد المجازات</small><b>${leaveDates.length}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="document.getElementById('parentTodaySchedulePanel')?.scrollIntoView({behavior:'smooth'})">📅 جدول اليوم</button><button type="button" onclick="document.getElementById('parentAbsencePanel')?.scrollIntoView({behavior:'smooth'})">📌 الغيابات</button><button type="button" onclick="document.getElementById('parentGradesPanel')?.scrollIntoView({behavior:'smooth'})">📝 الدرجات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff">📮 شكوى إلى المدير</button></div><div class="parent-portal-grid"><div class="pro-panel"><h3>👤 بيانات ${childPossessive}</h3><div class="pro-mini-grid"><div class="pro-info"><small>الاسم</small>${escapeGlobalSearchHTML(studentName)}</div><div class="pro-info"><small>الصف</small>${escapeGlobalSearchHTML(liveClass.name||'-')}</div><div class="pro-info"><small>المقعد</small>${escapeGlobalSearchHTML(f.student.deskNumber||'-')}</div><div class="pro-info"><small>الجنس</small>${f.student.gender==='female'?'مؤنث':f.student.gender==='male'?'ذكر':'-'}</div></div></div><div class="pro-panel"><h3>📊 ملخص الحضور</h3><div class="parent-att-summary"><div><b>${myAtt.filter(r=>r.status==='present').length}</b><span>حاضر</span></div><div><b>${absentDates.length}</b><span>غائب</span></div><div><b>${leaveDates.length}</b><span>مجاز</span></div><div><b>${myAtt.filter(r=>r.status==='late').length}</b><span>متأخر</span></div></div></div></div>${scheduleHtml}<div class="pro-panel" id="parentAbsencePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 عدد غيابات الطالب والتواريخ</h3><strong style="color:#c0392b">${absentDates.length} يوم</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${absenceRows}</tbody></table></div></div><div class="pro-panel"><h3>🏖️ تواريخ المجاز</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${leaveRows}</tbody></table></div></div><div class="pro-panel" id="parentHomeworkPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📚 واجبات ${childWord}</h3><strong style="color:#d35400">${parentHomework.length} واجب</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div><div class="pro-panel"><div class="pro-toolbar"><h3 style="margin:0">⭐ السلوك والمستوى</h3></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h4>📝 السلوك</h4>${parentBehaviorText}</div><div><h4>⭐ المستوى</h4>${parentLevelRows}</div></div></div><div class="pro-panel" id="parentGradesPanel"><h3>📝 درجات ${childWord}</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div><div style="text-align:center;padding:12px;color:#6b7b88;font-size:11px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.</div></div>`;
         document.body.appendChild(modal);
     }
 
@@ -10455,7 +10355,7 @@ window.addEventListener('unhandledrejection', function (event) {
         <div class="pro-stat"><div class="lbl">المعلمون</div><div class="num">${teacherCount}</div></div>
         <div class="pro-stat"><div class="lbl">غياب اليوم</div><div class="num">${absent}</div></div>
         <div class="pro-stat"><div class="lbl">تأخير اليوم</div><div class="num">${late}</div></div>
-        <div class="pro-stat"><div class="lbl">سجلات الحضور</div><div class="num">${attendanceData.length}</div></div><div class="pro-stat"><div class="lbl">الإعلانات</div><div class="num">${announcementsData.length}</div></div>
+        <div class="pro-stat"><div class="lbl">سجلات الحضور</div><div class="num">${attendanceData.length}</div></div><div class="pro-stat"><div class="lbl">المواد المتاحة في المدرسة</div><div class="num">${uniqueSubjectCount}</div></div><div class="pro-stat"><div class="lbl">الإعلانات</div><div class="num">${announcementsData.length}</div></div>
       </div>
       <div class="pro-panel">
         <h3>📅 ملخص اليوم — ${escapeHTML(today)}</h3>
@@ -11156,6 +11056,7 @@ function openDev5Performance(){
       <div class="school-command-card teal"><span>👦</span><b>الذكور</b><strong>${maleStudents}</strong><small>عدد الطلاب الذكور</small></div>
       <div class="school-command-card purple"><span>👧</span><b>الإناث</b><strong>${femaleStudents}</strong><small>عدد الطالبات الإناث</small></div>
       <div class="school-command-card teal"><span>👨‍🏫</span><b>المعلمون</b><strong>${teachers.length}</strong><small>معلم مسجل بالنظام</small></div>
+      <div class="school-command-card purple"><span>📚</span><b>عدد المواد</b><strong>${allSubjectNames.size}</strong><small>المواد الموجودة والمضافة في النظام</small></div>
       <div class="school-command-card orange"><span>🚌</span><b>الرحلات</b><strong>${trips}</strong><small>رحلة / مقعد مزدوج</small></div>
       <div class="school-command-card green"><span>💺</span><b>المقاعد المشغولة</b><strong>${occupiedSeats}</strong><small>من أصل ${totalSeats} مقعد</small></div>
       <div class="school-command-card red"><span>📊</span><b>الدرجات المسجلة</b><strong>${grades}</strong><small>سجل درجات محفوظ</small></div>
@@ -11177,6 +11078,7 @@ function openDev5Performance(){
       <div class="school-command-status-grid">
         <div><b>📌 نسبة الغياب</b><strong>${monthlyAbsencePct}%</strong><em>${monthAbsent} غياب من ${monthAttendance.length} سجل حضور خلال آخر 30 يوماً</em></div>
         <button type="button" class="dev5-result-button attendance-total" onclick="window.Dev5.openMonthlyAbsenceDetails()"><b>❌ إجمالي الغياب المسجل</b><strong>${totalRegisteredAbsences}</strong><em>اضغط لعرض غيابات كل شهر</em></button>
+        <div><b>📚 المواد الموجودة</b><strong>${allSubjectNames.size}</strong><em>مواد المعلمين + المواد المضافة في النظام</em></div>
               </div>
     </div>
 
@@ -11191,11 +11093,6 @@ function openDev5Performance(){
     </div>
 
     <div class="school-command-section">
-      <div class="school-command-section-title"><span>📝</span><div><b>عمليات تعديل درجات الطلاب</b><small>آخر عمليات تعديل الدرجات من المدير والمعلمين</small></div></div>
-      <div class="pro-table-wrap" style="background:#fff;border:1px solid #e1e7ec;border-radius:12px"><table class="pro-table"><thead><tr><th>المستخدم</th><th>الطالب</th><th>المادة</th><th>القديمة</th><th>الجديدة</th><th>الوقت</th></tr></thead><tbody>${(gradeModificationLog||[]).slice(0,30).map(r=>`<tr><td>${d5esc(r.actorName||'-')}</td><td>${d5esc(r.studentName||'-')}</td><td>${d5esc(r.subject||'-')}</td><td>${d5esc(r.oldScore)}</td><td><b>${d5esc(r.newScore)}</b></td><td>${d5esc(new Date(r.time||Date.now()).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}))}</td></tr>`).join('')||'<tr><td colspan="6" class="pro-empty">لا توجد عمليات تعديل درجات مسجلة.</td></tr>'}</tbody></table></div>
-    </div>
-
-    <div class="school-command-section">
       <div class="school-command-section-title"><span>🏢</span><div><b>تفاصيل المدرسة</b><small>ملخص شامل لما هو محفوظ في النظام</small></div></div>
       <div class="school-command-details">
         <div><span>الصفوف</span><b>${classes.length}</b></div>
@@ -11203,12 +11100,15 @@ function openDev5Performance(){
         <div><span>الذكور</span><b>${maleStudents}</b></div>
         <div><span>الإناث</span><b>${femaleStudents}</b></div>
         <div><span>المعلمون</span><b>${teachers.length}</b></div>
+        <div><span>عدد المواد</span><b>${allSubjectNames.size}</b></div>
+                <div><span>المواد الظاهرة في الجداول</span><b>${scheduledSubjectNames.size}</b></div>
         <div><span>الرحلات</span><b>${trips}</b></div>
         <div><span>المقاعد</span><b>${totalSeats}</b></div>
         <div><span>المقاعد المشغولة</span><b>${occupiedSeats}</b></div>
         <div><span>المعاونون</span><b>${assistants.length}</b></div>
         <div><span>المراقبون</span><b>${monitors.length}</b></div>
         <div><span>الدرجات المحفوظة</span><b>${grades}</b></div>
+        <div><span>مواد المعلمين + المواد المضافة</span><b>${allSubjectNames.size}</b></div>
         <div><span>كفاءة إشغال المقاعد</span><b>${pct(occupiedSeats,totalSeats)}%</b></div>
       </div>
     </div>
