@@ -8586,118 +8586,30 @@ function updateCloudStatus(text, color) {
         const rows=students.map((f,i)=>{
             const rec=attendance.find(r=>String(r?.studentId)===String(f.student.id)&&String(r?.date)===String(date));
             const status=['late','absent','present'].includes(rec?.status) ? rec.status : 'present';
-            const lateTime=rec?.lateTime||'';
-            const lateReason=rec?.lateReason||rec?.note||'';
-            const safeId=escapeGlobalSearchHTML(String(f.student.id));
-            const safeName=escapeGlobalSearchHTML(String(f.student.name));
-            return `<tr><td>${i+1}</td><td>${safeName}</td><td>
-              <div class="monitor-status-checks" data-monitor-student="${safeId}" data-monitor-name="${safeName}" style="display:flex;flex-wrap:wrap;gap:7px;align-items:center">
-                ${[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰']].map(([v,l,ic])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;cursor:pointer;font-weight:800;font-size:12px"><input type="checkbox" data-status="${v}" ${status===v?'checked':''} onchange="monitorAttendanceCheckboxChanged(this)" style="width:18px;height:18px;accent-color:#176b9c;cursor:pointer"><span>${ic} ${l}</span></label>`).join('')}
-              </div>
-              <div data-late-info="${safeId}" style="font-size:11px;color:#8a5a00;font-weight:700;margin-top:4px;">${status==='late' ? `وقت الدخول: ${escapeGlobalSearchHTML(lateTime||'-')} — السبب: ${escapeGlobalSearchHTML(lateReason||'-')}` : ''}</div>
-            </td></tr>`;
+            const lateMeta = status==='late' ? ` data-late-time="${escapeGlobalSearchHTML(rec?.lateTime||'')}" data-late-reason="${escapeGlobalSearchHTML(rec?.lateReason||rec?.note||'')}"` : '';
+            return `<tr><td>${i+1}</td><td>${escapeGlobalSearchHTML(f.student.name)}</td><td><select data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" onchange="monitorAttendanceStatusChanged(this)"${lateMeta}><option value="present" ${status==='present'?'selected':''}>حاضر</option><option value="absent" ${status==='absent'?'selected':''}>غائب</option><option value="late" ${status==='late'?'selected':''}>متأخر ⏰</option></select><div data-late-info="${escapeGlobalSearchHTML(f.student.id)}" style="font-size:11px;color:#8a5a00;font-weight:700;margin-top:4px;">${status==='late' ? `وقت الدخول: ${escapeGlobalSearchHTML(rec?.lateTime||'-')} — السبب: ${escapeGlobalSearchHTML(rec?.lateReason||rec?.note||'-')}` : ''}</div></td></tr>`;
         }).join('');
         box.innerHTML=`<div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>#</th><th>اسم الطالب</th><th>الحضور</th></tr></thead><tbody>${rows}</tbody></table></div><div class="pro-toolbar" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="saveMonitorAttendance()" style="background:var(--success)">💾 حفظ الغياب وإرسال للمدير</button></div>`;
     }
-    async function persistMonitorStudentStatus(studentId,status,date,lateTime='',lateReason=''){
-        if(!currentUser||currentUser.role!=='monitor') return false;
-        const classSelect=document.getElementById('monitorClassSelect');
-        if(!classSelect || classSelect.value==='') return false;
-        const classIndex=Number(classSelect.value), cls=getMonitorClasses()[classIndex];
-        const students=getMonitorClassStudents(classIndex);
-        const student=students.find(x=>String(x.student.id)===String(studentId));
-        if(!cls||!student) return false;
-        const note=status==='late' ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
-        const saved=window.ProfessionalModules?.recordAttendance
-            ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason)
-            : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : false);
-        if(saved===false) return false;
-
-        if(student.classObj){
-            if(!student.classObj.absenceRecords) student.classObj.absenceRecords={};
-            if(!student.classObj.absenceRecords[date]) student.classObj.absenceRecords[date]={};
-            const seatPos=Number(student.slot)===1?'يمين':'يسار';
-            const deskNo=Number(student.deskIndex)+1;
-            const k1=`${deskNo}_${seatPos}_${student.student.name}`;
-            const k2=String(student.student.id);
-            if(status==='absent'||status==='late'){
-                student.classObj.absenceRecords[date][k1]=status;
-                student.classObj.absenceRecords[date][k2]=status;
-            }else{
-                delete student.classObj.absenceRecords[date][k1];
-                delete student.classObj.absenceRecords[date][k2];
-            }
-        }
-
-        let report=monitorInventoryReportsData.find(r=>String(r.monitorId)===String(currentUser.monitorId)&&String(r.classId||'')===String(cls.id||'')&&String(r.date)===String(date));
-        if(!report){
-            report={id:createStableId('minv'),monitorId:currentUser.monitorId,monitorName:currentUser.name,classId:cls.id||'',className:cls.name||`الصف ${classIndex+1}`,date,absentStudents:[],students:[],sentAt:new Date().toISOString(),completedAt:new Date().toISOString()};
-            monitorInventoryReportsData.unshift(report);
-        }
-        if(!Array.isArray(report.students)) report.students=[];
-        if(!Array.isArray(report.absentStudents)) report.absentStudents=[];
-        const upsert=(list)=>{
-            const idx=list.findIndex(x=>String(x.studentId)===String(student.student.id)||String(x.name)===String(student.student.name));
-            if(status==='present') { if(idx>=0) list.splice(idx,1); return; }
-            const item=idx>=0?list[idx]:{};
-            item.studentId=student.student.id; item.name=student.student.name; item.status=status; item.date=date;
-            item.lateTime=status==='late'?lateTime:''; item.lateReason=status==='late'?lateReason:'';
-            if(idx<0) list.push(item);
-        };
-        upsert(report.students);
-        // absentStudents مخصص للغائبين فقط، وليس الحاضر أو المتأخر.
-        const ai=report.absentStudents.findIndex(x=>String(x.studentId)===String(student.student.id)||String(x.name)===String(student.student.name));
-        if(status==='absent'){
-            const item=ai>=0?report.absentStudents[ai]:{}; item.studentId=student.student.id; item.name=student.student.name; item.status='absent';
-            if(ai<0) report.absentStudents.push(item);
-        }else if(ai>=0) report.absentStudents.splice(ai,1);
-        report.completedAt=new Date().toISOString();
-        saveData();
-        if(window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload==='function'){
-            try{ await saveCurrentCloudPayload(); }catch(e){ console.error('Monitor single-status cloud save failed:',e); }
-        }
-        try{renderMonitorSelectedClass();}catch(e){}
-        return true;
-    }
-
-    function monitorAttendanceCheckboxChanged(box){
-        if(!box) return;
-        const group=box.closest('.monitor-status-checks');
-        if(!group) return;
-        if(box.checked){
-            group.querySelectorAll('input[type="checkbox"]').forEach(cb=>{if(cb!==box) cb.checked=false;});
-            const status=String(box.dataset.status||'present');
-            const id=String(group.dataset.monitorStudent||'');
-            const date=document.getElementById('monitorAttendanceDate')?.value||getFormattedDate();
-            let lateTime='',lateReason='';
-            if(status==='late'){
-                const old=(window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===id&&String(r.date)===String(date));
-                lateTime=prompt('⏰ اكتب ساعة دخول الطالب:',old?.lateTime||'');
-                if(lateTime===null){ box.checked=false; return; }
-                lateReason=prompt('📝 اكتب سبب التأخير:',old?.lateReason||old?.note||'');
-                if(lateReason===null){ box.checked=false; return; }
-            }
-            persistMonitorStudentStatus(id,status,date,String(lateTime||'').trim(),String(lateReason||'').trim());
-        }else{
-            // لا نترك الطالب بلا حالة: إذا أزيلت العلامة من الحالة الحالية نعيدها إلى حاضر.
-            const any=group.querySelector('input[type="checkbox"]:checked');
-            if(!any){
-                const id=String(group.dataset.monitorStudent||'');
-                const date=document.getElementById('monitorAttendanceDate')?.value||getFormattedDate();
-                persistMonitorStudentStatus(id,'present',date);
-                group.querySelector('input[data-status="present"]')?.setAttribute('checked','checked');
-                const p=group.querySelector('input[data-status="present"]'); if(p)p.checked=true;
-            }
-        }
-    }
-
-    // توافق مع أي استدعاء قديم في الصفحة.
     function monitorAttendanceStatusChanged(sel){
         if(!sel) return;
         const id=String(sel.dataset.monitorStudent||'');
-        const status=String(sel.value||'present');
-        const date=document.getElementById('monitorAttendanceDate')?.value||getFormattedDate();
-        persistMonitorStudentStatus(id,status,date,sel.dataset.lateTime||'',sel.dataset.lateReason||'');
+        const info=document.querySelector(`[data-late-info=\"${CSS.escape(id)}\"]`);
+        if(sel.value!=='late'){
+            delete sel.dataset.lateTime;
+            delete sel.dataset.lateReason;
+            if(info) info.textContent='';
+            return;
+        }
+        const existingTime=sel.dataset.lateTime||'';
+        const existingReason=sel.dataset.lateReason||'';
+        const lateTime=prompt('⏰ اكتب ساعة دخول الطالب إلى المدرسة (مثال: 08:35):',existingTime);
+        if(lateTime===null){ sel.value='present'; if(info) info.textContent=''; return; }
+        const reason=prompt('📝 اكتب سبب التأخير:',existingReason);
+        if(reason===null){ sel.value='present'; if(info) info.textContent=''; return; }
+        sel.dataset.lateTime=String(lateTime).trim();
+        sel.dataset.lateReason=String(reason).trim();
+        if(info) info.textContent=`وقت الدخول: ${sel.dataset.lateTime||'-'} — السبب: ${sel.dataset.lateReason||'-'}`;
     }
 
     function openMonitorCenter(){
@@ -9007,10 +8919,11 @@ function updateCloudStatus(text, color) {
         };
         const cleanReportList=(list)=>Array.isArray(list)?list.map(r=>{
             if(!r || typeof r!=='object') return r;
-            const out={...r};
-            if(Array.isArray(out.absentStudents)) out.absentStudents=out.absentStudents.filter(x=>!isTargetRecord(x));
-            if(Array.isArray(out.students)) out.students=out.students.filter(x=>!isTargetRecord(x));
-            return out;
+            if(Array.isArray(r.absentStudents)){
+                const absentStudents=r.absentStudents.filter(x=>!isTargetRecord(x));
+                return {...r,absentStudents};
+            }
+            return r;
         }).filter(Boolean):[];
 
         try{
@@ -9374,7 +9287,7 @@ function updateCloudStatus(text, color) {
     function renderManagerAttendanceCheckboxes(studentId,date,currentStatus,studentName){
         const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         const safeId=escAttr(studentId), safeDate=escAttr(date), safeName=escAttr(studentName);
-        const statuses=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
+        const statuses=[['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
         return `<div class="manager-status-checks" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${statuses.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border:1px solid #d8e0e8;border-radius:8px;background:#fff;cursor:pointer;font-weight:800;font-size:12px"><input type="checkbox" ${currentStatus===value?'checked':''} onchange="window.managerAttendanceCheckboxChanged(this,'${safeId}','${safeDate}','${value}','${safeName}')" style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer"><span>${icon} ${label}</span></label>`).join('')}<span style="font-size:10px;color:#667;font-weight:700">✓ اختر حالة واحدة</span></div>`;
     }
     window.managerAttendanceCheckboxChanged=function(box,studentId,date,status,studentName=''){
