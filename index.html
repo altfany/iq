@@ -2144,7 +2144,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         </div>
         <div class="header-actions">
             <div style="display: flex; gap: 4px;" id="globalSearchWrapper">
-                <input type="text" id="globalStudentSearchInput" placeholder="🔍" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
+                <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم / هاتف / كود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
             <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 جرد الصفوف</button>
@@ -3101,7 +3101,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         </div>
         <div class="form-group pro-field wide">
           <label>البحث عن طالب في الصف</label>
-          <input type="text" id="systemGradesStudentSearch" oninput="filterSystemGradesStudents()" placeholder="اكتب اسم الطالب للبحث...">
+          <input type="text" id="systemGradesStudentSearch" oninput="filterSystemGradesStudents()" placeholder="اسم الطالب أو رقم الهاتف أو كود الطالب...">
+          <div style="font-size:10px;color:#718294;margin-top:4px;">يمكن البحث بالاسم أو رقم هاتف ولي الأمر المسجل للطالب أو كود الطالب.</div>
         </div>
         <div class="form-group pro-field full">
           <label>الطالب المسجل في السستم</label>
@@ -3109,6 +3110,24 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         </div>
       </div>
       <div id="systemGradesSelectedStudent" style="margin-top:8px;font-size:12px;font-weight:800;color:#2980b9;"></div>
+    </div>
+    <div id="systemGradeEntryPanel" class="pro-form-panel" style="background:#f7fbff;border:1px solid #cfe2f3;">
+      <div class="pro-form-title">➕ وظائف إدخال الدرجات</div>
+      <div style="font-size:11px;color:#667;margin-bottom:8px;line-height:1.7;">هذا الصندوق خاص بإضافة درجة جديدة من داخل زر «الدرجات»، وهو منفصل عن جدول عرض وتعديل الدرجات.</div>
+      <div class="pro-form-grid">
+        <div class="form-group pro-field wide"><label>الطالب</label><select id="systemNewGradeStudentSelect" onchange="systemNewGradeStudentChanged()"></select></div>
+        <div class="form-group pro-field"><label>المادة / الدرس</label><input type="text" id="systemNewGradeSubject" placeholder="مثال: الرياضيات"></div>
+        <div class="form-group pro-field"><label>نوع النتيجة</label><select id="systemNewGradePeriodType" onchange="updateSystemNewGradePeriodFields()"><option value="daily">امتحان يومي</option><option value="monthly">امتحان شهري</option><option value="midyear">نصف السنة</option><option value="finalyear">آخر السنة</option></select></div>
+        <div class="form-group pro-field"><label>الدرجة</label><input type="number" id="systemNewGradeScore" min="0" step="0.01" placeholder="مثال: 85"></div>
+        <div class="form-group pro-field"><label>الدرجة من</label><select id="systemNewGradeMax"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option><option value="60">60</option><option value="70">70</option><option value="80">80</option><option value="90">90</option><option value="100" selected>100</option></select></div>
+        <div class="form-group pro-field" id="systemNewGradeDateGroup"><label>اليوم</label><input type="date" id="systemNewGradeDate"></div>
+        <div class="form-group pro-field" id="systemNewGradeMonthGroup" style="display:none"><label>الشهر</label><input type="month" id="systemNewGradeMonth"></div>
+        <div class="form-group pro-field wide"><label>ملاحظات</label><input type="text" id="systemNewGradeNotes" placeholder="ملاحظات اختيارية"></div>
+      </div>
+      <div class="pro-primary-action">
+        <button onclick="saveSystemNewGrade()" style="background:var(--success)">💾 إضافة الدرجة</button>
+        <button onclick="clearSystemNewGradeForm()" style="background:#7f8c8d;margin-right:7px;">تفريغ</button>
+      </div>
     </div>
     <div id="systemGradeEditPanel" class="pro-form-panel" style="display:none;">
       <div class="pro-form-title">✏️ تعديل الدرجة المحددة</div>
@@ -6045,8 +6064,12 @@ function updateCloudStatus(text, color) {
             if(String(cls?.name||'').toLocaleLowerCase('ar').includes(query))classMatches.push({index:cIdx,name:cls.name});
             (cls?.desks||[]).forEach((d,di)=>[1,2].forEach(slot=>{
                 const name=String(d?.['student'+slot]||'').trim();
-                if(name && name.toLocaleLowerCase('ar').includes(query)){
-                    matches.push({name,className:cls.name,classObj:cls,classIndex:cIdx,deskIndex:di,deskNumber:d.deskNumber??(di+1),slot,seat:slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)',itemKey:`${d.deskNumber??(di+1)}_${slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)'}_${name}`,code:d?.['code'+slot],studentId:d?.['student'+slot+'Id']||d?.id||'' ,student:d});
+                const code=String(d?.['code'+slot]||'').trim();
+                const phone=String(d?.['phone'+slot]||d?.['parentPhone'+slot]||'').trim();
+                const searchable=[name,code,phone].map(normalizeStudentSearchValue);
+                const qNorm=normalizeStudentSearchValue(queryRaw);
+                if(name && searchable.some(v=>v && v.includes(qNorm))){
+                    matches.push({name,className:cls.name,classObj:cls,classIndex:cIdx,deskIndex:di,deskNumber:d.deskNumber??(di+1),slot,seat:slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)',itemKey:`${d.deskNumber??(di+1)}_${slot===1?'المقعد الأول (يمين)':'المقعد الثاني (يسار)'}_${name}`,code,phone,studentId:d?.['student'+slot+'Id']||d?.id||'' ,student:d});
                 }
             }));
         });
@@ -6103,7 +6126,7 @@ function updateCloudStatus(text, color) {
                 ['العمر',slotValue('age')||'—'],
                 ['تاريخ الميلاد',slotValue('birthDate')||'—'],
                 ['الرقم الوطني',slotValue('nationalId')||'—'],
-                ['هاتف ولي الأمر',slotValue('phone')||'—'],
+                ['هاتف ولي الأمر',slotValue('phone')||r.phone||'—'],
                 ['العنوان',slotValue('address')||'—'],
                 ['كود الطالب',slotValue('code')||r.code||'—']
             ];
@@ -7962,6 +7985,54 @@ function updateCloudStatus(text, color) {
         const search=document.getElementById('systemGradesStudentSearch'); if(search) search.value='';
         cancelSystemGradeEdit();
         systemGradesClassChanged();
+        populateSystemNewGradeStudents();
+        clearSystemNewGradeForm(false);
+    }
+
+    function normalizeStudentSearchValue(value){
+        return String(value??'').trim().toLocaleLowerCase('ar')
+          .replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+          .replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+          .replace(/[\s\-()_.+]/g,'');
+    }
+
+    function populateSystemNewGradeStudents(){
+        const select=document.getElementById('systemNewGradeStudentSelect'); if(!select)return;
+        const opts=getSystemGradeStudentOptions();
+        select.innerHTML=opts.length?opts.map((st,i)=>`<option value="${i}">${escapeGlobalSearchHTML(st.name)}${st.code?' — كود: '+escapeGlobalSearchHTML(st.code):''}</option>`).join(''):'<option value="">لا يوجد طلاب</option>';
+        select.dataset.optionKeys=JSON.stringify(opts.map(st=>st.studentKey));
+        const current=getSelectedSystemGradeStudent?.(); const idx=opts.findIndex(st=>st.studentKey===current?.studentKey);
+        if(idx>=0)select.value=String(idx);
+    }
+    function getSelectedSystemNewGradeStudent(){
+        const select=document.getElementById('systemNewGradeStudentSelect'); if(!select)return null;
+        const keys=JSON.parse(select.dataset.optionKeys||'[]'); const key=keys[parseInt(select.value||'-1',10)];
+        return getSystemGradeStudentOptions().find(st=>st.studentKey===key)||null;
+    }
+    function updateSystemNewGradePeriodFields(){
+        const type=document.getElementById('systemNewGradePeriodType')?.value||'daily';
+        const dg=document.getElementById('systemNewGradeDateGroup'); const mg=document.getElementById('systemNewGradeMonthGroup');
+        if(dg)dg.style.display=type==='daily'?'block':'none'; if(mg)mg.style.display=type==='monthly'?'block':'none';
+    }
+    function clearSystemNewGradeForm(resetStudent=false){
+        if(document.getElementById('systemNewGradeSubject'))document.getElementById('systemNewGradeSubject').value=''; if(document.getElementById('systemNewGradeScore'))document.getElementById('systemNewGradeScore').value=''; if(document.getElementById('systemNewGradeNotes'))document.getElementById('systemNewGradeNotes').value='';
+        if(document.getElementById('systemNewGradeMax'))document.getElementById('systemNewGradeMax').value='100';
+        if(document.getElementById('systemNewGradePeriodType'))document.getElementById('systemNewGradePeriodType').value='daily';
+        if(document.getElementById('systemNewGradeDate'))document.getElementById('systemNewGradeDate').value=getFormattedDate();
+        if(document.getElementById('systemNewGradeMonth'))document.getElementById('systemNewGradeMonth').value=new Date().toISOString().slice(0,7);
+        updateSystemNewGradePeriodFields(); if(resetStudent)populateSystemNewGradeStudents();
+    }
+    function saveSystemNewGrade(){
+        if(!isPrimaryAdminUser())return; const cls=schoolData[systemGradesClassIndex]; const st=getSelectedSystemNewGradeStudent();
+        if(!cls||!st){alert('اختر الطالب أولاً.');return;}
+        const subject=String(document.getElementById('systemNewGradeSubject')?.value||'').trim(); const type=document.getElementById('systemNewGradePeriodType')?.value||'daily';
+        const score=parseFloat(document.getElementById('systemNewGradeScore')?.value); const max=parseFloat(document.getElementById('systemNewGradeMax')?.value);
+        const period=type==='daily'?String(document.getElementById('systemNewGradeDate')?.value||''):type==='monthly'?String(document.getElementById('systemNewGradeMonth')?.value||''):'';
+        if(!subject){alert('اكتب المادة / الدرس.');return;} if(!Number.isFinite(score)||!Number.isFinite(max)||max<=0||score<0||score>max){alert('أدخل درجة صحيحة.');return;} if((type==='daily'||type==='monthly')&&!period){alert('حدد اليوم أو الشهر.');return;}
+        const now=new Date().toISOString(); const name=String(currentUser.name||'مدير النظام');
+        ensureStudentGrades(cls).push({id:createStableId('grade'),studentKey:st.studentKey,studentName:st.name,subject,score,maxScore:max,periodType:type,period,notes:String(document.getElementById('systemNewGradeNotes')?.value||'').trim(),teacherId:String(currentUser.id||currentUser.uid||name),teacherName:name,createdAt:now,updatedAt:now,modifiedById:String(currentUser.id||currentUser.uid||name),modifiedByName:name,modifiedAt:now});
+        if(window.ProfessionalModules?.addAudit)window.ProfessionalModules.addAudit('إضافة درجة طالب',`${name} أضاف درجة للطالب ${st.name} — ${subject} — ${score}/${max} — الوقت: ${nowText()}`);
+        saveData(); systemGradesStudentOptions=getSystemGradeStudentOptions(); populateSystemNewGradeStudents(); showSystemStudentGrades(); clearSystemNewGradeForm(false); alert('تمت إضافة الدرجة بنجاح.');
     }
 
     function getSystemGradeStudentOptions() {
@@ -7972,7 +8043,7 @@ function updateCloudStatus(text, color) {
             [1,2].forEach(slot=>{
                 const name=String(desk && desk['student'+slot] || '').trim();
                 if(!name) return;
-                out.push({studentKey:`${deskIndex}:${slot}`,deskIndex,slot,name,code:String(desk['code'+slot]||'').trim(),gender:String(desk['gender'+slot]||'').trim().toLowerCase()});
+                out.push({studentKey:`${deskIndex}:${slot}`,deskIndex,slot,name,code:String(desk['code'+slot]||'').trim(),phone:String(desk['phone'+slot]||desk['parentPhone'+slot]||'').trim(),gender:String(desk['gender'+slot]||'').trim().toLowerCase()});
             });
         });
         return out;
@@ -7994,10 +8065,11 @@ function updateCloudStatus(text, color) {
     function renderSystemGradeStudentSelect() {
         const select=document.getElementById('systemGradesStudentSelect');
         if(!select) return;
-        const q=String(document.getElementById('systemGradesStudentSearch')?.value||'').trim().toLocaleLowerCase('ar');
-        const filtered=q ? systemGradesStudentOptions.filter(s=>s.name.toLocaleLowerCase('ar').includes(q)) : systemGradesStudentOptions;
+        const rawQ=String(document.getElementById('systemGradesStudentSearch')?.value||'').trim();
+        const q=normalizeStudentSearchValue(rawQ);
+        const filtered=q ? systemGradesStudentOptions.filter(s=>[s.name,s.code,s.phone].some(v=>normalizeStudentSearchValue(v).includes(q))) : systemGradesStudentOptions;
         select.innerHTML=filtered.length
-            ? filtered.map((st,i)=>`<option value="${i}">${escapeGlobalSearchHTML(st.name)}</option>`).join('')
+            ? filtered.map((st,i)=>`<option value="${i}">${escapeGlobalSearchHTML(st.name)}${st.code?' — كود: '+escapeGlobalSearchHTML(st.code):''}${st.phone?' — هاتف: '+escapeGlobalSearchHTML(st.phone):''}</option>`).join('')
             : '<option value="">لا يوجد طالب مطابق</option>';
         select.dataset.optionKeys=JSON.stringify(filtered.map(s=>s.studentKey));
         if(filtered.length) showSystemStudentGrades();
@@ -8097,7 +8169,7 @@ function updateCloudStatus(text, color) {
         rec.modifiedById=String(currentUser.id||currentUser.uid||currentUser.name||'');
         rec.modifiedByName=String(currentUser.name||'مدير النظام');
         rec.modifiedAt=rec.updatedAt;
-        if(window.ProfessionalModules?.addAudit) window.ProfessionalModules.addAudit('تعديل درجة طالب', `${rec.modifiedByName} عدّل درجة الطالب ${rec.studentName||''} — القديمة: ${oldScore??'-'} / ${oldMax??max} — الجديدة: ${score} / ${max} — المادة: ${rec.subject||''}`);
+        if(window.ProfessionalModules?.addAudit) window.ProfessionalModules.addAudit('تعديل درجة طالب', `المدير ${rec.modifiedByName} عدّل درجة الطالب ${rec.studentName||''} — القديمة: ${oldScore??'-'} / ${oldMax??max} — الجديدة: ${score} / ${max} — المادة: ${rec.subject||''} — الوقت: ${nowText()}`);
         saveData();
         renderGradeEditAuditBox();
         cancelSystemGradeEdit();
