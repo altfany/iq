@@ -1645,6 +1645,25 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
   }
 </script>
 
+<style id="student-suspension-css">
+.student-suspension-admin-panel{border:1px solid #ead8f1!important;background:linear-gradient(145deg,#fffaff,#f8f1fb)!important}
+.student-suspension-admin-note{margin:-3px 0 13px;padding:10px 12px;border-radius:11px;background:#fff3fb;color:#6b3b6f;border:1px solid #efd7ee;font-size:12px;line-height:1.7}
+.student-suspension-current-state{margin:8px 0 0;min-height:4px}
+.suspension-state-active{padding:10px 12px;border-radius:11px;background:#fff0f0;color:#a40000;border:1px solid #f1bcbc;font-size:12px;line-height:1.7}
+.suspension-state-clear{padding:10px 12px;border-radius:11px;background:#eefaf1;color:#176b2b;border:1px solid #ccebd4;font-size:12px}
+.suspended-student-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;margin:7px 0;border:1px solid #ead7ef;border-radius:13px;background:#fff}
+.suspended-student-info{min-width:0;flex:1}.suspended-student-name{font-weight:900;color:#5b2c63;font-size:14px}.suspended-student-meta{color:#7c8793;font-size:11px;margin-top:3px}
+.suspended-student-message{margin-top:7px;padding:8px 10px;border-radius:9px;background:#faf6fb;color:#4f4054;font-size:11px;line-height:1.7}
+.btn-lift-suspension{background:linear-gradient(135deg,#27ae60,#1e8449)!important;white-space:nowrap}
+#studentSuspensionOverlay{position:fixed;inset:0;z-index:2147483646;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(18,24,32,.92)}
+#studentSuspensionOverlay .suspension-card{width:min(520px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:24px;padding:25px 21px;box-shadow:0 25px 70px rgba(0,0,0,.35);text-align:center}
+#studentSuspensionOverlay .suspension-icon{width:76px;height:76px;margin:0 auto 13px;display:grid;place-items:center;border-radius:50%;background:#fff0f0;color:#c0392b;font-size:37px}
+#studentSuspensionOverlay h2{margin:0 0 8px;color:#2c3e50;font-size:23px}
+#studentSuspensionOverlay .suspension-student{font-weight:900;color:#8e44ad;font-size:17px;margin:7px 0 14px}
+#studentSuspensionOverlay .suspension-message{text-align:right;background:#f8f5fa;border:1px solid #e5d9e9;border-radius:15px;padding:15px;color:#34495e;font-size:15px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere}
+#studentSuspensionOverlay .suspension-help{margin:13px 0 0;color:#7b8794;font-size:12px;line-height:1.7}
+@media(max-width:600px){.suspended-student-card{align-items:stretch;flex-direction:column}.btn-lift-suspension{width:100%!important}#studentSuspensionOverlay{padding:10px}#studentSuspensionOverlay .suspension-card{padding:22px 15px;border-radius:20px}#studentSuspensionOverlay h2{font-size:20px}#studentSuspensionOverlay .suspension-message{font-size:14px}}
+</style>
 <style id="development-five-css">
 .dev5-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.dev5-toolbar input,.dev5-toolbar select{flex:1 1 180px;min-height:42px;padding:8px;border:1px solid #ccd6df;border-radius:9px;font:inherit}.dev5-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.dev5-card{background:var(--card-bg,#fff);border:1px solid #dfe6ec;border-radius:15px;padding:14px;box-shadow:0 4px 14px rgba(0,0,0,.06)}.dev5-stat{font-size:28px;font-weight:900;margin-top:5px}.dev5-muted{font-size:12px;opacity:.68}.dev5-actions{display:flex;gap:6px;flex-wrap:wrap}.dev5-actions button{min-height:38px}.dev5-table-wrap{overflow:auto;max-height:58vh}.dev5-table{width:100%;border-collapse:collapse;min-width:720px}.dev5-table th,.dev5-table td{padding:8px;border-bottom:1px solid #e4e8ec;text-align:center}.dev5-table th{position:sticky;top:0;background:#f5f7f9;z-index:1}.dev5-search-result{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;border:1px solid #e1e7ec;border-radius:11px;margin:7px 0;background:#fff}.dev5-pill{display:inline-block;padding:4px 9px;border-radius:99px;background:#eef4f8;font-size:11px}.dev5-pager{display:flex;justify-content:center;gap:7px;align-items:center;margin-top:10px}.dev5-pager button{min-width:42px}.dev5-kpi{cursor:pointer}.dev5-kpi:hover{transform:translateY(-1px)}
 @media(max-width:600px){.dev5-table{min-width:650px}.dev5-search-result{align-items:flex-start;flex-direction:column}.dev5-toolbar>*{flex-basis:100%}}
@@ -2222,6 +2241,36 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     <div class="pro-form-panel" style="margin-top:12px;">
       <div class="pro-form-title">📋 قائمة الطلاب المفصولين</div>
       <div id="separatedStudentsList"></div>
+    </div>
+
+    <div class="pro-form-panel student-suspension-admin-panel" style="margin-top:12px;">
+      <div class="pro-form-title">⛔ تعليق طالب من النظام</div>
+      <div class="student-suspension-admin-note">
+        عند تعليق الطالب لن يتمكن ولي الأمر من الدخول إلى بوابة الطالب. سيظهر له فقط تنبيه التعليق ورسالة المدير، بدون عرض أي بيانات عن الطالب.
+      </div>
+      <div class="pro-form-grid">
+        <div class="form-group pro-field wide">
+          <label>🔎 البحث عن الطالب</label>
+          <input id="suspendStudentSearch" type="search" placeholder="اكتب اسم الطالب أو اسم الصف أو كود الطالب" oninput="renderSuspensionStudentOptions()">
+        </div>
+        <div class="form-group pro-field wide">
+          <label>الطالب المراد تعليقه</label>
+          <select id="suspendStudentSelect" onchange="loadSuspensionStudentState()"></select>
+        </div>
+        <div class="form-group pro-field wide">
+          <label>💬 رسالة إلى ولي الأمر</label>
+          <textarea id="suspensionMessage" rows="4" placeholder="مثال: يرجى مراجعة إدارة المدرسة قبل إعادة الدخول إلى النظام."></textarea>
+        </div>
+      </div>
+      <div id="suspensionCurrentState" class="student-suspension-current-state"></div>
+      <div class="pro-toolbar" style="justify-content:flex-end;">
+        <button type="button" onclick="executeStudentSuspension()" style="background:#8e44ad;">⛔ تعليق الطالب</button>
+      </div>
+    </div>
+
+    <div class="pro-form-panel" style="margin-top:12px;">
+      <div class="pro-form-title">🔓 الطلاب المعلّقون — رفع التعليق</div>
+      <div id="suspendedStudentsList"></div>
     </div>
   </div>
 </div>
@@ -3198,6 +3247,10 @@ function repairLegacySchoolData() {
       ['1','2'].forEach(slot=>{
         if(!String(desk['student'+slot]||'').trim()){ desk['code'+slot]=''; desk['student'+slot+'Id']=''; }
         else if(!desk['student'+slot+'Id']) desk['student'+slot+'Id']=createStableId('student');
+        if(desk[`suspended${slot}`]!==true)desk[`suspended${slot}`]=false;
+        if(desk[`suspensionMessage${slot}`]==null)desk[`suspensionMessage${slot}`]='';
+        if(desk[`suspendedAt${slot}`]==null)desk[`suspendedAt${slot}`]='';
+        if(desk[`suspendedBy${slot}`]==null)desk[`suspendedBy${slot}`]='';
       });
     });
   });
@@ -4071,6 +4124,117 @@ function updateCloudStatus(text, color) {
         ['adminNewPasswordInput','adminConfirmPasswordInput'].forEach(id=>addSecretToggle(id));
     }
 
+    // ===== تعليق الطالب من نظام ولي الأمر =====
+    function getStudentSuspensionRecord(match){
+        if(!match) return null;
+        const desk=match.desk||match.classObj?.desks?.[match.deskIndex];
+        const slot=Number(match.student?.slot||match.slot||0);
+        if(!desk||![1,2].includes(slot)||desk[`suspended${slot}`]!==true) return null;
+        return {
+            suspended:true,
+            message:String(desk[`suspensionMessage${slot}`]||'').trim(),
+            date:desk[`suspendedAt${slot}`]||'',
+            by:desk[`suspendedBy${slot}`]||'المدير',
+            name:String(desk[`student${slot}`]||match.student?.name||'الطالب').trim(),
+            className:String(match.classObj?.name||'').trim(),
+            studentId:String(desk[`student${slot}Id`]||match.student?.id||'').trim()
+        };
+    }
+    function showStudentSuspensionOverlay(record){
+        const overlay=document.getElementById('studentSuspensionOverlay'); if(!overlay)return;
+        const name=document.getElementById('studentSuspensionName'),msg=document.getElementById('studentSuspensionMessage');
+        if(name)name.textContent=record?.name||'الطالب';
+        if(msg)msg.textContent=record?.message||'يرجى مراجعة إدارة المدرسة قبل إعادة الدخول إلى النظام.';
+        overlay.style.display='flex';
+    }
+    function closeStudentSuspensionOverlay(){
+        const overlay=document.getElementById('studentSuspensionOverlay'); if(overlay)overlay.style.display='none';
+        const login=document.getElementById('loginOverlay'); if(login)login.style.display='flex';
+        const input=document.getElementById('loginCodeInput'); if(input){input.value='';setTimeout(()=>input.focus(),80);}
+    }
+    function getAllSuspendedStudentsForAdmin(){
+        const out=[];
+        (schoolData||[]).forEach((cls,ci)=>(cls.desks||[]).forEach((desk,di)=>[1,2].forEach(slot=>{
+            const name=String(desk?.[`student${slot}`]||'').trim();
+            if(!name||desk?.[`separated${slot}`]||desk?.[`suspended${slot}`]!==true)return;
+            out.push({ci,di,slot,name,className:cls.name||`الصف ${ci+1}`,desk,message:String(desk[`suspensionMessage${slot}`]||'').trim(),date:desk[`suspendedAt${slot}`]||'',by:desk[`suspendedBy${slot}`]||'المدير',studentId:String(desk[`student${slot}Id`]||'')});
+        })));
+        return out;
+    }
+    function renderSuspensionStudentOptions(){
+        const sel=document.getElementById('suspendStudentSelect'); if(!sel)return;
+        const q=String(document.getElementById('suspendStudentSearch')?.value||'').trim().toLocaleLowerCase('ar');
+        const students=getAllActiveStudentsForAdmin().filter(x=>{
+            if(!q)return true;
+            const code=String(x.desk?.[`code${x.slot}`]||'');
+            return [x.name,x.className,code].some(v=>String(v||'').toLocaleLowerCase('ar').includes(q));
+        });
+        const old=String(sel.value||'');
+        sel.innerHTML=students.length?students.map((x,i)=>`<option value="${i}">${escapeGlobalSearchHTML(x.name)} — ${escapeGlobalSearchHTML(x.className)}${x.desk?.[`suspended${x.slot}`]===true?' ⛔':''}</option>`).join(''):'<option value="">لا يوجد طالب مطابق</option>';
+        if(students.some((_,i)=>String(i)===old))sel.value=old; else if(students.length)sel.selectedIndex=0;
+        sel.dataset.studentKeys=JSON.stringify(students.map(x=>({ci:x.ci,di:x.di,slot:x.slot})));
+        loadSuspensionStudentState();
+    }
+    function getSelectedSuspensionStudent(){
+        const sel=document.getElementById('suspendStudentSelect'); if(!sel)return null;
+        let keys=[];try{keys=JSON.parse(sel.dataset.studentKeys||'[]')}catch(e){}
+        const x=keys[Number(sel.value)]; if(!x)return null;
+        const cls=schoolData[x.ci],desk=cls?.desks?.[x.di]; if(!cls||!desk)return null;
+        return {...x,cls,desk,name:String(desk[`student${x.slot}`]||'').trim(),className:cls.name||`الصف ${x.ci+1}`};
+    }
+    function loadSuspensionStudentState(){
+        const student=getSelectedSuspensionStudent(),box=document.getElementById('suspensionCurrentState'),msg=document.getElementById('suspensionMessage');
+        if(!student){if(box)box.innerHTML='';if(msg)msg.value='';return;}
+        const active=student.desk[`suspended${student.slot}`]===true,oldMsg=String(student.desk[`suspensionMessage${student.slot}`]||'');
+        if(msg)msg.value=oldMsg;
+        if(box)box.innerHTML=active?'<div class="suspension-state-active">⛔ هذا الطالب معلّق حالياً. يمكنك تعديل الرسالة ثم حفظ التعليق مرة أخرى، أو رفع التعليق من قائمة الطلاب المعلّقين أدناه.</div>':'<div class="suspension-state-clear">✅ الطالب غير معلّق حالياً.</div>';
+    }
+    function executeStudentSuspension(){
+        if(!currentUser||currentUser.role!=='admin')return;
+        if(!requireAdminSensitiveAction('تعليق طالب'))return;
+        const student=getSelectedSuspensionStudent(); if(!student){alert('اختر الطالب أولاً.');return;}
+        const message=String(document.getElementById('suspensionMessage')?.value||'').trim();
+        if(!message){alert('اكتب رسالة لولي الأمر قبل تعليق الطالب.');document.getElementById('suspensionMessage')?.focus();return;}
+        const action=student.desk[`suspended${student.slot}`]===true?'تحديث تعليق':'تعليق الطالب';
+        if(!confirm(`سيتم ${action} «${student.name}».\n\nستظهر لولي الأمر الرسالة فقط ولن يتمكن من دخول بوابة الطالب.\n\nهل تريد المتابعة؟`))return;
+        const now=new Date().toISOString();
+        student.desk[`suspended${student.slot}`]=true;
+        student.desk[`suspensionMessage${student.slot}`]=message;
+        student.desk[`suspendedAt${student.slot}`]=now;
+        student.desk[`suspendedBy${student.slot}`]=currentUser.name||'المدير';
+        if(!Array.isArray(student.cls.suspensionHistory))student.cls.suspensionHistory=[];
+        student.cls.suspensionHistory.push({type:'studentSuspension',studentName:student.name,studentId:String(student.desk[`student${student.slot}Id`]||''),message,date:now,by:currentUser.name||'المدير'});
+        saveData();
+        if(window.ProfessionalModules?.addAudit)window.ProfessionalModules.addAudit(action,`${student.name} — ${message}`);
+        renderSuspendedStudentsList();renderSuspensionStudentOptions();
+        alert(`تم تعليق الطالب «${student.name}» بنجاح.\nستظهر لولي الأمر رسالة التعليق عند محاولة الدخول.`);
+    }
+    function renderSuspendedStudentsList(){
+        const box=document.getElementById('suspendedStudentsList'); if(!box)return;
+        const list=getAllSuspendedStudentsForAdmin();
+        if(!list.length){box.innerHTML='<div class="pro-empty">لا يوجد طلاب معلّقون حالياً.</div>';return;}
+        box.innerHTML=list.map(x=>{
+            const date=x.date?new Date(x.date).toLocaleString('ar-IQ'):'غير محدد';
+            return `<div class="suspended-student-card"><div class="suspended-student-info"><div class="suspended-student-name">⛔ ${escapeGlobalSearchHTML(x.name)}</div><div class="suspended-student-meta">${escapeGlobalSearchHTML(x.className)} • تاريخ التعليق: ${escapeGlobalSearchHTML(date)}</div><div class="suspended-student-message">${escapeGlobalSearchHTML(x.message||'')}</div></div><button type="button" class="btn-lift-suspension" onclick="liftStudentSuspension(${x.ci},${x.di},${x.slot})">🔓 رفع التعليق</button></div>`;
+        }).join('');
+    }
+    function liftStudentSuspension(ci,di,slot){
+        if(!currentUser||currentUser.role!=='admin')return;
+        if(!requireAdminSensitiveAction('رفع تعليق طالب'))return;
+        const cls=schoolData?.[Number(ci)],desk=cls?.desks?.[Number(di)],name=String(desk?.[`student${slot}`]||'').trim();
+        if(!cls||!desk||!name){alert('تعذر العثور على الطالب.');return;}
+        if(desk[`suspended${slot}`]!==true){renderSuspendedStudentsList();return;}
+        if(!confirm(`هل تريد رفع التعليق عن الطالب «${name}»؟\n\nبعد رفع التعليق يستطيع ولي الأمر الدخول بالكود مرة أخرى.`))return;
+        const now=new Date().toISOString();
+        desk[`suspended${slot}`]=false;desk[`suspensionLiftedAt${slot}`]=now;desk[`suspensionLiftedBy${slot}`]=currentUser.name||'المدير';
+        if(!Array.isArray(cls.suspensionHistory))cls.suspensionHistory=[];
+        cls.suspensionHistory.push({type:'studentSuspensionLifted',studentName:name,studentId:String(desk[`student${slot}Id`]||''),date:now,by:currentUser.name||'المدير'});
+        saveData();
+        if(window.ProfessionalModules?.addAudit)window.ProfessionalModules.addAudit('رفع تعليق طالب',name);
+        renderSuspendedStudentsList();renderSuspensionStudentOptions();
+        alert(`تم رفع التعليق عن «${name}».\nيمكن لولي الأمر الدخول مرة أخرى بالكود.`);
+    }
+
     function performLogin() {
         const enteredCode = String(document.getElementById('loginCodeInput')?.value || '').trim();
         if (!enteredCode) { alert('الرجاء إدخال كود الدخول.'); return; }
@@ -4113,9 +4277,18 @@ function updateCloudStatus(text, color) {
                         alert('الكود غير صحيح يرجى مراجعة ادارة المدرسة ');
                         return;
                     }
+                    const suspensionRecord=getStudentSuspensionRecord(match);
+                    if(suspensionRecord?.suspended){
+                        currentUser=null;
+                        APP_SECURITY.failedAttempts=0;
+                        APP_SECURITY.lockedUntil=0;
+                        document.getElementById('loginOverlay').style.display='flex';
+                        showStudentSuspensionOverlay(suspensionRecord);
+                        return;
+                    }
                     currentUser = {
                         role: 'parent',
-                        name: match.student.student1 || match.student.student2 || match.student.name || 'الطالب',
+                        name: match.student.name || 'الطالب',
                         code: enteredCode,
                         classIndex: match.classIndex,
                         studentId: match.student.id || '',
@@ -6938,7 +7111,7 @@ function updateCloudStatus(text, color) {
             sourceClassIndex:fromIndex,
             sourceDeskIndex:x.di,
             sourceSlot:x.slot,
-            payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))
+            payload:Object.fromEntries(['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))
         }));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
@@ -6955,7 +7128,7 @@ function updateCloudStatus(text, color) {
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:targetName,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy'].forEach(f=>src[`${f}${slot}`]=f==='separated'?false:'');
+            ['student','code','phone','gender','address','studentId','separated','separationReason','separatedAt','separatedBy','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'].forEach(f=>src[`${f}${slot}`]=(f==='separated'||f==='suspended')?false:'');
         }
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
         saveData(); renderDesks(); renderClassesNav(); openWholeClassTransferControls();
@@ -6993,6 +7166,8 @@ function updateCloudStatus(text, color) {
         toggleTransferDestinationFields();
         openWholeClassTransferControls();
         renderSeparatedStudentsList();
+        renderSuspensionStudentOptions();
+        renderSuspendedStudentsList();
         m.style.display='flex';
     }
 
@@ -7014,6 +7189,12 @@ function updateCloudStatus(text, color) {
         desk[`student${slot}Id`]='';
         desk[`separated${slot}`]=false;
         desk[`separationReason${slot}`]='';
+        desk[`suspended${slot}`]=false;
+        desk[`suspensionMessage${slot}`]='';
+        desk[`suspendedAt${slot}`]='';
+        desk[`suspendedBy${slot}`]='';
+        desk[`suspensionLiftedAt${slot}`]='';
+        desk[`suspensionLiftedBy${slot}`]='';
         return oldName;
     }
 
@@ -7120,10 +7301,12 @@ function updateCloudStatus(text, color) {
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
         if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟\n\nنمط النقل: ${mode==='full'?'مع كل السجلات':'البيانات الأساسية فقط'}.`))return;
         const sourceSlot=student.slot;
-        const fields=['student','code','phone','gender','address','studentId'];
+        const fields=['student','code','phone','gender','address','studentId','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'];
         fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
+        if(targetDesk[`suspended${slot2}`]===undefined)targetDesk[`suspended${slot2}`]=false;
+        if(targetDesk[`suspensionMessage${slot2}`]===undefined)targetDesk[`suspensionMessage${slot2}`]='';
         if(mode==='full') migrateStudentClassHistory(oldCls,student.di,sourceSlot,student.name,target,targetDi,slot2,student.name,mode);
         clearStudentFromDesk(student);
         if(!Array.isArray(target.transfers))target.transfers=[];
@@ -9512,7 +9695,17 @@ const currentStatus = adminChangedStatus || professionalStatus?.status || x.stat
         const w=window.open('','_blank','width=1000,height=800');
         if(!w){alert('اسمح بالنوافذ المنبثقة للطباعة.');return;}
         const rows=unique.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.name)}</td><td>${escapeGlobalSearchHTML(x.className)}</td><td>${escapeGlobalSearchHTML(x.date)}</td></tr>`).join('');
-        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>تقرير غياب الطالب</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center;margin-bottom:8px}p{font-size:15px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #777;padding:9px;text-align:right}th{background:#eee}.summary{font-size:18px;font-weight:bold;margin:15px 0}</style></head><body><h1>تقرير غياب طالب</h1><p>اسم الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</p><p>الصف: ${escapeGlobalSearchHTML(classes.join('، ')||'-')}</p><p>من تاريخ: ${escapeGlobalSearchHTML(from)} &nbsp;&nbsp; إلى تاريخ: ${escapeGlobalSearchHTML(to)}</p><div class="summary">عدد أيام الغياب: ${unique.length}</div><table><thead><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr></thead><tbody>${rows||'<tr><td colspan="3">لا توجد غيابات في الفترة المحددة.</td></tr>'}</tbody></table><script>window.onload=()=>window.print();<\/script></body></html>`);
+        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>تقرير غياب الطالب</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center;margin-bottom:8px}p{font-size:15px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #777;padding:9px;text-align:right}th{background:#eee}.summary{font-size:18px;font-weight:bold;margin:15px 0}</style></head><body><h1>تقرير غياب طالب</h1><p>اسم الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</p><p>الصف: ${escapeGlobalSearchHTML(classes.join('، ')||'-')}</p><p>من تاريخ: ${escapeGlobalSearchHTML(from)} &nbsp;&nbsp; إلى تاريخ: ${escapeGlobalSearchHTML(to)}</p><div class="summary">عدد أيام الغياب: ${unique.length}</div><table><thead><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr></thead><tbody>${rows||'<tr><td colspan="3">لا توجد غيابات في الفترة المحددة.</td></tr>'}</tbody></table><script>window.onload=()=>window.print();<\/script><div id="studentSuspensionOverlay" aria-modal="true" role="dialog">
+  <div class="suspension-card">
+    <div class="suspension-icon">⛔</div>
+    <h2>دخول الطالب معلّق</h2>
+    <div id="studentSuspensionName" class="suspension-student"></div>
+    <div id="studentSuspensionMessage" class="suspension-message"></div>
+    <div class="suspension-help">لا يمكن مشاهدة نظام الطالب أو أي من بياناته أثناء التعليق.<br>يرجى مراجعة إدارة المدرسة. بعد رفع التعليق يمكن الدخول بالكود مرة أخرى.</div>
+    <button type="button" onclick="closeStudentSuspensionOverlay()" style="margin-top:16px;background:#34495e;">العودة إلى شاشة الدخول</button>
+  </div>
+</div>
+</body></html>`);
         w.document.close();
     }
 
