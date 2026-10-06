@@ -8585,7 +8585,13 @@ function updateCloudStatus(text, color) {
         const attendance=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
         const rows=students.map((f,i)=>{
             const rec=attendance.find(r=>String(r?.studentId)===String(f.student.id)&&String(r?.date)===String(date));
-            const status=['late','absent','present'].includes(rec?.status) ? rec.status : 'present';
+            const seatPos=Number(f.slot)===1?'يمين':'يسار';
+            const deskNo=Number(f.deskIndex)+1;
+            const legacyKey=`${deskNo}_${seatPos}_${f.student.name}`;
+            const legacyStatus=cls?.absenceRecords?.[date]?.[legacyKey] || cls?.absenceRecords?.[date]?.[String(f.student.id)] || '';
+            const status=['late','absent','present'].includes(rec?.status)
+                ? rec.status
+                : (['late','absent','present'].includes(legacyStatus) ? legacyStatus : 'present');
             const lateTime=rec?.lateTime||'';
             const lateReason=rec?.lateReason||rec?.note||'';
             const safeId=escapeGlobalSearchHTML(String(f.student.id));
@@ -8654,7 +8660,16 @@ function updateCloudStatus(text, color) {
         report.completedAt=new Date().toISOString();
         saveData();
         if(window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload==='function'){
-            try{ await saveCurrentCloudPayload(); }catch(e){ console.error('Monitor single-status cloud save failed:',e); }
+            try{
+                await saveCurrentCloudPayload();
+                lastAppliedCloudUpdatedAt=new Date().toISOString();
+                cloudSavePending=false;
+                cloudSaveExpectedRevision='';
+            }catch(e){
+                console.error('Monitor single-status cloud save failed:',e);
+                alert('⚠️ تم تسجيل الحالة، لكن تعذر تأكيد حفظها في Firebase. تحقق من الإنترنت ثم اضغط حفظ مرة أخرى.');
+                return false;
+            }
         }
         try{renderMonitorSelectedClass();}catch(e){}
         return true;
@@ -8723,65 +8738,49 @@ function updateCloudStatus(text, color) {
             const classIndex=Number(select.value);
             const cls=getMonitorClasses()[classIndex];
             const students=getMonitorClassStudents(classIndex);
+            if(!cls||!students.length){alert('لا يوجد طلاب مسجلون في هذا الصف.');return;}
 
-            if(!cls||!students.length){
-                alert('لا يوجد طلاب مسجلون في هذا الصف.');
+            let groups=[...document.querySelectorAll('#monitorClassStudents .monitor-status-checks[data-monitor-student]')];
+            if(groups.length!==students.length){
+                renderMonitorSelectedClass();
+                groups=[...document.querySelectorAll('#monitorClassStudents .monitor-status-checks[data-monitor-student]')];
+            }
+            if(groups.length!==students.length){
+                alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');
                 return;
             }
-
-            /*
-             * مهم:
-             * واجهة المراقب تستخدم حالياً checkboxes (حاضر/غائب/متأخر)،
-             * وليس select. لذلك نقرأ كل مجموعة monitor-status-checks
-             * الخاصة بكل طالب.
-             */
-            const groups=[...document.querySelectorAll(
-                '#monitorClassStudents .monitor-status-checks[data-monitor-student]'
-            )];
-
-            if(groups.length!==students.length){
-                // إعادة رسم الصف مرة واحدة للتأكد من أن الواجهة متزامنة مع الصف المختار.
-                renderMonitorSelectedClass();
-
-                const retryGroups=[...document.querySelectorAll(
-                    '#monitorClassStudents .monitor-status-checks[data-monitor-student]'
-                )];
-
-                if(retryGroups.length!==students.length){
-                    alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');
-                    return;
-                }
-            }
-
-            const finalGroups=[...document.querySelectorAll(
-                '#monitorClassStudents .monitor-status-checks[data-monitor-student]'
-            )];
 
             const absent=[];
             const reportStudents=[];
 
-            finalGroups.forEach(group=>{
-                const student=students.find(x=>
-                    String(x.student.id)===String(group.dataset.monitorStudent||'')
-                );
-                if(!student)return;
+            for(const group of groups){
+                const student=students.find(x=>String(x.student.id)===String(group.dataset.monitorStudent));
+                if(!student) continue;
 
                 const checked=group.querySelector('input[type="checkbox"][data-status]:checked');
-                const status=['late','absent','present'].includes(String(checked?.dataset?.status||''))
+                const oldRec=(window.ProfessionalModules?.attendanceData||[]).find(
+                    r=>String(r?.studentId)===String(student.student.id)&&String(r?.date)===String(date)
+                );
+
+                // لا نعيد الطالب إلى "حاضر" تلقائياً. نستخدم الحالة المحفوظة
+                // لهذا اليوم إذا لم يغيّر المراقب الاختيار.
+                const status=['late','absent','present'].includes(checked?.dataset?.status)
                     ? String(checked.dataset.status)
-                    : 'present';
+                    : (['late','absent','present'].includes(oldRec?.status) ? String(oldRec.status) : 'present');
 
-                let lateTime='';
-                let lateReason='';
+                let lateTime=String(oldRec?.lateTime||'').trim();
+                let lateReason=String(oldRec?.lateReason||'').trim();
 
-                // بيانات التأخير محفوظة في سجل الحضور الاحترافي.
                 if(status==='late'){
-                    const old=(window.ProfessionalModules?.attendanceData||[]).find(r=>
-                        String(r?.studentId)===String(student.student.id) &&
-                        String(r?.date)===String(date)
-                    );
-                    lateTime=String(old?.lateTime||'').trim();
-                    lateReason=String(old?.lateReason||old?.note||'').trim();
+                    const info=group.parentElement?.querySelector(`[data-late-info="${CSS.escape(String(student.student.id))}"]`);
+                    const m=String(info?.textContent||'').match(/وقت الدخول:\s*(.*?)\s+—\s*السبب:\s*(.*)$/);
+                    if(m){
+                        lateTime=String(m[1]||'').trim();
+                        lateReason=String(m[2]||'').trim();
+                    }
+                }else{
+                    lateTime='';
+                    lateReason='';
                 }
 
                 const note=status==='late'
@@ -8789,22 +8788,16 @@ function updateCloudStatus(text, color) {
                     : '';
 
                 const saved=window.ProfessionalModules?.recordAttendance
-                    ? window.ProfessionalModules.recordAttendance(
-                        student.student.id,status,date,note,lateTime,lateReason
-                    )
+                    ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason)
                     : (typeof recordAttendance==='function'
-                        ? recordAttendance(
-                            student.student.id,status,date,note,lateTime,lateReason
-                        )
+                        ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason)
                         : false);
 
-                // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب
-                // مباشرة داخل زر «الحضور والغياب» في كارت الصف.
+                if(saved===false) continue;
+
                 if(student.classObj){
-                    if(!student.classObj.absenceRecords)
-                        student.classObj.absenceRecords={};
-                    if(!student.classObj.absenceRecords[date])
-                        student.classObj.absenceRecords[date]={};
+                    if(!student.classObj.absenceRecords) student.classObj.absenceRecords={};
+                    if(!student.classObj.absenceRecords[date]) student.classObj.absenceRecords[date]={};
 
                     const seatPos=Number(student.slot)===1?'يمين':'يسار';
                     const deskNo=Number(student.deskIndex)+1;
@@ -8821,11 +8814,7 @@ function updateCloudStatus(text, color) {
                 }
 
                 if(status==='absent'){
-                    absent.push({
-                        studentId:student.student.id,
-                        name:student.student.name,
-                        status:'absent'
-                    });
+                    absent.push({studentId:student.student.id,name:student.student.name,status:'absent',date});
                 }
 
                 reportStudents.push({
@@ -8836,8 +8825,9 @@ function updateCloudStatus(text, color) {
                     lateReason:status==='late'?lateReason:'',
                     date
                 });
-            });
+            }
 
+            // تقرير منفصل لليوم والصف والمراقب. تحديث التقرير لا يمس سجل الحضور نفسه.
             const report={
                 id:createStableId('minv'),
                 monitorId:currentUser.monitorId,
@@ -8852,46 +8842,50 @@ function updateCloudStatus(text, color) {
             };
 
             const same=monitorInventoryReportsData.findIndex(r=>
-                String(r.monitorId)===String(report.monitorId) &&
-                String(r.classId)===String(report.classId) &&
+                String(r.monitorId)===String(report.monitorId)&&
+                String(r.classId)===String(report.classId)&&
                 String(r.date)===String(report.date)
             );
 
-            if(same>=0) monitorInventoryReportsData[same]=report;
-            else monitorInventoryReportsData.unshift(report);
-
-            if(monitorInventoryReportsData.length>500)
-                monitorInventoryReportsData.length=500;
-
-            // الحفظ الأساسي يكون في Firebase مباشرة.
-            saveData();
-
-            if(window.FirebaseCloud?.enabled &&
-               cloudReady &&
-               navigator.onLine &&
-               typeof saveCurrentCloudPayload==='function'){
-                try{
-                    await saveCurrentCloudPayload();
-                    lastAppliedCloudUpdatedAt=String(new Date().toISOString());
-                    cloudSavePending=false;
-                    cloudSaveExpectedRevision='';
-                    updateCloudStatus('تم حفظ جرد المراقب في Firebase ✓','#16803c');
-                }catch(cloudError){
-                    console.error('Monitor attendance Firebase save failed:',cloudError);
-                    alert('⚠️ تم تحديث الحضور على الشاشة، لكن تعذر تأكيد الحفظ في Firebase. تحقق من الإنترنت ثم حاول مرة أخرى.');
-                    return;
-                }
+            if(same>=0){
+                monitorInventoryReportsData[same]={
+                    ...monitorInventoryReportsData[same],
+                    ...report,
+                    id:monitorInventoryReportsData[same].id||report.id
+                };
+            }else{
+                monitorInventoryReportsData.unshift(report);
             }
 
-            alert(
-                absent.length
-                    ? `تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`
-                    : 'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.'
-            );
+            if(monitorInventoryReportsData.length>500)monitorInventoryReportsData.length=500;
 
+            saveData();
+
+            if(window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload==='function'){
+                try{
+                    await saveCurrentCloudPayload();
+                    lastAppliedCloudUpdatedAt=new Date().toISOString();
+                    cloudSavePending=false;
+                    cloudSaveExpectedRevision='';
+                    updateCloudStatus('تم حفظ حالات الطلاب في Firebase ✓', '#16803c');
+                }catch(cloudError){
+                    console.error('Monitor attendance Firebase save failed:',cloudError);
+                    alert('⚠️ تم تحديث الحالات، لكن تعذر تأكيد الحفظ في Firebase. تحقق من الإنترنت ثم اضغط حفظ مرة أخرى.');
+                    return;
+                }
+            }else if(!navigator.onLine){
+                alert('⚠️ لا يوجد اتصال بالإنترنت. لم يتم تأكيد حفظ الحالة في Firebase.');
+                return;
+            }
+
+            alert(absent.length
+                ? `تم حفظ حالات الطلاب لليوم ${date} وإرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`
+                : `تم حفظ حالات الطلاب لليوم ${date} وإرسال الجرد إلى المدير.`);
+
+            // إعادة الرسم من السجل المحفوظ لنفس اليوم.
             renderMonitorSelectedClass();
         }catch(err){
-            console.error('saveMonitorAttendance error:',err);
+            console.error(err);
             alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');
         }
     }
