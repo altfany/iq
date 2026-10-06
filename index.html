@@ -2094,131 +2094,46 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 #btnComplaintsNav.complaints-pending::after{content:'!';position:absolute;top:-8px;left:-8px;width:23px;height:23px;border-radius:50%;background:#e74c3c;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:14px;}
 @keyframes complaintsPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35);transform:scale(1.035)}}
 </style>
-<style id="parent-portal-gender-theme">.parent-portal-male{--parent-bg:#eef7ff;--parent-primary:#1976d2;--parent-soft:#e5f2ff}.parent-portal-female{--parent-bg:#fff0f7;--parent-primary:#d81b72;--parent-soft:#ffe4f0}.parent-portal-male .parent-portal-hero{background:linear-gradient(135deg,#145ea8,#2f8fe5)!important}.parent-portal-female .parent-portal-hero{background:linear-gradient(135deg,#b4145c,#ec5c9b)!important}.parent-portal-female .parent-portal-actions button{background:linear-gradient(135deg,#c51d6d,#e85b9d)!important}.parent-portal-male .parent-portal-actions button{background:linear-gradient(135deg,#1769aa,#2d8dd6)!important}.parent-portal-female .pro-panel{border-color:#f4c1d7}.parent-portal-male .pro-panel{border-color:#c5def5}
-<style id="parent-weekly-schedule-attendance-v2">
-/* ===== بوابة ولي الأمر: جدول أسبوعي كامل + حضور حقيقي ===== */
-.parent-weekly-schedule-panel{
-  background:linear-gradient(145deg,#ffffff,#f7fafc)!important;
-  border:1px solid #dce6ee!important;
-  border-radius:18px!important;
-  padding:14px!important;
-  box-shadow:0 7px 22px rgba(31,45,61,.08)!important;
-}
-.parent-weekly-schedule-panel .weekly-schedule-scroll{
-  width:100%;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  border-radius:14px;
-}
-.parent-weekly-schedule-table{
-  width:100%;
-  min-width:760px;
-  border-collapse:separate;
-  border-spacing:0;
-  overflow:hidden;
-  background:#fff;
-}
-.parent-weekly-schedule-table th,
-.parent-weekly-schedule-table td{
-  border:1px solid #dfe7ed!important;
-  padding:8px 7px!important;
-  text-align:center!important;
-  vertical-align:middle!important;
-}
-.parent-weekly-schedule-table thead th{
-  background:#eef4f8!important;
-  color:#26384a!important;
-  font-weight:900!important;
-  position:sticky;
-  top:0;
-  z-index:2;
-}
-.parent-weekly-schedule-table .period-cell{
-  min-width:72px;
-  font-weight:900;
-  background:#f7f9fb;
-}
-.parent-weekly-schedule-table .schedule-day-cell{
-  min-width:125px;
-  transition:background .18s,box-shadow .18s;
-}
-.parent-weekly-schedule-table .schedule-day-cell.today{
-  background:#ffe5e5!important;
-  box-shadow:inset 0 0 0 3px rgba(192,57,43,.30);
-}
-.parent-weekly-schedule-table .schedule-day-cell.tomorrow{
-  background:#e4f8ea!important;
-  box-shadow:inset 0 0 0 3px rgba(39,174,96,.24);
-}
-.parent-weekly-schedule-table .day-title.today{
-  background:#c0392b!important;color:#fff!important;
-}
-.parent-weekly-schedule-table .day-title.tomorrow{
-  background:#27ae60!important;color:#fff!important;
-}
-.parent-weekly-schedule-table .day-title .day-status{
-  display:block;font-size:10px;margin-top:2px;opacity:.95;
-}
-.parent-weekly-schedule-table .lesson-subject{
-  display:block;font-weight:900;color:#26384a;font-size:12px;
-}
-.parent-weekly-schedule-table .lesson-teacher{
-  display:block;margin-top:3px;color:#6b7b88;font-size:10px;
-}
-.parent-weekly-schedule-table .lesson-emergency{
-  color:#b35b00;font-weight:900;
-}
-.parent-weekly-schedule-table .empty-lesson{
-  color:#a1acb5;font-size:11px;
-}
-.parent-attendance-real-panel{
-  background:linear-gradient(145deg,#ffffff,#fbfcfd)!important;
-}
-.parent-attendance-real-grid{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:9px;
-}
-.parent-attendance-real-card{
-  border:1px solid #e1e7ec;
-  border-radius:13px;
-  padding:11px 8px;
-  text-align:center;
-  background:#fff;
-}
-.parent-attendance-real-card .real-num{
-  display:block;font-size:24px;font-weight:900;line-height:1.1;
-}
-.parent-attendance-real-card .real-label{
-  display:block;margin-top:4px;font-size:11px;color:#6b7b88;font-weight:800;
-}
-.parent-attendance-real-card.present .real-num{color:#27ae60}
-.parent-attendance-real-card.absent .real-num{color:#c0392b}
-.parent-attendance-real-card.leave .real-num{color:#d68910}
-.parent-attendance-real-card.late .real-num{color:#8a5a00}
-.parent-attendance-real-note{
-  margin-top:10px;padding:8px 10px;border-radius:10px;
-  background:#f5f8fa;border:1px solid #e1e7ec;color:#60717e;font-size:10px;
-  line-height:1.7;
-}
-.parent-attendance-status-badge{
-  display:inline-flex;align-items:center;justify-content:center;
-  padding:3px 8px;border-radius:999px;font-weight:900;font-size:11px;
-}
-.parent-attendance-status-badge.present{background:#e6f7ea;color:#176b2b}
-.parent-attendance-status-badge.absent{background:#ffe8e8;color:#a40000}
-.parent-attendance-status-badge.leave{background:#fff3d6;color:#8a5a00}
-.parent-attendance-status-badge.late{background:#fff0d8;color:#8a5a00}
-.parent-attendance-late-meta{display:block;font-size:9px;color:#8a5a00;margin-top:3px}
-@media(max-width:650px){
-  .parent-attendance-real-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-  .parent-weekly-schedule-panel{padding:10px!important}
-  .parent-weekly-schedule-table{min-width:720px}
-  .parent-weekly-schedule-table th,.parent-weekly-schedule-table td{padding:7px 5px!important}
-}
+<style id="parent-portal-gender-theme">.parent-portal-male{--parent-bg:#eef7ff;--parent-primary:#1976d2;--parent-soft:#e5f2ff}.parent-portal-female{--parent-bg:#fff0f7;--parent-primary:#d81b72;--parent-soft:#ffe4f0}.parent-portal-male .parent-portal-hero{background:linear-gradient(135deg,#145ea8,#2f8fe5)!important}.parent-portal-female .parent-portal-hero{background:linear-gradient(135deg,#b4145c,#ec5c9b)!important}.parent-portal-female .parent-portal-actions button{background:linear-gradient(135deg,#c51d6d,#e85b9d)!important}.parent-portal-male .parent-portal-actions button{background:linear-gradient(135deg,#1769aa,#2d8dd6)!important}.parent-portal-female .pro-panel{border-color:#f4c1d7}.parent-portal-male .pro-panel{border-color:#c5def5}</style>
+
+<style id="parent-weekly-schedule-and-absence-page">
+.parent-weekly-schedule{overflow:hidden}
+.parent-schedule-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #d9e2e9;border-radius:14px;background:#fff}
+.parent-schedule-table{width:100%;min-width:820px;border-collapse:separate;border-spacing:0;font-size:12px}
+.parent-schedule-table th,.parent-schedule-table td{border-left:1px solid #e1e7ec;border-bottom:1px solid #e1e7ec;padding:9px 7px;text-align:center;vertical-align:middle}
+.parent-schedule-table tr:last-child td,.parent-schedule-table tr:last-child th{border-bottom:0}
+.parent-schedule-table th:last-child,.parent-schedule-table td:last-child{border-left:0}
+.parent-schedule-table thead th{background:#f5f8fa;color:#34495e;font-weight:900;position:sticky;top:0;z-index:2}
+.parent-schedule-day{min-width:108px}
+.parent-schedule-day span{display:block;font-weight:900}
+.parent-schedule-day small{display:block;margin-top:3px;font-size:10px}
+.parent-schedule-day.is-today{background:#ffe1e1!important;color:#b42318!important}
+.parent-schedule-day.is-tomorrow{background:#e3f8e9!important;color:#187a3d!important}
+.parent-schedule-lesson{width:82px;background:#f8fafb;color:#52616f;white-space:nowrap}
+.parent-schedule-cell{height:58px;background:#fff}
+.parent-schedule-cell b{display:block;font-size:12px;color:#26384a}
+.parent-schedule-cell small{display:block;margin-top:4px;color:#71808e;font-size:10px}
+.parent-schedule-cell.is-today{background:#fff1f1!important;box-shadow:inset 3px 0 0 #e74c3c,inset -3px 0 0 #e74c3c}
+.parent-schedule-cell.is-tomorrow{background:#f0fff4!important;box-shadow:inset 3px 0 0 #2ecc71,inset -3px 0 0 #2ecc71}
+.schedule-empty{color:#b0bac2}
+.parent-schedule-legend{font-size:11px;color:#657482;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.parent-schedule-legend i{display:inline-block;width:11px;height:11px;border-radius:50%}
+.parent-schedule-legend .today-dot{background:#e74c3c}.parent-schedule-legend .tomorrow-dot{background:#2ecc71}
+.parent-absence-page{position:fixed;inset:0;z-index:2147483005;background:linear-gradient(135deg,rgba(9,26,45,.96),rgba(20,75,95,.94));padding:12px;overflow:auto;direction:rtl}
+.parent-absence-page-inner{width:min(1050px,100%);min-height:calc(100vh - 24px);margin:auto;background:#f6f9fb;border-radius:20px;box-shadow:0 25px 70px rgba(0,0,0,.3);overflow:hidden}
+.parent-absence-page-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:18px 20px;background:#fff;border-bottom:1px solid #dfe7ed}
+.parent-absence-page-head h2{margin:2px 0 4px;font-size:22px;color:#243447}.parent-absence-page-head p{margin:0;color:#6f7e8b;font-size:12px}
+.parent-absence-close{background:#34495e!important;color:#fff!important;border:0!important;border-radius:10px!important;padding:10px 15px!important;min-height:44px!important;white-space:nowrap}
+.parent-absence-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px 20px}
+.absence-stat{background:#fff;border:1px solid #e0e7ed;border-radius:15px;padding:15px;text-align:center;box-shadow:0 4px 14px rgba(31,45,61,.06)}
+.absence-stat span{display:block;font-size:23px}.absence-stat small{display:block;color:#73818d;font-weight:800;margin-top:3px}.absence-stat b{display:block;font-size:28px;margin-top:3px}.absence-stat.absent b{color:#c0392b}.absence-stat.leave b{color:#d68910}.absence-stat.late b{color:#9a5b00}
+.parent-absence-note{margin:0 20px 15px;padding:12px 14px;border-radius:12px;background:#eef6fb;border:1px solid #cfe1ee;color:#526676;font-size:12px;line-height:1.8}
+.parent-absence-table-wrap{margin:0 20px 24px;background:#fff;border:1px solid #dfe7ed;border-radius:14px;overflow:auto}
+.parent-absence-table-wrap .pro-table{min-width:650px}
+.parent-absence-status{display:inline-flex;padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px}.parent-absence-status.absent{background:#ffe7e7;color:#a40000}.parent-absence-status.leave{background:#fff1d5;color:#8a5a00}.parent-absence-status.late{background:#fff3d6;color:#8a5a00}
+@media(max-width:600px){.parent-schedule-table{min-width:760px}.parent-schedule-day{min-width:98px}.parent-schedule-cell{height:54px}.parent-absence-page{padding:0}.parent-absence-page-inner{min-height:100vh;border-radius:0}.parent-absence-page-head{padding:14px}.parent-absence-page-head h2{font-size:18px}.parent-absence-stats{padding:12px;gap:7px}.absence-stat{padding:10px 5px}.absence-stat b{font-size:23px}.parent-absence-note{margin:0 12px 12px}.parent-absence-table-wrap{margin:0 12px 18px}}
 </style>
 
-</style>
 </head>
 <body>
 
@@ -3340,6 +3255,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let parentSessionTimer = null;
     let parentSessionCountdownTimer = null;
     let parentLoginUsage = {};
+    // بوابة الغيابات لولي الأمر: دورة عرض مستقلة تُعاد كل 390 يوماً دون حذف سجلات النظام الأصلية.
+    let parentAbsencePageResetData = {};
     let showTeacherCodes = false;
     let monitorsData = [];
     let monitorNotesData = [];
@@ -3730,7 +3647,6 @@ function acknowledgeAnnouncement(id) {
     }
 
     function getCloudPayload() {
-        pruneParentAttendance380Days();
         pruneExpiredAnnouncementsData();
         pruneExpiredComplaintsData();
         return {
@@ -3740,6 +3656,7 @@ function acknowledgeAnnouncement(id) {
             adminCode: String(adminCredentials.password || DEFAULT_ADMIN_LOGIN_CODE),
             adminName: String(adminCredentials.name || 'مدير النظام'),
             parentLoginUsage: parentLoginUsage || {},
+            parentAbsencePageResetData: parentAbsencePageResetData || {},
             printManagerName: String(printManagerName || ''),
             printSchoolName: String(printSchoolName || ''),
             studyYearFrom: String(studyYearFrom || ''),
@@ -3962,6 +3879,7 @@ function updateCloudStatus(text, color) {
         if (cloud.adminCode !== undefined && String(cloud.adminCode).trim()) adminCredentials.password = String(cloud.adminCode).trim();
         if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
         if (cloud.parentLoginUsage !== undefined && cloud.parentLoginUsage && typeof cloud.parentLoginUsage === 'object') parentLoginUsage = cloud.parentLoginUsage;
+        if (cloud.parentAbsencePageResetData !== undefined && cloud.parentAbsencePageResetData && typeof cloud.parentAbsencePageResetData === 'object' && !Array.isArray(cloud.parentAbsencePageResetData)) parentAbsencePageResetData = cloud.parentAbsencePageResetData;
         if (cloud.printManagerName !== undefined) printManagerName = String(cloud.printManagerName || '').trim();
         if (cloud.printSchoolName !== undefined) printSchoolName = String(cloud.printSchoolName || '').trim();
         if (cloud.studyYearFrom !== undefined) studyYearFrom = String(cloud.studyYearFrom || '').trim();
@@ -6825,9 +6743,7 @@ function updateCloudStatus(text, color) {
 
     function openModal(modalId) {
         if (modalId === 'absenceModalBox' && currentUser.role === 'parent') {
-            renderParentAbsenceView();
-            const m = document.getElementById('absenceModalBox');
-            if (m) { m.style.zIndex = '1000000'; m.style.display = 'flex'; }
+            openParentAbsencePage();
             return;
         }
 
@@ -9176,178 +9092,125 @@ function updateCloudStatus(text, color) {
         return out.sort((a,b)=>new Date(b.time||0)-new Date(a.time||0)).slice(0,20);
     }
 
-
-    // ===== بوابة ولي الأمر: مصدر حضور موحّد مطابق لسجلات المدير/المراقب =====
-    const PARENT_ATTENDANCE_RETENTION_DAYS = 380;
-
-    function parentDateOnly(v){
-        const s=String(v||'').slice(0,10);
-        return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:'';
+    function getParentAbsenceResetKey(studentId){
+        return String(studentId||currentUser?.studentId||currentUser?.code||'').trim();
     }
 
-    function parentDaysBetween(a,b){
-        const ta=new Date(String(a)+'T00:00:00').getTime();
-        const tb=new Date(String(b)+'T00:00:00').getTime();
-        if(!Number.isFinite(ta)||!Number.isFinite(tb)) return 0;
-        return Math.floor((tb-ta)/86400000);
-    }
-
-    function pruneParentAttendance380Days(){
-        const cutoffMs=Date.now()-PARENT_ATTENDANCE_RETENTION_DAYS*86400000;
-        const cutoff=new Date(cutoffMs);
-        const cutoffDate=getFormattedDate(cutoff);
-
-        // السجل الاحترافي السحابي.
-        if(window.ProfessionalModules && Array.isArray(window.ProfessionalModules.attendanceData)){
-            const arr=window.ProfessionalModules.attendanceData;
-            const kept=arr.filter(r=>{
-                const d=parentDateOnly(r?.date);
-                return !d || d>=cutoffDate;
-            });
-            if(kept.length!==arr.length){
-                arr.length=0; kept.forEach(x=>arr.push(x));
-                try{ window.ProfessionalModules.persistModules?.(); }catch(_e){}
-            }
+    function ensureParentAbsencePageReset(studentId){
+        const key=getParentAbsenceResetKey(studentId);
+        if(!key) return Date.now();
+        const now=Date.now();
+        const cycleMs=390*24*60*60*1000;
+        const stored=Number(parentAbsencePageResetData?.[key]?.resetAt||0);
+        if(!stored || !Number.isFinite(stored) || now-stored>=cycleMs){
+            if(!parentAbsencePageResetData || typeof parentAbsencePageResetData!=='object' || Array.isArray(parentAbsencePageResetData)) parentAbsencePageResetData={};
+            parentAbsencePageResetData[key]={resetAt:now,cycleDays:390,updatedAt:new Date().toISOString()};
+            saveData();
+            return now;
         }
-
-        // سجلات جرد المراقب القديمة: لا نحذف التقرير كله إذا كان يحتوي بيانات أخرى،
-        // بل نحذف التقارير الأقدم من 380 يوماً.
-        if(Array.isArray(monitorInventoryReportsData)){
-            monitorInventoryReportsData=monitorInventoryReportsData.filter(r=>{
-                const d=parentDateOnly(r?.date);
-                return !d || d>=cutoffDate;
-            });
-        }
-
-        // السجل القديم داخل الصفوف.
-        (schoolData||[]).forEach(cls=>{
-            const records=cls?.absenceRecords;
-            if(!records || typeof records!=='object') return;
-            Object.keys(records).forEach(d=>{
-                if(/^\d{4}-\d{2}-\d{2}$/.test(d) && d<cutoffDate) delete records[d];
-            });
-        });
+        return stored;
     }
 
-    function getParentUnifiedAttendance(f, liveClass, studentId, studentName){
-        pruneParentAttendance380Days();
+    function parentStatusLabel(status){
+        return status==='absent'?'غائب':status==='leave'?'مجاز':status==='late'?'متأخر':'حاضر';
+    }
+
+    function parentActorLabel(role,name){
+        const n=String(name||'').trim();
+        const r=String(role||'').trim();
+        const roleLabel=r==='admin'?'المدير':r==='monitor'?'المراقب':r==='teacher'?'مرشد الصف':r==='معاون'?'المعاون':r;
+        if(n && roleLabel) return `${roleLabel} — ${n}`;
+        if(n) return n;
+        return roleLabel||'مستخدم النظام';
+    }
+
+    function getParentAttendanceHistory(f,liveClass,studentId,studentName,resetAt){
         const byDate=new Map();
-        const put=(date,status,extra={})=>{
-            const d=parentDateOnly(date);
-            if(!d || parentDaysBetween(d,getFormattedDate())>PARENT_ATTENDANCE_RETENTION_DAYS) return;
-            const normalized=['present','absent','leave','late'].includes(String(status)) ? String(status) : '';
-            if(!normalized) return;
-
-            // أولوية الحالة: متأخر/مجاز/غائب أعلى من حاضر، لأن وجود سجل تفصيلي
-            // من المدير/المراقب يجب ألا يختفي بسبب سجل حاضر قديم.
-            const priority={present:1,absent:3,leave:4,late:5};
+        const put=(date,status,actorRole='',actorName='',source='')=>{
+            const d=String(date||'').trim();
+            const st=String(status||'').trim();
+            if(!d || !['absent','leave','late'].includes(st)) return;
+            const time=new Date(d+'T23:59:59').getTime();
+            if(Number.isFinite(resetAt) && time<resetAt) return;
+            const row={date:d,status:st,actorRole:String(actorRole||''),actorName:String(actorName||''),source:String(source||'')};
             const old=byDate.get(d);
-            if(!old || priority[normalized]>=priority[old.status]){
-                byDate.set(d,{date:d,status:normalized,...extra});
-            }
+            const priority={absent:1,leave:2,late:3};
+            if(!old || priority[st]>=priority[old.status]) byDate.set(d,row);
         };
 
-        const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))
-            ? window.ProfessionalModules.attendanceData : [];
-
-        att.forEach(r=>{
-            if(String(r?.studentId)!==String(studentId)) return;
-            put(r.date,r.status,{lateTime:r.lateTime||'',lateReason:r.lateReason||r.note||'',source:'attendance'});
+        // السجل الاحترافي: يتضمن الآن جهة التعديل للسجلات الجديدة.
+        (window.ProfessionalModules?.attendanceData||[]).forEach(r=>{
+            if(String(r.studentId)!==String(studentId)) return;
+            put(r.date,r.status,r.changedByRole,r.changedByName,'سجل الحضور الاحترافي');
         });
 
-        // جرد المراقب: يدعم الطلاب و absentStudents والسجلات القديمة.
-        (monitorInventoryReportsData||[]).forEach(report=>{
-            const list=Array.isArray(report?.students) ? report.students :
-                       (Array.isArray(report?.absentStudents) ? report.absentStudents : []);
-            list.forEach(item=>{
-                const sameId=studentId && String(item?.studentId||'')===String(studentId);
-                const sameName=String(item?.name||'').trim()===String(studentName||'').trim();
-                if(!sameId && !sameName) return;
-                const st=String(item?.status||'').trim();
-                if(!['present','absent','late'].includes(st)) return;
-                put(report.date,st,{
-                    lateTime:item?.lateTime||'',
-                    lateReason:item?.lateReason||item?.note||'',
-                    source:'monitor'
-                });
-            });
-        });
-
-        // سجل الصف القديم: الغياب والمجاز فقط.
         const legacyMap=liveClass?.absenceRecords||{};
         const legacyKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
-        Object.keys(legacyMap||{}).forEach(date=>{
-            const value=legacyMap?.[date]?.[legacyKey];
-            if(value===true || value==='absent') put(date,'absent',{source:'legacy'});
-            else if(value==='leave' || value==='مجاز') put(date,'leave',{source:'legacy'});
-            else if(value==='late' || value==='متأخر') put(date,'late',{source:'legacy'});
+        Object.keys(legacyMap).forEach(date=>{
+            const raw=legacyMap[date]?.[legacyKey];
+            const legacyAudit=liveClass?.attendanceChangeLog?.[date]?.[legacyKey];
+            const legacyStatus=raw===true?'absent':raw;
+            if(raw && typeof raw==='object') put(date,raw.status,raw.changedByRole,raw.changedByName,'سجل الصف');
+            else put(date,legacyStatus,legacyAudit?.byRole,legacyAudit?.byName,'سجل الصف');
+            const audit=liveClass?.attendanceChangeLog?.[date]?.[legacyKey];
+            if(audit){
+                const row=byDate.get(String(date));
+                if(row){row.actorRole=row.actorRole||audit.byRole;row.actorName=row.actorName||audit.byName;}
+            }
+        });
+
+        // جرد المراقب/مرشد الصف هو مصدر إضافي للتواريخ والجهة التي حددتها.
+        (monitorInventoryReportsData||[]).forEach(report=>{
+            if(!report?.date) return;
+            const lists=[];
+            if(Array.isArray(report.students)) lists.push(report.students);
+            if(Array.isArray(report.absentStudents)) lists.push(report.absentStudents);
+            lists.forEach(list=>list.forEach(item=>{
+                const sameId=studentId && String(item?.studentId||'')===String(studentId);
+                const sameName=String(item?.name||'').trim()===String(studentName).trim();
+                if(sameId||sameName) put(report.date,item?.status, item?.changedBy||item?.changedByRole||report.changedByRole, item?.changedByName||report.changedByName||report.actorName,'جرد المراقب');
+            }));
+        });
+
+        // محاولة إسناد جهة السجل القديم من سجل العمليات إن لم تكن محفوظة داخله.
+        const auditLog=Array.isArray(window.ProfessionalModules?.auditLog)?window.ProfessionalModules.auditLog:[];
+        byDate.forEach(row=>{
+            if(row.actorRole||row.actorName) return;
+            const foundAudit=auditLog.find(a=>{
+                const detail=String(a?.details||'');
+                const sameDate=detail.includes(row.date);
+                const sameStudent=detail.includes(studentName);
+                return sameDate&&sameStudent&&/حضور|غياب|مجاز|متأخر/.test(String(a?.action||'')+' '+detail);
+            });
+            if(foundAudit){row.actorRole=foundAudit.role||'';row.actorName=foundAudit.actor||'';}
         });
 
         return Array.from(byDate.values()).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     }
 
-    function buildParentWeeklySchedule(liveClass){
-        const days=[
-            {index:0,name:'الأحد'},
-            {index:1,name:'الإثنين'},
-            {index:2,name:'الثلاثاء'},
-            {index:3,name:'الأربعاء'},
-            {index:4,name:'الخميس'},
-            {index:5,name:'الجمعة'},
-            {index:6,name:'السبت'}
-        ];
-        const todayIndex=new Date().getDay();
-        const tomorrowIndex=(todayIndex+1)%7;
-        const lessons=Math.max(1,Number(liveClass?.scheduleLessons||6));
-        const configuredDays=Number(liveClass?.scheduleDays||5);
-        const activeDays=Math.min(7,Math.max(5,configuredDays||5));
-
-        const active=days.map((d,i)=>({
-            ...d,
-            hidden: i>=activeDays && configuredDays>0,
-            isToday:i===todayIndex,
-            isTomorrow:i===tomorrowIndex
-        }));
-
-        const head=active.map(d=>{
-            const cls=d.isToday?'day-title today':d.isTomorrow?'day-title tomorrow':'day-title';
-            const suffix=d.isToday?'<span class="day-status">🔴 اليوم</span>':d.isTomorrow?'<span class="day-status">🟢 غداً</span>':'';
-            return `<th class="${cls}">${d.name}${suffix}</th>`;
-        }).join('');
-
-        const body=[];
-        for(let l=0;l<lessons;l++){
-            const cells=active.map(d=>{
-                if(d.hidden) return '<td class="schedule-day-cell"><span class="empty-lesson">—</span></td>';
-                const e=getScheduleEntryData(liveClass,`${d.index}_${l}`);
-                const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');
-                const dayClass=d.isToday?'today':d.isTomorrow?'tomorrow':'';
-                if(!e.subject){
-                    return `<td class="schedule-day-cell ${dayClass}"><span class="empty-lesson">لا توجد حصة</span></td>`;
-                }
-                return `<td class="schedule-day-cell ${dayClass}">
-                    <span class="lesson-subject">${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</span>
-                    <span class="lesson-teacher">${escapeGlobalSearchHTML(t||'—')}</span>
-                </td>`;
-            }).join('');
-            body.push(`<tr><td class="period-cell">الحصة ${l+1}</td>${cells}</tr>`);
-        }
-
-        return `<div class="pro-panel parent-weekly-schedule-panel" id="parentWeeklySchedulePanel">
-          <div class="pro-toolbar" style="justify-content:space-between">
-            <div>
-              <h3 style="margin:0">📚 جدول الحصص الأسبوعي الكامل</h3>
-              <div style="font-size:10px;color:#718294;margin-top:3px">🔴 حصص اليوم — 🟢 حصص الغد</div>
-            </div>
-            <strong>${lessons} حصص يومياً</strong>
-          </div>
-          <div class="weekly-schedule-scroll">
-            <table class="parent-weekly-schedule-table">
-              <thead><tr><th>الحصة</th>${head}</tr></thead>
-              <tbody>${body.join('')}</tbody>
-            </table>
-          </div>
+    function openParentAbsencePage(){
+        if(currentUser?.role!=='parent') return;
+        const f=currentStudentForDashboard();
+        if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
+        const liveClass=schoolData[f.classIndex]||f.classObj||{};
+        const studentId=String(f.student.id||'');
+        const studentName=String(f.student.name||'');
+        const resetAt=ensureParentAbsencePageReset(studentId);
+        const records=getParentAttendanceHistory(f,liveClass,studentId,studentName,resetAt);
+        const counts={absent:0,leave:0,late:0}; records.forEach(r=>{counts[r.status]=(counts[r.status]||0)+1;});
+        document.getElementById('parentAbsencePage')?.remove();
+        const page=document.createElement('div');
+        page.id='parentAbsencePage';
+        page.className='parent-absence-page';
+        const rows=records.map(r=>`<tr><td><b>${escapeGlobalSearchHTML(r.date)}</b></td><td><span class="parent-absence-status ${r.status}">${parentStatusLabel(r.status)}</span></td><td>${escapeGlobalSearchHTML(parentActorLabel(r.actorRole,r.actorName))}</td><td>${escapeGlobalSearchHTML(r.source||'—')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات غياب أو إجازة أو تأخير ضمن دورة العرض الحالية.</td></tr>';
+        const nextReset=new Date(resetAt+390*24*60*60*1000).toLocaleDateString('ar-IQ',{year:'numeric',month:'long',day:'numeric'});
+        page.innerHTML=`<div class="parent-absence-page-inner">
+            <div class="parent-absence-page-head"><div><div class="parent-kicker">📌 بوابة ولي الأمر</div><h2>سجل الغيابات والحضور</h2><p>الطالب: <b>${escapeGlobalSearchHTML(studentName)}</b> — الصف: <b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></p></div><button type="button" class="parent-absence-close" onclick="document.getElementById('parentAbsencePage')?.remove()">✕ إغلاق</button></div>
+            <div class="parent-absence-stats"><div class="absence-stat absent"><span>❌</span><small>عدد الغيابات</small><b>${counts.absent}</b></div><div class="absence-stat leave"><span>🏖️</span><small>عدد الإجازات</small><b>${counts.leave}</b></div><div class="absence-stat late"><span>⏰</span><small>عدد التأخيرات</small><b>${counts.late}</b></div></div>
+            <div class="parent-absence-note">يتم عرض السجلات التي حددها <b>المدير أو المراقب أو مرشد الصف</b> حسب البيانات المحفوظة في النظام. تبدأ دورة هذه الصفحة من ${new Date(resetAt).toLocaleDateString('ar-IQ',{year:'numeric',month:'long',day:'numeric'})}، وتُعاد تلقائياً كل <b>390 يوماً</b> دون حذف السجلات الأصلية من النظام. موعد الترسيت التالي: <b>${nextReset}</b>.</div>
+            <div class="parent-absence-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>حددها بواسطة</th><th>المصدر</th></tr></thead><tbody>${rows}</tbody></table></div>
         </div>`;
+        document.body.appendChild(page);
     }
 
     function openStudentDashboard(){
@@ -9370,21 +9233,14 @@ function updateCloudStatus(text, color) {
         const todayIndex=new Date().getDay();
         const days=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
         const todayName=days[todayIndex];
-
-        // المصدر الموحد: نفس سجلات المدير والمراقب والسجل القديم، مع الاحتفاظ بـ380 يوماً.
-        const parentUnifiedAttendance=getParentUnifiedAttendance(f,liveClass,studentId,studentName);
-        const absentDates=parentUnifiedAttendance.filter(r=>r.status==='absent');
-        const leaveDates=parentUnifiedAttendance.filter(r=>r.status==='leave');
-        const lateDates=parentUnifiedAttendance.filter(r=>r.status==='late');
-        const presentDates=parentUnifiedAttendance.filter(r=>r.status==='present');
-        const todayRecord=parentUnifiedAttendance.find(r=>String(r.date)===String(today));
-        const todayStatus=todayRecord?.status||'present';
+        const legacyMap=liveClass?.absenceRecords||{};
+        const legacyKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
+        const todayRecord=myAtt.find(r=>String(r.date)===String(today));
+        const todayStatus=todayRecord?.status||legacyMap?.[today]?.[legacyKey]||'present';
         const parentNewNotifications=getParentNewActivityNotifications(f,liveClass,studentId,studentName);
         const parentNotificationsHtml=`<div class="parent-new-notifications"><h3>🔔 ماذا حصل اليوم؟ ${parentNewNotifications.length?`<span style="font-size:12px;background:#c0392b;color:#fff;padding:4px 8px;border-radius:999px">${parentNewNotifications.length} جديد</span>`:''}</h3><div class="parent-new-notification-list">${parentNewNotifications.length?parentNewNotifications.map(n=>`<div class="parent-new-notification"><span class="parent-new-notification-icon">${n.icon}</span><div><b>${escapeGlobalSearchHTML(n.title)}</b><div>${escapeGlobalSearchHTML(n.text)}</div><span class="parent-new-notification-time">${escapeGlobalSearchHTML(new Date(n.time).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}))}</span></div></div>`).join(''):'<div class="parent-new-notifications-empty">لا توجد إضافات جديدة تخص الطالب اليوم.</div>'}</div></div>`;
         const todayMessage=todayStatus==='absent'?`<div class="parent-alert parent-alert-absent">🚨 <b>تنبيه:</b> تم تسجيل ${childPossessive} اليوم <b>غائباً</b>.</div>`:todayStatus==='leave'?`<div class="parent-alert parent-alert-leave">🏖️ <b>تنبيه:</b> تم تسجيل ${childPossessive} اليوم <b>مجازاً</b>.</div>`:todayStatus==='late'?`<div class="parent-alert parent-alert-late">⏰ <b>تنبيه:</b> تم تسجيل تأخر ${childPossessive} اليوم.</div>`:`<div class="parent-alert parent-alert-ok">✅ حالة اليوم: <b>حاضر</b> أو لم يُسجّل عليه غياب.</div>`;
-        const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لـ${childPossessive} حالياً.</td></tr>';
-        const absenceRows=absentDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>غائب</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام غياب مسجلة.</td></tr>';
-        const leaveRows=leaveDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td>مجاز</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام إجازة مسجلة.</td></tr>';
+        const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لـ'+escapeGlobalSearchHTML(childPossessive)+' حالياً.</td></tr>';
         const parentBehaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
         const behavior=liveClass.behaviorNotes?.[parentBehaviorKey];
         const levels=Array.isArray(liveClass.studentLevels?.[parentBehaviorKey])?liveClass.studentLevels[parentBehaviorKey]:[];
@@ -9392,15 +9248,18 @@ function updateCloudStatus(text, color) {
         const parentLevelRows=levels.filter(x=>x&&x.level!=null).map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 10px;border:1px solid #e1e7ec;border-radius:8px;background:#fff;margin-bottom:6px"><b>${escapeGlobalSearchHTML(x.lesson||x.subject||'المادة')}</b><span>${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</span></div>`).join('')||'<div class="pro-empty">لا توجد تقييمات مستوى مسجلة حالياً.</div>';
         const parentClassId=String(liveClass.id||'');
         const parentHomework=homeworkData.filter(h=>{if(!h)return false;const sameStudent=h.targetCode&&String(h.targetCode)===String(currentUser.code);if(h.audience==='student')return !!sameStudent;if(h.audience!=='all')return false;const hc=String(h.classId||'');if(hc)return hc===parentClassId;if(h.classIndex!=null&&f.classIndex!=null)return Number(h.classIndex)===Number(f.classIndex);return true;});
-        const parentHomeworkRows=parentHomework.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||''))).map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div></td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة لـ${childPossessive}.</td></tr>';
-        const scheduleHtml=buildParentWeeklySchedule(liveClass);
+        const parentHomeworkRows=parentHomework.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||''))).map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div></td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة لـ'+escapeGlobalSearchHTML(childPossessive)+'.</td></tr>';
+
+        // جدول أسبوعي كامل داخل مربع واحد: اليوم باللون الأحمر، وغداً بالأخضر، وبقية الأيام دون تمييز.
+        const lessons=Number(liveClass.scheduleLessons||6);
+        const daysCount=Number(liveClass.scheduleDays||5);
+        const tomorrowIndex=(todayIndex+1)%7;
+        const scheduleDays=days.map((day,di)=>({name:day,index:di,enabled:di<daysCount||!daysCount}));
+        const scheduleHead=scheduleDays.map(d=>`<th class="parent-schedule-day ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}"><span>${d.name}</span>${d.index===todayIndex?'<small>اليوم</small>':''}${d.index===tomorrowIndex?'<small>غداً</small>':''}</th>`).join('');
+        const scheduleBody=Array.from({length:lessons},(_,l)=>`<tr><th class="parent-schedule-lesson">الحصة ${l+1}</th>${scheduleDays.map(d=>{const e=d.enabled?getScheduleEntryData(liveClass,`${d.index}_${l}`):{subject:'',teacherName:'',emergency:false};const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');return `<td class="parent-schedule-cell ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}">${e.subject?`<b>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</b><small>${escapeGlobalSearchHTML(t||'-')}</small>`:'<span class="schedule-empty">—</span>'}</td>`;}).join('')}</tr>`).join('');
+        const scheduleHtml=`<div class="pro-panel parent-weekly-schedule" id="parentWeeklySchedulePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 جدول الحصص الأسبوعي الكامل</h3><span class="parent-schedule-legend"><i class="today-dot"></i> اليوم <i class="tomorrow-dot"></i> غداً</span></div><div class="parent-schedule-wrap"><table class="parent-schedule-table"><thead><tr><th>الحصة</th>${scheduleHead}</tr></thead><tbody>${scheduleBody}</tbody></table></div></div>`;
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div><div><span>❌</span><small>عدد الغيابات</small><b>${absentDates.length}</b></div><div><span>🏖️</span><small>عدد المجازات</small><b>${leaveDates.length}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="document.getElementById('parentWeeklySchedulePanel')?.scrollIntoView({behavior:'smooth'})">📚 الجدول الأسبوعي</button><button type="button" onclick="document.getElementById('parentAbsencePanel')?.scrollIntoView({behavior:'smooth'})">📌 الغيابات</button><button type="button" onclick="document.getElementById('parentGradesPanel')?.scrollIntoView({behavior:'smooth'})">📝 الدرجات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff">📮 شكوى إلى المدير</button></div><div class="parent-portal-grid"><div class="pro-panel"><h3>👤 بيانات ${childPossessive}</h3><div class="pro-mini-grid"><div class="pro-info"><small>الاسم</small>${escapeGlobalSearchHTML(studentName)}</div><div class="pro-info"><small>الصف</small>${escapeGlobalSearchHTML(liveClass.name||'-')}</div><div class="pro-info"><small>المقعد</small>${escapeGlobalSearchHTML(f.student.deskNumber||'-')}</div><div class="pro-info"><small>الجنس</small>${f.student.gender==='female'?'مؤنث':f.student.gender==='male'?'ذكر':'-'}</div></div></div><div class="pro-panel parent-attendance-real-panel"><h3>📊 ملخص الحضور الفعلي</h3><div class="parent-attendance-real-grid">
-<div class="parent-attendance-real-card present"><span class="real-num">${presentDates.length}</span><span class="real-label">حاضر</span></div>
-<div class="parent-attendance-real-card absent"><span class="real-num">${absentDates.length}</span><span class="real-label">غائب</span></div>
-<div class="parent-attendance-real-card leave"><span class="real-num">${leaveDates.length}</span><span class="real-label">مجاز</span></div>
-<div class="parent-attendance-real-card late"><span class="real-num">${lateDates.length}</span><span class="real-label">متأخر</span></div>
-</div><div class="parent-attendance-real-note">🔄 الأرقام مأخوذة من سجلات الحضور السحابية الفعلية التي سجلها المدير أو المراقب، وليست أرقاماً ثابتة. يتم الاحتفاظ بالسجل لمدة 380 يوماً.</div></div></div>${scheduleHtml}<div class="pro-panel" id="parentAbsencePanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 عدد غيابات الطالب والتواريخ</h3><strong style="color:#c0392b">${absentDates.length} يوم</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${absenceRows}</tbody></table></div></div><div class="pro-panel"><h3>🏖️ تواريخ المجاز</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${leaveRows}</tbody></table></div></div><div class="pro-panel"><h3>⏰ تواريخ التأخير</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة ووقت التأخير</th></tr></thead><tbody>${lateDates.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.date)}</td><td><span class="parent-attendance-status-badge late">⏰ متأخر</span>${x.lateTime||x.lateReason?`<span class="parent-attendance-late-meta">${x.lateTime?'وقت الدخول: '+escapeGlobalSearchHTML(x.lateTime):''}${x.lateReason?` — السبب: ${escapeGlobalSearchHTML(x.lateReason)}`:''}</span>`:''}</td></tr>`).join('')||'<tr><td colspan="2" class="pro-empty">لا توجد أيام تأخير مسجلة.</td></tr>'}</tbody></table></div></div><div class="pro-panel" id="parentHomeworkPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📚 واجبات ${childWord}</h3><strong style="color:#d35400">${parentHomework.length} واجب</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div><div class="pro-panel"><div class="pro-toolbar"><h3 style="margin:0">⭐ السلوك والمستوى</h3></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h4>📝 السلوك</h4>${parentBehaviorText}</div><div><h4>⭐ المستوى</h4>${parentLevelRows}</div></div></div><div class="pro-panel" id="parentGradesPanel"><h3>📝 درجات ${childWord}</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div><div style="text-align:center;padding:12px;color:#6b7b88;font-size:11px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(1180px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>المعلومات الظاهرة هنا تخص <b>${escapeGlobalSearchHTML(studentName)}</b> فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="document.getElementById('parentWeeklySchedulePanel')?.scrollIntoView({behavior:'smooth'})">📅 جدول الحصص</button><button type="button" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" onclick="document.getElementById('parentGradesPanel')?.scrollIntoView({behavior:'smooth'})">📝 الدرجات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff">📮 شكوى إلى المدير</button></div><div class="parent-portal-grid"><div class="pro-panel"><h3>👤 بيانات ${childPossessive}</h3><div class="pro-mini-grid"><div class="pro-info"><small>الاسم</small>${escapeGlobalSearchHTML(studentName)}</div><div class="pro-info"><small>الصف</small>${escapeGlobalSearchHTML(liveClass.name||'-')}</div><div class="pro-info"><small>المقعد</small>${escapeGlobalSearchHTML(f.student.deskNumber||'-')}</div><div class="pro-info"><small>الجنس</small>${f.student.gender==='female'?'مؤنث':f.student.gender==='male'?'ذكر':'-'}</div></div></div></div>${scheduleHtml}<div class="pro-panel" id="parentHomeworkPanel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📚 واجبات ${childWord}</h3><strong style="color:#d35400">${parentHomework.length} واجب</strong></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div><div class="pro-panel"><div class="pro-toolbar"><h3 style="margin:0">⭐ السلوك والمستوى</h3></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h4>📝 السلوك</h4>${parentBehaviorText}</div><div><h4>⭐ المستوى</h4>${parentLevelRows}</div></div></div><div class="pro-panel" id="parentGradesPanel"><h3>📝 درجات ${childWord}</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div><div style="text-align:center;padding:12px;color:#6b7b88;font-size:11px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.</div></div>`;
         document.body.appendChild(modal);
     }
 
@@ -10501,9 +10360,7 @@ const currentStatus = adminChangedStatus || professionalStatus?.status || x.stat
     };
 
     // عند عودة الإنترنت، نعيد محاولة Firebase تلقائياً بدون إعادة تحميل الصفحة.
-    setInterval(()=>{ try{ pruneParentAttendance380Days(); }catch(_e){} }, 24*60*60*1000);
-
-window.addEventListener('online', function(){
+    window.addEventListener('online', function(){
         clearTimeout(firebaseRetryTimer);
         initializeCloudData().catch(err => console.error('Firebase online retry failed:', err));
     });
@@ -10659,7 +10516,9 @@ window.addEventListener('unhandledrejection', function (event) {
       lateTime:status==='late' ? String(lateTime||existing?.lateTime||'').trim() : '',
       lateReason:status==='late' ? String(lateReason||existing?.lateReason||'').trim() : '',
       createdAt:existing?.createdAt||new Date().toISOString(),
-      updatedAt:new Date().toISOString()
+      updatedAt:new Date().toISOString(),
+      changedByName:(currentUser&&currentUser.name)||existing?.changedByName||'مستخدم النظام',
+      changedByRole:(currentUser?.isAssistant?'معاون':(currentUser?.role||existing?.changedByRole||''))
     };
     if(existing) Object.assign(existing,record);
     else attendanceData.unshift(record);
