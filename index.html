@@ -8744,6 +8744,27 @@ function updateCloudStatus(text, color) {
             window.ProfessionalModules.recordAttendance(foundStudent.id,statusVal,dateStr,'تعديل من زر الحضور والغياب');
         }
 
+        // مزامنة جرد الصفوف مع أي تغيير يجريه المدير/مرشد الصف من شاشة الحضور والغياب.
+        (monitorInventoryReportsData||[]).forEach(report=>{
+            if(String(report.date)!==String(dateStr)) return;
+            const sameClass=!report.classId || String(report.classId)===String(cls.id||'') || String(report.className||'')===String(cls.name||'');
+            if(!sameClass) return;
+            const lists=[];
+            if(Array.isArray(report.students)) lists.push(report.students);
+            if(Array.isArray(report.absentStudents)) lists.push(report.absentStudents);
+            if(!lists.length){report.students=[];report.absentStudents=[];lists.push(report.students,report.absentStudents);}
+            lists.forEach(list=>{
+                const match=x=>String(x?.studentId||'')===String(foundStudent?.id||'') || String(x?.name||'')===String(studentName);
+                for(let i=list.length-1;i>=0;i--){ if(statusVal==='present' && match(list[i])) list.splice(i,1); }
+                if(statusVal!=='present'){
+                    let item=list.find(match);
+                    if(!item){item={studentId:foundStudent?.id||'',name:studentName};list.push(item);}
+                    item.studentId=foundStudent?.id||item.studentId||''; item.name=studentName; item.status=statusVal; item.date=dateStr;
+                    item.changedBy=currentUser?.role==='admin'?'المدير':'مرشد الصف'; item.changedByName=actorName(); item.changedAt=new Date().toISOString();
+                }
+            });
+        });
+
         if(!cls.attendanceChangeLog) cls.attendanceChangeLog={};
         if(!cls.attendanceChangeLog[dateStr]) cls.attendanceChangeLog[dateStr]={};
         cls.attendanceChangeLog[dateStr][studentKey]={byName:actorName(),byRole:currentUser?.isAssistant?'معاون':(currentUser?.role||''),at:nowText(),isoAt:new Date().toISOString(),status:statusVal};
@@ -10812,52 +10833,115 @@ function openDev5StudentGrades(id){const st=d5studentById(id);if(!st)return;cons
 function openDev5StudentReport(id){const st=d5studentById(id);if(!st)return;const c=schoolData[st.classIndex];const grades=ensureStudentGrades(c).filter(g=>String(g.studentKey)===String(st.key));const att=(ProfessionalModules?.attendanceData||[]).filter(r=>String(r.studentId)===String(st.id));const w=window.open('','_blank','width=900,height=800');if(!w)return;w.document.write('<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير طالب</title><style>body{font-family:Arial;padding:25px}table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #bbb;padding:7px;text-align:center}th{background:#eee}</style></head><body><h2>تقرير الطالب: '+d5esc(st.name)+'</h2><p>الصف: '+d5esc(st.className)+' — المقعد: '+d5esc(st.deskNumber)+'</p><h3>الدرجات</h3><table><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th></tr>'+grades.map(g=>'<tr><td>'+d5esc(g.subject)+'</td><td>'+d5esc(g.score)+' / '+d5esc(g.maxScore)+'</td><td>'+d5esc(getGradePeriodLabel(g.periodType))+'</td><td>'+d5esc(g.period||'-')+'</td></tr>').join('')+'</table><h3>الحضور</h3><p>حاضر: '+att.filter(r=>r.status==='present').length+' | غائب: '+att.filter(r=>r.status==='absent').length+' | متأخر: '+att.filter(r=>r.status==='late').length+'</p></body></html>');w.document.close();setTimeout(()=>w.print(),300);}
 function openDev5AdminDashboard(){if(!isPrimaryAdminUser())return;rebuildD5Index();const grades=dev5StudentIndex.reduce((n,s)=>n+ensureStudentGrades(schoolData[s.classIndex]).filter(g=>String(g.studentKey)===String(s.key)).length,0);const att=ProfessionalModules?.attendanceData||[];const today=new Date().toISOString().slice(0,10);const present=new Set(att.filter(r=>r.date===today&&r.status==='present').map(r=>String(r.studentId))).size;const absent=new Set(att.filter(r=>r.date===today&&r.status==='absent').map(r=>String(r.studentId))).size;const late=new Set(att.filter(r=>r.date===today&&r.status==='late').map(r=>String(r.studentId))).size;const html='<div class="dev5-grid"><div class="dev5-card dev5-kpi"><div class="dev5-muted">الطلاب</div><div class="dev5-stat">'+dev5StudentIndex.length+'</div></div><div class="dev5-card dev5-kpi"><div class="dev5-muted">الصفوف</div><div class="dev5-stat">'+(schoolData||[]).length+'</div></div><div class="dev5-card dev5-kpi"><div class="dev5-muted">المعلمون</div><div class="dev5-stat">'+(teachersData||[]).length+'</div></div><div class="dev5-card"><div class="dev5-muted">درجات مسجلة</div><div class="dev5-stat">'+grades+'</div></div><div class="dev5-card"><div class="dev5-muted">حاضر اليوم</div><div class="dev5-stat">'+present+'</div></div><div class="dev5-card"><div class="dev5-muted">غائب اليوم</div><div class="dev5-stat">'+absent+'</div></div><div class="dev5-card"><div class="dev5-muted">متأخر اليوم</div><div class="dev5-stat">'+late+'</div></div></div><div class="dev5-card" style="margin-top:12px"><h3>⚡ إجراءات سريعة</h3><div class="dev5-actions"><button onclick="window.Dev5.studentSearch()">🔎 البحث عن طالب</button><button onclick="window.Dev5.gradeCenter()">📝 إدخال درجات</button><button onclick="window.Dev5.reports()">📊 التقارير</button></div></div>';d5open('📊 لوحة تحكم الإدارة',html,'dev5DashboardModal');}
 
+function d5studentGradeItems(st, cls){
+  const gs=ensureStudentGrades(cls)||[];
+  const keys=new Set([String(st?.key||''),String(st?.id||''),`${st?.deskIndex??''}:${st?.slot??''}`]);
+  const desk=cls?.desks?.[Number(st?.deskIndex)];
+  if(desk){
+    keys.add(String(desk?.id||''));
+    keys.add(`${String(desk?.id||'')}_${Number(st?.slot||0)}`);
+    keys.add(`${Number(st?.deskIndex||0)}_${Number(st?.slot||0)}`);
+    keys.add(`${Number(st?.deskNumber||st?.deskIndex+1)}_${Number(st?.slot||0)}`);
+  }
+  const name=String(st?.name||'').trim();
+  return gs.filter(g=>keys.has(String(g?.studentKey||'')) || String(g?.studentName||'').trim()===name);
+}
+function d5studentBehaviorValues(st, cls){
+  const desk=cls?.desks?.[Number(st?.deskIndex)]; if(!desk)return [];
+  const name=String(st?.name||'').trim();
+  const keys=new Set([
+    `${desk?.deskNumber??(Number(st?.deskIndex)+1)}_${Number(st?.slot)===1?'يمين':'يسار'}_${name}`,
+    `${Number(st?.deskIndex)+1}_${Number(st?.slot)===1?'يمين':'يسار'}_${name}`,
+    `${Number(st?.deskNumber??(Number(st?.deskIndex)+1))}_${Number(st?.slot)===1?'يمين':'يسار'}_${name}`
+  ]);
+  const maps=cls?.behaviorNotes&&typeof cls.behaviorNotes==='object'?cls.behaviorNotes:{};
+  let vals=[];
+  keys.forEach(k=>{
+    const map=maps[k];
+    if(map&&typeof map==='object') vals.push(...Object.values(map));
+    else if(map) vals.push(map);
+  });
+  return [...new Set(vals.map(v=>String(v||'').trim()).filter(Boolean))];
+}
+function d5studentAttendanceRecords(st, cls){
+  const out=[]; const seen=new Set();
+  const add=(r)=>{if(!r||!r.date)return;const status=String(r.status||'present');const k=String(r.date)+'|'+status;if(seen.has(k))return;seen.add(k);out.push({...r,status});};
+  const att=Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[];
+  const sid=String(st?.id||'');
+  att.filter(r=>String(r?.studentId||'')===sid).forEach(add);
+  const name=String(st?.name||'').trim();
+  const desk=cls?.desks?.[Number(st?.deskIndex)];
+  const legacyKeys=new Set([String(st?.key||''),`${desk?.deskNumber??(Number(st?.deskIndex)+1)}_${Number(st?.slot)===1?'يمين':'يسار'}_${name}`,`${Number(st?.deskIndex)+1}_${Number(st?.slot)===1?'يمين':'يسار'}_${name}`]);
+  Object.entries(cls?.absenceRecords||{}).forEach(([date,map])=>{const k=Object.keys(map||{}).find(x=>legacyKeys.has(String(x)));if(k){const v=map[k];add({studentId:sid,date,status:v===true?'absent':(v||'present')});}});
+  return out;
+}
 function openDev5StudentCategoryDetails(type){
   if(!currentUser || currentUser.role!=='admin'){ alert('هذه التفاصيل متاحة للمدير فقط.'); return; }
+  rebuildD5Index();
   const classes=Array.isArray(schoolData)?schoolData:[];
   const goodSet=new Set(['جيد','جيد جدا','جيد جدًا','ممتاز']);
   const badSet=new Set(['متوسط','ردئ','رديء']);
   const groups=[];
   const titleMap={top:'🏆 الصفوف والطلاب المتفوقون',weak:'⚠️ الصفوف والطلاب غير الجيدين دراسياً',goodBehavior:'😊 الصفوف والطلاب ذوو السلوك الجيد',badBehavior:'⚠️ الصفوف والطلاب ذوو السلوك غير الجيد'};
-  const descMap={top:'الطلاب الذين بلغ متوسط درجاتهم 90% فأعلى.',weak:'الطلاب الذين بلغ متوسط درجاتهم أقل من 50% من الدرجة الكاملة.',goodBehavior:'الطلاب الذين لديهم تقييم سلوكي: جيد، جيد جداً أو ممتاز.',badBehavior:'الطلاب الذين لديهم تقييم سلوكي: متوسط أو ردئ.'};
+  const descMap={top:'الطلاب الذين بلغ متوسط درجاتهم 90% فأعلى من الدرجات المسجلة فعلياً.',weak:'الطلاب الذين بلغ متوسط درجاتهم أقل من 50% من الدرجات المسجلة فعلياً.',goodBehavior:'الطلاب الذين لديهم تقييم سلوكي فعلي: جيد، جيد جداً أو ممتاز.',badBehavior:'الطلاب الذين لديهم تقييم سلوكي فعلي: متوسط أو ردئ.'};
   classes.forEach((cls,ci)=>{
     const studentsInClass=[];
-    const desks=Array.isArray(cls?.desks)?cls.desks:[];
-    desks.forEach((desk,di)=>{
-      [1,2].forEach(slot=>{
-        const name=String(desk?.['student'+slot]||'').trim();
-        if(!name)return;
-        const studentKey=String(desk?.['key'+slot]||desk?.['studentKey'+slot]||name);
-        let qualifies=false, detail='';
-        if(type==='top' || type==='weak'){
-          let items=[];
-          try{
-            const gs=ensureStudentGrades(cls)||[];
-            items=gs.filter(g=>String(g?.studentKey||'')===studentKey || String(g?.studentName||'').trim()===name);
-          }catch(e){}
-          const vals=items.map(g=>{const score=Number(g?.score),max=Number(g?.maxScore);return Number.isFinite(score)&&Number.isFinite(max)&&max>0?score/max:null;}).filter(v=>v!==null);
-          if(vals.length){
-            const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-            qualifies=type==='top'?avg>=0.90:avg<0.50;
-            detail=`متوسط الدرجات: ${Math.round(avg*100)}%`;
-          }
-        }else{
-          const key=`${desk?.deskNumber??(di+1)}_${slot===1?'يمين':'يسار'}_${name}`;
-          const map=cls?.behaviorNotes?.[key];
-          const vals=map&&typeof map==='object'?Object.values(map).map(v=>String(v||'').trim()).filter(Boolean):String(map||'').trim()?[String(map).trim()]:[];
-          const hasBad=vals.some(v=>badSet.has(v)), hasGood=vals.some(v=>goodSet.has(v));
-          qualifies=type==='goodBehavior'?(!hasBad&&hasGood):hasBad;
-          detail=vals.length?`السلوك: ${vals.join('، ')}`:'السلوك غير محدد';
-        }
-        if(qualifies)studentsInClass.push({name,detail});
-      });
+    d5students().filter(st=>st.classIndex===ci).forEach(st=>{
+      let qualifies=false, detail='';
+      if(type==='top' || type==='weak'){
+        const items=d5studentGradeItems(st,cls);
+        const vals=items.map(g=>{const score=Number(g?.score),max=Number(g?.maxScore);return Number.isFinite(score)&&Number.isFinite(max)&&max>0?score/max:null;}).filter(v=>v!==null);
+        if(vals.length){const avg=vals.reduce((a,b)=>a+b,0)/vals.length;qualifies=type==='top'?avg>=.90:avg<.50;detail=`متوسط الدرجات: ${Math.round(avg*100)}% — ${vals.length} سجل درجات`;}
+      }else{
+        const vals=d5studentBehaviorValues(st,cls);
+        const hasBad=vals.some(v=>badSet.has(v)), hasGood=vals.some(v=>goodSet.has(v));
+        qualifies=type==='goodBehavior' ? (!hasBad&&hasGood) : hasBad;
+        if(vals.length) detail=`السلوك: ${vals.join('، ')}`;
+      }
+      if(qualifies)studentsInClass.push({name:st.name,detail});
     });
     if(studentsInClass.length)groups.push({name:String(cls?.name||`الصف ${ci+1}`),students:studentsInClass});
   });
   const total=groups.reduce((n,g)=>n+g.students.length,0);
-  const body=groups.length?groups.map(g=>`<div class="dev5-detail-class"><div class="dev5-detail-class-title">🏫 ${d5esc(g.name)} <span>${g.students.length} طالب</span></div><div class="dev5-detail-students">${g.students.map(st=>`<div class="dev5-detail-student"><b>👤 ${d5esc(st.name)}</b><small>${d5esc(st.detail)}</small></div>`).join('')}</div></div>`).join(''):`<div class="dev5-empty-detail">لا توجد نتائج مطابقة حالياً في بيانات النظام.</div>`;
+  const body=groups.length?groups.map(g=>`<div class="dev5-detail-class"><div class="dev5-detail-class-title">🏫 ${d5esc(g.name)} <span>${g.students.length} طالب</span></div><div class="dev5-detail-students">${g.students.map(st=>`<div class="dev5-detail-student"><b>👤 ${d5esc(st.name)}</b><small>${d5esc(st.detail)}</small></div>`).join('')}</div></div>`).join(''):`<div class="dev5-empty-detail">لا توجد نتائج مطابقة حالياً في البيانات المسجلة بالنظام.</div>`;
   const html=`<div class="dev5-detail-head"><div><div class="dev5-detail-kicker">${d5esc(descMap[type]||'')}</div><h3>${d5esc(titleMap[type]||'التفاصيل')}</h3></div><div class="dev5-detail-total">${total}<small>طالب</small></div></div>${body}`;
   d5open(titleMap[type]||'تفاصيل الطلاب',html,'dev5StudentCategoryModal');
+}
+
+function d5allAttendanceRecords(){
+  const out=[]; const seen=new Set();
+  const add=(r,student)=>{
+    if(!r||!r.date)return;
+    const sid=String(r.studentId||student?.id||'');
+    const name=String(r.studentName||student?.name||'').trim();
+    const key=`${sid}|${name}|${String(r.date)}|${String(r.status||'present')}`;
+    if(seen.has(key))return; seen.add(key);
+    out.push({studentId:sid,studentName:name,date:String(r.date),status:String(r.status||'present')});
+  };
+  const pro=Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[];
+  pro.forEach(r=>{const st=dev5StudentIndex.find(x=>String(x.id)===String(r.studentId));add(r,st);});
+  (schoolData||[]).forEach((cls,ci)=>{
+    d5students().filter(st=>st.classIndex===ci).forEach(st=>{
+      const desk=cls?.desks?.[st.deskIndex];
+      const keys=new Set([String(st.key),`${desk?.deskNumber??(st.deskIndex+1)}_${st.slot===1?'يمين':'يسار'}_${st.name}`,`${st.deskIndex+1}_${st.slot===1?'يمين':'يسار'}_${st.name}`,String(st.id)]);
+      Object.entries(cls?.absenceRecords||{}).forEach(([date,map])=>{for(const k of Object.keys(map||{})){if(keys.has(String(k))){const v=map[k];add({studentId:st.id,studentName:st.name,date,status:v===true?'absent':(v||'present')},st);break;}}});
+    });
+  });
+  return out;
+}
+function d5monthKey(date){const m=String(date||'').match(/^(\d{4})-(\d{1,2})/);return m?`${m[1]}-${String(m[2]).padStart(2,'0')}`:'';}
+function d5monthLabel(key){const [y,m]=String(key).split('-').map(Number);return Number.isFinite(y)&&Number.isFinite(m)?new Date(y,m-1,1).toLocaleDateString('ar-IQ',{year:'numeric',month:'long'}):key;}
+function openDev5MonthlyAbsenceDetails(){
+  if(!currentUser||currentUser.role!=='admin')return;
+  const records=d5allAttendanceRecords().filter(r=>r.status==='absent');
+  const map=new Map(); records.forEach(r=>{const k=d5monthKey(r.date);if(k)map.set(k,(map.get(k)||0)+1);});
+  const now=new Date(); for(let i=0;i<12;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;if(!map.has(k))map.set(k,0);}
+  const rows=[...map.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([k,n])=>`<div class="dev5-month-row"><b>📅 ${d5esc(d5monthLabel(k))}</b><strong>${n}</strong><span>غياب مسجل</span></div>`).join('');
+  d5open('📊 إجمالي سجلات الغياب حسب الأشهر',`<div class="dev5-detail-kicker">هذه الأعداد مأخوذة من سجل الحضور الفعلي في النظام، مع منع تكرار نفس الطالب والتاريخ والحالة.</div><div class="dev5-month-list">${rows}</div>`,'dev5MonthlyAbsenceModal');
+}
+function updateDev5MonthlyAbsenceCount(monthKey){
+  const count=d5allAttendanceRecords().filter(r=>r.status==='absent'&&d5monthKey(r.date)===String(monthKey)).length;
+  const el=document.getElementById('dev5SelectedMonthAbsenceCount'); if(el)el.textContent=count;
 }
 
 function openDev5Performance(){
@@ -10874,14 +10958,16 @@ function openDev5Performance(){
   const attendance=Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[];
   const today=(typeof getFormattedDate==='function')?getFormattedDate():new Date().toISOString().slice(0,10);
 
-  // المواد: نجمع المواد المضافة في قائمة المواد، وكذلك المواد الظاهرة فعلياً في جداول الصفوف.
-  const addedSubjectNames=new Set((Array.isArray(subjectsData)?subjectsData:[]).map(x=>String(x?.name||'').trim()).filter(Boolean));
-  const scheduledSubjectNames=new Set();
-  classes.forEach(c=>{
-    const sd=c?.scheduleData;
-    if(sd && typeof sd==='object') Object.values(sd).forEach(entry=>{const n=String(entry?.subject||'').trim();if(n)scheduledSubjectNames.add(n);});
+  // المواد: نفس المواد الظاهرة في نظام المعلمين + المواد التي أضافها المدير، بدون تكرار.
+  const teacherSubjectNames=new Set();
+  teachers.forEach(t=>{
+    try{(typeof getTeacherSpecialties==='function'?getTeacherSpecialties(t):[]).forEach(x=>{const n=String(x||'').trim();if(n)teacherSubjectNames.add(n);});}catch(e){}
+    [t?.specialty,...(Array.isArray(t?.subjects)?t.subjects:[]),...(Array.isArray(t?.specialties)?t.specialties:[])].forEach(x=>{const n=String(x||'').trim();if(n)teacherSubjectNames.add(n);});
   });
-  const allSubjectNames=new Set([...addedSubjectNames,...scheduledSubjectNames]);
+  const addedSubjectNames=new Set((Array.isArray(subjectsData)?subjectsData:[]).map(x=>String(x?.name||x||'').trim()).filter(Boolean));
+  const scheduledSubjectNames=new Set();
+  classes.forEach(c=>{const sd=c?.scheduleData;if(sd&&typeof sd==='object')Object.values(sd).forEach(entry=>{const n=String(entry?.subject||'').trim();if(n)scheduledSubjectNames.add(n);});});
+  const allSubjectNames=new Set([...teacherSubjectNames,...addedSubjectNames,...scheduledSubjectNames]);
 
   const genderStudents=classes.flatMap((c,ci)=>(Array.isArray(c?.desks)?c.desks:[]).flatMap((d,di)=>[1,2].map(slot=>({name:String(d?.['student'+slot]||'').trim(),gender:String(d?.['gender'+slot]||''),ci,di,slot})).filter(x=>x.name)));
   const maleStudents=genderStudents.filter(x=>x.gender==='male').length;
@@ -10897,27 +10983,24 @@ function openDev5Performance(){
   const totalSeats=occupiedSeats+emptySeats;
   const pct=(n,d)=>d?Math.round((n/d)*100):0;
 
-  // الحضور والغياب لليوم.
-  let absent=0, leave=0, present=0;
-  const seenToday=new Set();
-  dev5StudentIndex.forEach(st=>{
-    const key=String(st.classIndex)+'|'+String(st.key);
-    if(seenToday.has(key)) return;
-    seenToday.add(key);
-    let status='present';
-    try{status=getStoredAttendanceStatus(classes[st.classIndex],today,st.key)||'present';}catch(e){}
-    if(status==='absent') absent++; else if(status==='leave') leave++; else present++;
-  });
-
-  // نسبة الغياب خلال آخر 30 يوماً: الغياب المسجل ÷ جميع سجلات الحضور المسجلة في الفترة.
-  const nowMs=Date.now();
-  const cutoffMs=nowMs-30*24*60*60*1000;
-  const monthAttendance=attendance.filter(r=>{
-    const t=new Date(String(r?.date||'')).getTime();
-    return Number.isFinite(t) && t>=cutoffMs && t<=nowMs;
-  });
-  const monthAbsent=monthAttendance.filter(r=>r?.status==='absent').length;
+  // الحضور والغياب: المصدر الموحد هو السجل الاحترافي + سجل الصف القديم مع منع التكرار.
+  const allAttendanceRecords=d5allAttendanceRecords();
+  const todayRecords=allAttendanceRecords.filter(r=>r.date===today);
+  let absent=todayRecords.filter(r=>r.status==='absent').length;
+  let leave=todayRecords.filter(r=>r.status==='leave').length;
+  let late=todayRecords.filter(r=>r.status==='late').length;
+  let present=todayRecords.filter(r=>r.status==='present').length;
+  const totalRegisteredAbsences=allAttendanceRecords.filter(r=>r.status==='absent').length;
+  const nowMs=Date.now(), cutoffMs=nowMs-30*24*60*60*1000;
+  const monthAttendance=allAttendanceRecords.filter(r=>{const t=new Date(r.date+'T23:59:59').getTime();return Number.isFinite(t)&&t>=cutoffMs&&t<=nowMs;});
+  const monthAbsent=monthAttendance.filter(r=>r.status==='absent').length;
   const monthlyAbsencePct=pct(monthAbsent,monthAttendance.length);
+  const monthKeys=[...new Set(allAttendanceRecords.map(r=>d5monthKey(r.date)).filter(Boolean))];
+  const currentMonthKey=d5monthKey(today);
+  if(currentMonthKey&&!monthKeys.includes(currentMonthKey))monthKeys.push(currentMonthKey);
+  monthKeys.sort((a,b)=>b.localeCompare(a));
+  const selectedMonthKey=monthKeys[0]||currentMonthKey;
+  const selectedMonthAbsences=allAttendanceRecords.filter(r=>r.status==='absent'&&d5monthKey(r.date)===selectedMonthKey).length;
 
   // تجميع الدرجات لكل طالب. المتفوق = متوسط 90% فأعلى (أي النقص لا يتجاوز 10%).
   // غير الجيد = متوسط أقل من 50% من الدرجة الكاملة.
@@ -10926,12 +11009,7 @@ function openDev5Performance(){
     const key=String(st.classIndex)+'|'+String(st.key);
     gradeByStudent.set(key,{student:st,items:[]});
     try{
-      const gs=ensureStudentGrades(classes[st.classIndex])||[];
-      gs.forEach(g=>{
-        const sameKey=g?.studentKey!=null && String(g.studentKey)===String(st.key);
-        const sameName=String(g?.studentName||'').trim()===String(st.name||'').trim();
-        if(sameKey || sameName) gradeByStudent.get(key).items.push(g);
-      });
+      gradeByStudent.get(key).items.push(...d5studentGradeItems(st,classes[st.classIndex]));
     }catch(e){}
   });
   let topStudents=0, weakStudents=0;
@@ -10962,14 +11040,6 @@ function openDev5Performance(){
     if(hasBad)badBehavior++; else if(hasGood)goodBehavior++;
   });
 
-  const teacherSubjects=[...new Set(teachers.flatMap(t=>{
-    const a=[];
-    if(Array.isArray(t?.specialties))a.push(...t.specialties);
-    if(Array.isArray(t?.subjects))a.push(...t.subjects);
-    if(t?.specialty)a.push(t.specialty);
-    return a.map(x=>String(x||'').trim()).filter(Boolean);
-  }))];
-
   const html=`
     <div class="school-command-hero">
       <div>
@@ -10996,19 +11066,19 @@ function openDev5Performance(){
     <div class="school-command-section">
       <div class="school-command-section-title"><span>🏆</span><div><b>التحصيل الدراسي والسلوك</b><small>المتفوقون وغير الجيدين حسب الدرجات والسلوك المسجل</small></div></div>
       <div class="school-command-status-grid dev5-clickable-results">
-        <button type="button" class="dev5-result-button top" onclick="openDev5StudentCategoryDetails('top')"><b>🏆 المتفوقون</b><strong>${topStudents}</strong><em>اضغط لعرض الصفوف وأسماء المتفوقين</em></button>
-        <button type="button" class="dev5-result-button weak" onclick="openDev5StudentCategoryDetails('weak')"><b>⚠️ غير الجيدين دراسياً</b><strong>${weakStudents}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
-        <button type="button" class="dev5-result-button good" onclick="openDev5StudentCategoryDetails('goodBehavior')"><b>😊 السلوك الجيد</b><strong>${goodBehavior}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
-        <button type="button" class="dev5-result-button bad" onclick="openDev5StudentCategoryDetails('badBehavior')"><b>⚠️ السلوك غير الجيد</b><strong>${badBehavior}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
+        <button type="button" class="dev5-result-button top" onclick="window.Dev5.openStudentCategoryDetails('top')"><b>🏆 المتفوقون</b><strong>${topStudents}</strong><em>اضغط لعرض الصفوف وأسماء المتفوقين</em></button>
+        <button type="button" class="dev5-result-button weak" onclick="window.Dev5.openStudentCategoryDetails('weak')"><b>⚠️ غير الجيدين دراسياً</b><strong>${weakStudents}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
+        <button type="button" class="dev5-result-button good" onclick="window.Dev5.openStudentCategoryDetails('goodBehavior')"><b>😊 السلوك الجيد</b><strong>${goodBehavior}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
+        <button type="button" class="dev5-result-button bad" onclick="window.Dev5.openStudentCategoryDetails('badBehavior')"><b>⚠️ السلوك غير الجيد</b><strong>${badBehavior}</strong><em>اضغط لعرض الصفوف وأسماء الطلاب</em></button>
       </div>
     </div>
 
     <div class="school-command-section">
       <div class="school-command-section-title"><span>📅</span><div><b>نسبة الغياب في المدرسة خلال شهر</b><small>آخر 30 يوماً من سجلات الحضور المحفوظة</small></div></div>
       <div class="school-command-status-grid">
-        <div><b>📌 نسبة الغياب</b><strong>${monthlyAbsencePct}%</strong><em>${monthAbsent} غياب من ${monthAttendance.length} سجل حضور</em></div>
-        <div><b>📝 إجمالي السجلات</b><strong>${monthAttendance.length}</strong><em>سجل خلال آخر 30 يوماً</em></div>
-        <div><b>📚 المواد الموجودة</b><strong>${allSubjectNames.size}</strong><em>مادة فريدة في النظام والجداول</em></div>
+        <div><b>📌 نسبة الغياب</b><strong>${monthlyAbsencePct}%</strong><em>${monthAbsent} غياب من ${monthAttendance.length} سجل حضور خلال آخر 30 يوماً</em></div>
+        <button type="button" class="dev5-result-button attendance-total" onclick="window.Dev5.openMonthlyAbsenceDetails()"><b>❌ إجمالي الغياب المسجل</b><strong>${totalRegisteredAbsences}</strong><em>اضغط لعرض غيابات كل شهر</em></button>
+        <div><b>📚 المواد الموجودة</b><strong>${allSubjectNames.size}</strong><em>مواد المعلمين + المواد المضافة في النظام</em></div>
               </div>
     </div>
 
@@ -11038,8 +11108,16 @@ function openDev5Performance(){
         <div><span>المعاونون</span><b>${assistants.length}</b></div>
         <div><span>المراقبون</span><b>${monitors.length}</b></div>
         <div><span>الدرجات المحفوظة</span><b>${grades}</b></div>
-        <div><span>مواد المعلمين المسجلة</span><b>${teacherSubjects.length}</b></div>
+        <div><span>مواد المعلمين + المواد المضافة</span><b>${allSubjectNames.size}</b></div>
         <div><span>كفاءة إشغال المقاعد</span><b>${pct(occupiedSeats,totalSeats)}%</b></div>
+      </div>
+    </div>
+
+    <div class="school-command-section">
+      <div class="school-command-section-title"><span>🗓️</span><div><b>غيابات الأشهر</b><small>اختر الشهر لمعرفة عدد الغيابات المسجلة فيه</small></div></div>
+      <div class="school-command-month-picker">
+        <select id="dev5AbsenceMonthSelect" onchange="window.Dev5.updateMonthlyAbsenceCount(this.value)">${monthKeys.map(k=>`<option value="${d5esc(k)}" ${k===selectedMonthKey?'selected':''}>${d5esc(d5monthLabel(k))}</option>`).join('')}</select>
+        <div class="dev5-month-count"><b id="dev5SelectedMonthAbsenceCount">${selectedMonthAbsences}</b><span>غياب مسجل</span></div>
       </div>
     </div>
 
@@ -11057,7 +11135,7 @@ function openDev5Performance(){
   `;
   d5open('🏫 نظام المدرسة الشامل',html,'dev5PerformanceModal');
 }
-window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
+window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
 const pq=document.querySelector('#professionalQuickMenu .pq-items');if(pq&&!document.getElementById('dev5QuickButtons')){const wrap=document.createElement('div');wrap.id='dev5QuickButtons';wrap.innerHTML='<button type="button" onclick="Dev5.performance()"><span class="dev5-btn-icon">🏫</span><span class="dev5-btn-title">نظام المدرسة الشامل</span><span class="dev5-btn-arrow">←</span></button>';pq.insertBefore(wrap,pq.firstChild);}
 window.addEventListener('load',()=>{rebuildD5Index();setTimeout(()=>{try{console.info('Development 5 modules ready:',dev5StudentIndex.length,'students')}catch(e){}},300);});
 })();
@@ -11084,7 +11162,7 @@ body.parent-only-mode header { display:none !important; }
 #professionalQuickMenu #dev5QuickButtons .dev5-btn-arrow{font-size:18px;opacity:.85}
 .school-command-hero{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:18px;border-radius:18px;background:linear-gradient(135deg,#162a46,#2c78a9);color:#fff;margin-bottom:15px;box-shadow:0 10px 28px rgba(25,58,91,.2)}
 .school-command-hero h2{margin:4px 0 5px;font-size:25px}.school-command-hero p{margin:0;opacity:.9;line-height:1.7}.school-command-kicker{font-size:12px;opacity:.8;font-weight:800}.school-command-date{background:rgba(255,255,255,.13);padding:9px 12px;border-radius:12px;white-space:nowrap;font-weight:800}
-.school-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.school-command-card{padding:15px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 6px 18px rgba(30,50,70,.07);position:relative;overflow:hidden}.school-command-card:after{content:'';position:absolute;left:-25px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:currentColor;opacity:.06}.school-command-card span{font-size:23px;display:block}.school-command-card b{display:block;margin-top:6px;color:#445}.school-command-card strong{display:block;font-size:30px;margin-top:3px;color:#1e2e3d}.school-command-card small{display:block;margin-top:3px;color:#71808d}.school-command-card.primary{color:#34495e}.school-command-card.blue{color:#2980b9}.school-command-card.teal{color:#16a085}.school-command-card.purple{color:#8e44ad}.school-command-card.orange{color:#d35400}.school-command-card.green{color:#27ae60}.school-command-card.red{color:#c0392b}.school-command-card.gold{color:#b87900}
+.school-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.school-command-month-picker{display:grid;grid-template-columns:minmax(180px,1fr) 220px;gap:12px;align-items:center}.school-command-month-picker select{width:100%;padding:12px;border:1px solid #d9e2ea;border-radius:10px;background:#fff;font-weight:800}.dev5-month-count{padding:12px;border:1px solid #d9e2ea;border-radius:10px;background:#f8fbfd;text-align:center}.dev5-month-count b{display:block;font-size:28px;color:#c0392b}.dev5-month-count span{color:#657786;font-size:12px}.dev5-month-list{display:grid;gap:8px}.dev5-month-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px;border:1px solid #e1e7ed;border-radius:10px;background:#fff}.dev5-month-row strong{font-size:22px;color:#c0392b}.dev5-month-row span{font-size:11px;color:#71808d}.school-command-card{padding:15px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 6px 18px rgba(30,50,70,.07);position:relative;overflow:hidden}.school-command-card:after{content:'';position:absolute;left:-25px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:currentColor;opacity:.06}.school-command-card span{font-size:23px;display:block}.school-command-card b{display:block;margin-top:6px;color:#445}.school-command-card strong{display:block;font-size:30px;margin-top:3px;color:#1e2e3d}.school-command-card small{display:block;margin-top:3px;color:#71808d}.school-command-card.primary{color:#34495e}.school-command-card.blue{color:#2980b9}.school-command-card.teal{color:#16a085}.school-command-card.purple{color:#8e44ad}.school-command-card.orange{color:#d35400}.school-command-card.green{color:#27ae60}.school-command-card.red{color:#c0392b}.school-command-card.gold{color:#b87900}
 .school-command-section{margin-top:15px;padding:16px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 5px 16px rgba(30,50,70,.06)}.school-command-section-title{display:flex;align-items:center;gap:10px;margin-bottom:13px}.school-command-section-title>span{font-size:23px}.school-command-section-title b{display:block;font-size:16px}.school-command-section-title small{display:block;color:#788692;margin-top:2px}.school-command-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.school-command-status-grid>div{padding:13px;border-radius:13px;background:#f7f9fb;border:1px solid #e7edf2}.school-command-status-grid b{display:block;color:#536270}.school-command-status-grid strong{font-size:25px;display:inline-block;margin-top:4px}.school-command-status-grid em{font-style:normal;float:left;margin-top:8px;font-weight:800;color:#607d8b}.school-command-details{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.school-command-details div{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:#f7f9fb;border-radius:10px}.school-command-details span{color:#65737e}.school-command-details b{color:#1f3345}.school-command-features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.school-command-features div{padding:12px;border-radius:12px;background:#f7fafc;line-height:1.7}.school-command-features small{display:block;color:#71808d;padding-right:20px}.school-command-footer{text-align:center;margin-top:15px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#eef6fb,#f7fbff);color:#31556d;font-weight:900}
 @media(max-width:900px){.school-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.school-command-details{grid-template-columns:repeat(2,minmax(0,1fr))}.school-command-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.school-command-hero{display:block;padding:14px}.school-command-hero h2{font-size:21px}.school-command-date{display:inline-block;margin-top:10px}.school-command-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.school-command-card{padding:11px}.school-command-card strong{font-size:24px}.school-command-card small{font-size:11px}.school-command-section{padding:12px}.school-command-details,.school-command-features{grid-template-columns:1fr}.school-command-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
