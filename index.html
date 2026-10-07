@@ -2092,6 +2092,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 #btnManagerNotesNav{position:static!important;left:auto;bottom:auto;z-index:auto;box-shadow:none;border-radius:12px!important;}
 #btnComplaintsNav.complaints-pending{animation:complaintsPulse 1.05s ease-in-out infinite;box-shadow:0 0 0 3px rgba(255,235,59,.35),0 0 22px rgba(255,80,80,.85)!important;border:2px solid #ffe600!important;position:relative;}
 #btnComplaintsNav.complaints-pending::after{content:'!';position:absolute;top:-8px;left:-8px;width:23px;height:23px;border-radius:50%;background:#e74c3c;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:14px;}
+#btnTeacherComplaintsNav.teacher-complaints-pending{animation:complaintsPulse 1.05s ease-in-out infinite;box-shadow:0 0 0 3px rgba(255,235,59,.35),0 0 22px rgba(255,80,80,.85)!important;border:2px solid #ffe600!important;position:relative;}
+#btnTeacherComplaintsNav.teacher-complaints-pending::after{content:'!';position:absolute;top:-8px;left:-8px;width:23px;height:23px;border-radius:50%;background:#e74c3c;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:14px;}
 @keyframes complaintsPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35);transform:scale(1.035)}}
 </style>
 <style id="parent-portal-gender-theme">.parent-portal-male{--parent-bg:#eef7ff;--parent-primary:#1976d2;--parent-soft:#e5f2ff}.parent-portal-female{--parent-bg:#fff0f7;--parent-primary:#d81b72;--parent-soft:#ffe4f0}.parent-portal-male .parent-portal-hero{background:linear-gradient(135deg,#145ea8,#2f8fe5)!important}.parent-portal-female .parent-portal-hero{background:linear-gradient(135deg,#b4145c,#ec5c9b)!important}.parent-portal-female .parent-portal-actions button{background:linear-gradient(135deg,#c51d6d,#e85b9d)!important}.parent-portal-male .parent-portal-actions button{background:linear-gradient(135deg,#1769aa,#2d8dd6)!important}.parent-portal-female .pro-panel{border-color:#f4c1d7}.parent-portal-male .pro-panel{border-color:#c5def5}</style>
@@ -2192,6 +2194,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openAnnouncementsModal()" id="btnAnnouncementsNav" style="background: #8e44ad;">🔔 التنبيهات والرسائل</button>
             <button onclick="openComplaintsManagerModal()" id="btnComplaintsNav" style="background:#c0398a;">📮 الشكاوي</button>
+            <button onclick="openComplaintSenderModal()" id="btnTeacherComplaintsNav" style="background:#8e44ad;display:none;font-weight:900;">📨 إرسال شكوى إلى المدير</button>
             <button onclick="openTransferSeparationModal()" id="btnTransferNav" style="background:#7d3c98;display:none;">🔄  نقل وفصل وتعليق</button>
             <button onclick="openAdminManagementModal()" id="btnAdminManagementNav" style="background: var(--orange); display:none;">⚙️ إدارة المدير والمعاون</button>
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
@@ -2374,7 +2377,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <h3 style="margin:0; color: var(--teal);">👨‍🏫 اختيار مرشد الصف</h3>
             <button onclick="closeModal('classSupervisorModal')" style="background: #7f8c8d; padding: 3px 8px; font-size: 11px;">إغلاق X</button>
         </div>
-        <p style="font-size: 11px; color: #666; margin-top: 0;">اختر معلماً ليكون مرشداً لهذا الصف. المرشد المعيّن فقط، إضافة إلى المدير، يملك صلاحية تسجيل الحضور والغياب والمجاز لهذا الصف:</p>
+        <p style="font-size: 11px; color: #666; margin-top: 0;">اختر معلماً ليكون مرشداً لهذا الصف. المرشد المعيّن فقط، إضافة إلى المدير، يملك صلاحية تسجيل الحضور والغياب والمتأخر لهذا الصف، أما المجاز فمن اختصاص المدير فقط:</p>
         <div style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;" id="supervisorTeachersListContainer"></div>
         <div style="text-align: left;">
             <button onclick="clearClassSupervisor()" id="btnClearSupervisor" style="background: var(--danger); font-size: 12px;">إلغاء تعيين المرشد</button>
@@ -3472,6 +3475,7 @@ function markComplaintResponseRead(id){
     c.responseReadAt=new Date().toISOString(); c.responseReadBy=String(info.name||currentUser.name||'');
     const popup=document.getElementById('complaintResponsePopup'); if(popup) popup.remove();
     saveData();
+    updateComplaintsManagerIndicator();
     setTimeout(()=>showComplaintResponses(true),150);
 }
 function showComplaintResponses(force=false){
@@ -3484,8 +3488,14 @@ function showComplaintResponses(force=false){
     document.body.appendChild(modal);
 }
 function renderComplaintSenderStatus(){
-    const box=document.getElementById('complaintSenderStatus'); if(!box||!currentUser) return; const c=getRecentOwnComplaint();
-    box.innerHTML=c?`<div style="background:#f7f9fb;padding:10px;border-radius:10px"><b>آخر شكوى:</b> ${escapeGlobalSearchHTML(c.createdAt?new Date(c.createdAt).toLocaleString('ar-IQ'):'')}<br><span style="color:${c.response?'#16803c':'#b26a00'}">${c.response?'تم الرد من المدير':'بانتظار رد المدير'}</span></div>`:'<div style="color:#667">يمكنك إرسال شكوى واحدة حسب المدة المسموحة.</div>';
+    const box=document.getElementById('complaintSenderStatus'); if(!box||!currentUser) return;
+    const c=getRecentOwnComplaint();
+    const teacherResponses=currentUser.role==='teacher' ? complaintsData.filter(x=>x&&x.senderRole==='teacher'&&String(x.senderKey||'')===String(currentUser.teacherId||currentUser.name||'')&&x.response).slice(0,10) : [];
+    let html=c?`<div style="background:#f7f9fb;padding:10px;border-radius:10px"><b>آخر شكوى:</b> ${escapeGlobalSearchHTML(c.createdAt?new Date(c.createdAt).toLocaleString('ar-IQ'):'')}<br><span style="color:${c.response?'#16803c':'#b26a00'}">${c.response?'تم الرد من المدير':'بانتظار رد المدير'}</span>${c.response?`<br><small>الرد: ${escapeGlobalSearchHTML(new Date(c.responseAt).toLocaleString('ar-IQ'))} — ${c.responseReadAt?'✓ تمت القراءة من المعلم في '+escapeGlobalSearchHTML(new Date(c.responseReadAt).toLocaleString('ar-IQ')):'🔔 الرد جديد وغير مقروء'}</small>`:''}</div>`:'<div style="color:#667">يمكنك إرسال شكوى واحدة حسب المدة المسموحة.</div>';
+    if(teacherResponses.length){
+        html+=`<div style="margin-top:10px"><b>📬 الردود السابقة</b>${teacherResponses.map(x=>`<div style="margin-top:7px;padding:9px;border-radius:10px;background:${x.responseReadAt?'#f7f9fb':'#eefaf3'}"><div style="font-size:11px;color:#667">${escapeGlobalSearchHTML(new Date(x.responseAt).toLocaleString('ar-IQ'))}</div><div style="white-space:pre-wrap;margin-top:4px">${escapeGlobalSearchHTML(x.response)}</div>${x.responseReadAt?`<small style="color:#16803c">✓ تمت القراءة في ${escapeGlobalSearchHTML(new Date(x.responseReadAt).toLocaleString('ar-IQ'))}</small>`:`<button onclick="showComplaintResponses(true);" style="margin-top:6px;background:#16803c;color:#fff">📩 فتح الرد الجديد</button>`}</div>`).join('')}</div>`;
+    }
+    box.innerHTML=html;
 }
 function openComplaintSenderModal(){
     if(!currentUser || (currentUser.role!=='parent'&&currentUser.role!=='teacher')) return;
@@ -3498,6 +3508,17 @@ function openComplaintSenderModal(){
 function getUnreadAdminComplaints(){
     if(!Array.isArray(complaintsData)) return [];
     return complaintsData.filter(c=>c && !c.adminReadAt);
+}
+function getCurrentTeacherComplaintKey(){
+    if(!currentUser || currentUser.role!=='teacher') return '';
+    const info=getComplaintSenderInfo();
+    return String(info.teacherId||currentUser.teacherId||currentUser.id||currentUser.name||'').trim();
+}
+function getUnreadTeacherComplaintResponses(){
+    if(!currentUser || currentUser.role!=='teacher' || !Array.isArray(complaintsData)) return [];
+    const info=getComplaintSenderInfo();
+    const key=String(info.studentId||currentUser.teacherId||currentUser.name||'').trim();
+    return complaintsData.filter(c=>c && c.senderRole==='teacher' && String(c.senderKey||'')===key && c.response && !c.responseReadAt);
 }
 
 function markComplaintsAsReadByAdmin(){
@@ -3512,14 +3533,24 @@ function markComplaintsAsReadByAdmin(){
 }
 
 function updateComplaintsManagerIndicator(){
-    const btn=document.getElementById('btnComplaintsNav'); if(!btn) return;
-    const unread=getUnreadAdminComplaints();
-    const hasUnread=unread.length>0;
-    btn.classList.toggle('complaints-pending', hasUnread && currentUser?.role==='admin');
-    if(hasUnread && currentUser?.role==='admin'){
-        btn.title=`يوجد ${unread.length} شكوى جديدة غير مقروءة في صندوق الشكاوى`;
-        btn.setAttribute('aria-label',`يوجد ${unread.length} شكوى جديدة غير مقروءة في صندوق الشكاوى`);
-    }else{btn.removeAttribute('title');btn.removeAttribute('aria-label');}
+    const btn=document.getElementById('btnComplaintsNav');
+    const teacherBtn=document.getElementById('btnTeacherComplaintsNav');
+    if(btn){
+        const unread=getUnreadAdminComplaints();
+        const hasUnread=unread.length>0;
+        btn.classList.toggle('complaints-pending', hasUnread && currentUser?.role==='admin');
+        if(hasUnread && currentUser?.role==='admin'){
+            btn.title=`يوجد ${unread.length} شكوى جديدة غير مقروءة في صندوق الشكاوى`;
+            btn.setAttribute('aria-label',`يوجد ${unread.length} شكوى جديدة غير مقروءة في صندوق الشكاوى`);
+        }else{btn.removeAttribute('title');btn.removeAttribute('aria-label');}
+    }
+    if(teacherBtn){
+        const unreadTeacher=getUnreadTeacherComplaintResponses();
+        const hasTeacherUnread=unreadTeacher.length>0 && currentUser?.role==='teacher';
+        teacherBtn.classList.toggle('teacher-complaints-pending',hasTeacherUnread);
+        teacherBtn.innerText=hasTeacherUnread ? `📮 شكاوى إلى المدير (${unreadTeacher.length})` : '📨 إرسال شكوى إلى المدير';
+        teacherBtn.title=hasTeacherUnread ? `لديك ${unreadTeacher.length} رد جديد من المدير` : 'إرسال شكوى إلى المدير ومتابعة الردود';
+    }
 }
 
 setInterval(updateComplaintsManagerIndicator, 10000);
@@ -4106,10 +4137,28 @@ function updateCloudStatus(text, color) {
         } catch(e){ console.warn('Automatic backup failed',e); }
     }
 
+    const BIWEEKLY_BACKUP_MS = 14 * 24 * 60 * 60 * 1000;
+    async function maybeCreateBiweeklyCloudBackup(){
+        if(!window.FirebaseCloud?.enabled || !cloudReady || !navigator.onLine || !firebaseDB) return;
+        try{
+            const markerSnap=await firebaseDB.ref('systemControl/biweeklyBackup').once('value');
+            const marker=markerSnap.exists()?markerSnap.val():null;
+            const last=Date.parse(String(marker?.createdAt||''));
+            if(Number.isFinite(last) && (Date.now()-last)<BIWEEKLY_BACKUP_MS) return;
+            const payload=makeBackupPayload();
+            payload.backupReason='نسخة احتياطية دورية كل 14 يوماً';
+            const stamp=new Date().toISOString();
+            const key='biweekly-'+stamp.replace(/[.:]/g,'-');
+            await window.FirebaseCloud.saveBackup(key,payload);
+            await firebaseDB.ref('systemControl/biweeklyBackup').set({createdAt:stamp,key,resetGeneration:String(factoryResetGeneration||'0'),reason:'نسخة احتياطية دورية كل 14 يوماً'});
+            console.info('Biweekly cloud backup created:',key);
+        }catch(e){ console.warn('Biweekly cloud backup failed',e); }
+    }
+
     function scheduleAutomaticBackup(){
         clearInterval(automaticBackupTimer);
-        automaticBackupTimer=setInterval(()=>createAutomaticBackup('كل 30 دقيقة'),30*60*1000);
-        setTimeout(()=>createAutomaticBackup('بعد تشغيل النظام'),5000);
+        automaticBackupTimer=setInterval(()=>{ createAutomaticBackup('كل 30 دقيقة'); maybeCreateBiweeklyCloudBackup(); },30*60*1000);
+        setTimeout(()=>{createAutomaticBackup('بعد تشغيل النظام'); maybeCreateBiweeklyCloudBackup();},5000);
     }
 
     function getFormattedDate(date = new Date()) {
@@ -4857,6 +4906,7 @@ function updateCloudStatus(text, color) {
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
+            const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'flex';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
@@ -4880,6 +4930,7 @@ function updateCloudStatus(text, color) {
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display='none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display='none';
             const btnSystemResetNav2=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav2) btnSystemResetNav2.style.display='none';
+            const btnTeacherComplaintsNavMonitor=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavMonitor) btnTeacherComplaintsNavMonitor.style.display='none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display='none';
@@ -4913,7 +4964,7 @@ function updateCloudStatus(text, color) {
             let spec = getCurrentTeacherSpec();
             badge.innerText = `الصلاحية: معلم (${currentUser.name} - ${spec}) 👨‍🏫`;
             if(btnAddClass) btnAddClass.style.display = 'none';
-            if(btnTeachers) btnTeachers.style.display = 'inline-block';
+            if(btnTeachers) btnTeachers.style.display = 'none';
             if(btnEditClass) btnEditClass.style.display = 'none';
             if(btnDeleteClass) btnDeleteClass.style.display = 'none';
             if(btnSupervisor) btnSupervisor.style.display = 'none';
@@ -4921,11 +4972,18 @@ function updateCloudStatus(text, color) {
             if(btnClearSupervisor) btnClearSupervisor.style.display = 'none';
             if(btnScheduleSettings) btnScheduleSettings.style.display = 'none';
             if(btnParentTab) btnParentTab.style.display = 'none';
-            // لا يظهر زر الحضور والغياب للمعلم إلا إذا كان مرشد الصف الحالي.
-            if(btnAbsenceTab) btnAbsenceTab.style.display = 'none';
+            // زر الحضور والغياب يظهر داخل الصف الحالي لمرشد الصف الذي عيّنه المدير فقط.
+            const currentClsForTeacher = schoolData[currentClassIndex];
+            const isAssignedSupervisor = isClassSupervisor(currentClsForTeacher);
+            if(btnAbsenceTab) btnAbsenceTab.style.display = isAssignedSupervisor ? 'inline-block' : 'none';
             if(btnLogNavTab) btnLogNavTab.style.display = 'inline-block';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'none';
-            if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'inline-block';
+            if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'none';
+            const btnComplaintsNavTeacher=document.getElementById('btnComplaintsNav'); if(btnComplaintsNavTeacher) btnComplaintsNavTeacher.style.display='none';
+            const btnTeacherComplaintsNav=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNav) btnTeacherComplaintsNav.style.display='inline-block';
+            const btnManagerNotesNavTeacher=document.getElementById('btnManagerNotesNav'); if(btnManagerNotesNavTeacher) btnManagerNotesNavTeacher.style.display='none';
+            const btnSystemResetNavTeacher=document.getElementById('btnSystemResetNav'); if(btnSystemResetNavTeacher) btnSystemResetNavTeacher.style.display='none';
+            const btnMonitorsNavTeacher=document.getElementById('btnMonitorsNav'); if(btnMonitorsNavTeacher) btnMonitorsNavTeacher.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'inline-block';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'inline-block';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
@@ -4952,6 +5010,7 @@ function updateCloudStatus(text, color) {
             // ولي الأمر لا يرى أي زر تنقل عام أو زر رجوع للصفوف؛ واجهته صفحة ابنه فقط.
             if(btnAbsenceTab) btnAbsenceTab.style.display = 'none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'none';
+            const btnTeacherComplaintsNavParent=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavParent) btnTeacherComplaintsNavParent.style.display='none';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'none';
@@ -6051,7 +6110,7 @@ function updateCloudStatus(text, color) {
                     <tr>
                         <td><strong>${t.name}</strong></td>
                         <td>${t.spec}</td>
-                        <td style="font-size:10px;color:#27ae60;font-weight:bold;">حضور + غياب + مجاز لهذا الصف</td>
+                        <td style="font-size:10px;color:#27ae60;font-weight:bold;">حضور + غياب + متأخر لهذا الصف (بدون مجاز)</td>
                         <td><button onclick="assignClassSupervisor('${t.name}')" style="background: var(--success); padding: 3px 8px; font-size: 11px;">تعيين كمرشد</button></td>
                     </tr>
                 `;
@@ -6070,7 +6129,7 @@ function updateCloudStatus(text, color) {
         updateSupervisorButtonDisplay();
         updateAttendancePermissionUI();
         closeModal('classSupervisorModal');
-        alert(`تم تعيين المعلم (${teacherName}) كمرشد لهذا الصف. أصبح لديه الآن صلاحية تسجيل الحضور والغياب والمجاز لهذا الصف فقط.`);
+        alert(`تم تعيين المعلم (${teacherName}) كمرشد لهذا الصف. أصبح لديه الآن صلاحية تسجيل الحضور والغياب والمتأخر لهذا الصف فقط، ولا يملك صلاحية تسجيل مجاز.`);
     }
 
     function clearClassSupervisor() {
@@ -6081,7 +6140,7 @@ function updateCloudStatus(text, color) {
         updateSupervisorButtonDisplay();
         updateAttendancePermissionUI();
         closeModal('classSupervisorModal');
-        alert('تم إزالة تعيين مرشد الصف، وتم إلغاء صلاحية تسجيل الحضور والغياب والمجاز لهذا المعلم في هذا الصف.');
+        alert('تم إزالة تعيين مرشد الصف، وتم إلغاء صلاحية تسجيل الحضور والغياب والمتأخر لهذا المعلم في هذا الصف.');
     }
 
     function updateSupervisorButtonDisplay() {
@@ -8854,7 +8913,7 @@ function updateCloudStatus(text, color) {
 
         const canEdit = canManageStudentAttendance(cls);
         document.getElementById('absenceSubText').innerText = canEdit
-            ? `تسجيل حضور وغياب ومجاز الطلاب — ${cls.name} — الصلاحية: ${currentUser.role === 'admin' ? 'مدير النظام' : 'مرشد الصف'}`
+            ? `تسجيل حضور وغياب ومتأخر الطلاب — ${cls.name} — الصلاحية: ${currentUser.role === 'admin' ? 'مدير النظام (كاملة)' : 'مرشد الصف (بدون مجاز)'}`
             : `سجل الحضور والغياب للطالب: ${currentUser.name}`;
 
         cls.desks.forEach(desk => {
@@ -8886,7 +8945,7 @@ function updateCloudStatus(text, color) {
                     <option value="present" ${status === 'present' ? 'selected' : ''}>حاضر ✔️</option>
                     <option value="late" ${status === 'late' ? 'selected' : ''}>متأخر ⏰</option>
                     <option value="absent" ${status === 'absent' ? 'selected' : ''}>غائب ❌</option>
-                    <option value="leave" ${status === 'leave' ? 'selected' : ''}>مجاز 🏖️</option>
+                    ${currentUser.role === 'admin' ? `<option value="leave" ${status === 'leave' ? 'selected' : ''}>مجاز 🏖️</option>` : ''}
                 </select>`;
         } else {
             const label = status === 'absent' ? 'غائب ❌' : (status === 'leave' ? 'مجاز 🏖️' : (status === 'late' ? 'متأخر ⏰' : 'حاضر ✔️'));
@@ -8905,13 +8964,13 @@ function updateCloudStatus(text, color) {
 
     function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const cls = schoolData[currentClassIndex];
-        if (statusVal === 'leave' && !(currentUser?.role === 'admin' || (currentUser?.role === 'teacher' && isClassSupervisor(cls)))) {
+        if (statusVal === 'leave' && currentUser?.role !== 'admin') {
             alert('تغيير الطالب إلى مجاز متاح للمدير أو المعاون أو مرشد الصف فقط.');
             renderAbsenceTable();
             return;
         }
         if (!canManageStudentAttendance(cls)) {
-            alert('لا تملك صلاحية تسجيل الحضور والغياب والمجاز لهذا الصف.');
+            alert('لا تملك صلاحية تسجيل الحضور والغياب والمتأخر لهذا الصف.');
             renderAbsenceTable();
             return;
         }
