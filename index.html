@@ -1356,6 +1356,21 @@ table td,table th { line-height:1.55; }
 .announcement-compose-grid select:focus,.announcement-compose-grid textarea:focus{border-color:#8e44ad;box-shadow:0 0 0 3px rgba(142,68,173,.10)}
 .announcement-compose-actions{display:flex;align-items:center;gap:10px;margin-top:10px}.announcement-compose-actions button{border:0;color:#fff;border-radius:10px;padding:9px 16px;font-weight:800;cursor:pointer}.announcement-compose-actions span{font-size:11px;color:#8794a2}
 .announcement-list-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-weight:900;color:#243b53}.announcement-list-head small{font-weight:600;color:#8996a4}
+
+/* ===== تطوير مركز الرسائل العام والمراسلة بين المعلم وولي الأمر ===== */
+.announcement-tab-general{background:linear-gradient(135deg,#16a085,#1abc9c)!important;color:#fff!important}
+.announcement-tab-general.active{box-shadow:0 0 0 3px rgba(22,160,133,.16),0 8px 20px rgba(22,160,133,.20)!important}
+.parent-messages-teacher-unread{animation:parentTeacherInboxPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(231,76,60,.16),0 0 22px rgba(231,76,60,.72)!important}
+.general-message-unread{animation:parentTeacherInboxPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(22,160,133,.16),0 0 22px rgba(22,160,133,.72)!important}
+@keyframes parentTeacherInboxPulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.045);filter:brightness(1.2)}}
+.teacher-parent-compose{border:1px solid #dbe7f1;border-radius:16px;padding:14px;background:linear-gradient(180deg,#f8fbff,#fff);margin:12px 0 16px}
+.teacher-parent-compose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.teacher-parent-compose textarea{min-height:110px;resize:vertical}
+.teacher-parent-compose .compose-actions{display:flex;justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:10px}
+.parent-incoming-teacher-message{border-right:5px solid #16a085!important;background:#f4fffc!important}
+.general-announcement-card{border-right:5px solid #16a085!important}
+@media(prefers-reduced-motion:reduce){.parent-messages-teacher-unread,.general-message-unread{animation:none!important}}
+
 .announcements-list{display:grid;gap:10px}.announcement-card{position:relative;border:1px solid #e0e7ef;border-radius:15px;padding:14px;background:#fff;box-shadow:0 6px 18px rgba(30,50,80,.06);overflow:hidden}.announcement-card:before{content:'';position:absolute;right:0;top:0;bottom:0;width:5px;background:#8e44ad}.announcement-card.teacher:before{background:#3498db}.announcement-card.parent:before{background:#16a085}.announcement-card-title{font-weight:900;color:#263b50;margin-bottom:5px}.announcement-card-message{font-size:14px;line-height:1.8;color:#334e68;white-space:pre-wrap}.announcement-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10px;color:#8a97a5}.announcement-badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:20px;background:#f0eafa;color:#6c5ce7;font-weight:800}.announcement-card-actions{margin-top:10px;text-align:left}.announcement-card-actions button{background:#e74c3c!important;color:#fff!important;border:0!important;border-radius:8px!important;padding:6px 10px!important;font-size:11px!important}.recipient-highlight{animation:announcementPulse 1.8s ease-in-out infinite}@keyframes announcementPulse{0%,100%{box-shadow:0 6px 18px rgba(142,68,173,.08)}50%{box-shadow:0 0 0 5px rgba(142,68,173,.10),0 12px 28px rgba(142,68,173,.18)}}
 @media(max-width:650px){.announcement-compose-grid{grid-template-columns:1fr}.announcement-compose-grid .full{grid-column:auto}.announcement-list-head{align-items:flex-start;gap:5px;flex-direction:column}}
 /* إشعار مضيء يظهر للمستخدم عند الدخول */
@@ -2606,6 +2621,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         <div class="announcement-tabs">
             <button id="annTabTeachers" class="announcement-tab active" onclick="switchAnnouncementTab('teachers')">👨‍🏫 رسائل المعلمين</button>
             <button id="annTabParents" class="announcement-tab" onclick="switchAnnouncementTab('parents')">👨‍👩‍👧 رسائل أولياء الأمور</button>
+            <button id="annTabGeneral" class="announcement-tab announcement-tab-general" onclick="switchAnnouncementTab('general')">📢 رسالة عامة</button>
         </div>
         <div id="announcementAdminPanel" class="announcement-admin-panel">
             <div class="announcement-compose-head">✍️ إرسال تنبيه جديد</div>
@@ -2626,6 +2642,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                         <option value="teacher">معلم محدد</option>
                         <option value="all_parents">جميع أولياء الأمور</option>
                         <option value="parent">ولي أمر طالب محدد</option>
+                        <option value="all_users">📢 رسالة عامة — جميع الموجودين</option>
                     </select>
                 </div>
                 <div class="form-group pro-field" id="announcementRecipientGroup" style="display:none;">
@@ -5362,21 +5379,32 @@ function updateCloudStatus(text, color) {
         if(a==='all_teachers') return 'جميع المعلمين';
         if(a==='teacher') return 'معلم محدد';
         if(a==='all_parents') return 'جميع أولياء الأمور';
+        if(a==='all_users') return 'رسالة عامة — جميع الموجودين';
         return 'ولي أمر طالب محدد';
     }
     function openAnnouncementsModal(){
         if(!currentUser) return;
-        currentAnnouncementTab = currentUser.role==='parent' ? 'parents' : 'teachers';
+        currentAnnouncementTab = currentUser.role==='parent' ? 'general' : 'teachers';
         document.getElementById('announcementsModal').style.display='flex';
         const adminPanel=document.getElementById('announcementAdminPanel');
-        adminPanel.style.display=currentUser.role==='admin'?'block':'none';
-        if(currentUser.role==='admin') updateAnnouncementRecipientOptions();
+        const isPrimaryAdmin=!!(currentUser.role==='admin' && currentUser.isPrimaryAdmin);
+        if(adminPanel) adminPanel.style.display=isPrimaryAdmin?'block':'none';
+        const parentsTab=document.getElementById('annTabParents');
+        const teachersTab=document.getElementById('annTabTeachers');
+        const generalTab=document.getElementById('annTabGeneral');
+        if(parentsTab) parentsTab.style.display=currentUser.role==='teacher'?'none':'';
+        if(teachersTab) teachersTab.style.display=currentUser.role==='parent'?'none':'';
+        if(generalTab) generalTab.style.display='inline-flex';
+        if(isPrimaryAdmin) updateAnnouncementRecipientOptions();
         renderAnnouncementsList();
+        updateGeneralAnnouncementIndicators();
     }
     function switchAnnouncementTab(tab){
         currentAnnouncementTab=tab;
-        document.getElementById('annTabTeachers').classList.toggle('active',tab==='teachers');
-        document.getElementById('annTabParents').classList.toggle('active',tab==='parents');
+        const t=document.getElementById('annTabTeachers'), p=document.getElementById('annTabParents'), g=document.getElementById('annTabGeneral');
+        if(t)t.classList.toggle('active',tab==='teachers');
+        if(p)p.classList.toggle('active',tab==='parents');
+        if(g)g.classList.toggle('active',tab==='general');
         renderAnnouncementsList();
     }
     function updateAnnouncementRecipientOptions(){
@@ -5446,6 +5474,7 @@ function updateCloudStatus(text, color) {
     function sendAnnouncement(){
         if(!currentUser || currentUser.role!=='admin') return;
         const audience=document.getElementById('announcementAudience').value;
+        if(audience==='all_users' && !currentUser.isPrimaryAdmin){ alert('الرسالة العامة متاحة لمدير النظام الأساسي فقط.'); return; }
         const type=document.getElementById('announcementType')?.value||'normal';
         const message=document.getElementById('announcementMessageInput').value.trim();
         if(!message){alert('اكتب نص الرسالة أولاً.');return;}
@@ -5493,7 +5522,7 @@ function updateCloudStatus(text, color) {
         if(currentUser.role==='teacher'){
             const teacherId=String(currentUser.teacherId||currentUser.id||'');
             const teacherName=String(currentUser.name||'').trim();
-            return a.audience==='all_teachers' ||
+            return a.audience==='all_users' || a.audience==='all_teachers' ||
                    (a.audience==='teacher' &&
                     (String(a.targetId||'')===teacherId || String(a.targetId||'')===teacherName || String(a.targetName||'')===teacherName));
         }
@@ -5505,7 +5534,7 @@ function updateCloudStatus(text, color) {
                 ? {key:`${currentUser.classIndex}:${currentUser.deskIndex}:${currentUser.studentSnapshot.slot||''}`,name:studentName}
                 : getAllStudentsForAnnouncements().find(x=>x.name===studentName);
 
-            return a.audience==='all_parents' ||
+            return a.audience==='all_users' || a.audience==='all_parents' ||
                    (a.audience==='parent' && (
                        (student && String(a.targetId||'')===String(student.key||'')) ||
                        (studentId && String(a.targetStudentId||'')===studentId) ||
@@ -5547,10 +5576,22 @@ function updateCloudStatus(text, color) {
 
     function renderAnnouncementsList(){
         const c=document.getElementById('announcementsList'); if(!c) return;
-        let list=announcementsData.filter(a=> currentUser.role==='admin' ? (currentAnnouncementTab==='teachers'?a.audience==='all_teachers'||a.audience==='teacher':a.audience==='all_parents'||a.audience==='parent') : announcementBelongsToCurrentUser(a));
+        let list;
+        if(currentUser.role==='admin'){
+            list=announcementsData.filter(a=> currentAnnouncementTab==='teachers' ? (a.audience==='all_teachers'||a.audience==='teacher') : currentAnnouncementTab==='parents' ? (a.audience==='all_parents'||a.audience==='parent') : currentAnnouncementTab==='general' ? a.audience==='all_users' : false);
+        }else if(currentAnnouncementTab==='general'){
+            list=announcementsData.filter(a=>a.audience==='all_users');
+        }else if(currentAnnouncementTab==='teachers'){
+            list=announcementsData.filter(a=>announcementBelongsToCurrentUser(a) && (a.audience==='all_teachers'||a.audience==='teacher'));
+        }else if(currentAnnouncementTab==='parents'){
+            list=announcementsData.filter(a=>announcementBelongsToCurrentUser(a) && (a.audience==='all_parents'||a.audience==='parent'));
+        }else{
+            list=[];
+        }
         if(!list.length){c.innerHTML='<div class="pro-empty">🔔<br><strong>لا توجد رسائل</strong><br><span>لا توجد تنبيهات ضمن هذا القسم حالياً.</span></div>';return;}
+        if(currentAnnouncementTab==='general' && currentUser.role!=='admin'){ list.filter(a=>a.audience==='all_users').forEach(a=>markGeneralAnnouncementRead(a.id)); updateGeneralAnnouncementIndicators(); }
         c.innerHTML=list.map(a=>`
-            <div class="announcement-card ${a.audience.includes('parent')?'parent':'teacher'}">
+            <div class="announcement-card ${a.audience==='all_users'?'general-announcement-card':(a.audience.includes('parent')?'parent':'teacher')}">
                 <div class="announcement-card-title">🔔 ${escapeAnnouncementHTML(getAnnouncementRecipientLabel(a.audience))}${a.targetName?' — '+escapeAnnouncementHTML(a.targetName):''}</div>
                 ${renderAnnouncementTypeBadge(a)}
                 <div class="announcement-card-message">${escapeAnnouncementHTML(a.message)}</div>
@@ -9659,6 +9700,40 @@ function updateCloudStatus(text, color) {
         },3000);
     }
 
+
+    // ===== الرسالة العامة من مدير النظام =====
+    function getGeneralAnnouncementsForCurrentUser(){
+        if(!currentUser) return [];
+        return (Array.isArray(announcementsData)?announcementsData:[]).filter(a=>a && a.audience==='all_users').sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    }
+    function getGeneralAnnouncementReaderKey(){
+        if(!currentUser)return '';
+        if(currentUser.role==='teacher') return `teacher:${String(currentUser.teacherId||currentUser.id||currentUser.name||'')}`;
+        if(currentUser.role==='parent') return `parent:${String(currentUser.studentId||currentUser.code||currentUser.name||'')}`;
+        if(currentUser.role==='admin') return currentUser.isAssistant ? `assistant:${String(currentUser.assistantId||currentUser.name||'')}` : `admin:${String(currentUser.name||'')}`;
+        return `${String(currentUser.role||'user')}:${String(currentUser.name||'')}`;
+    }
+    function getUnreadGeneralAnnouncementsForCurrentUser(){
+        const key=getGeneralAnnouncementReaderKey(); if(!key)return [];
+        return getGeneralAnnouncementsForCurrentUser().filter(a=>!(Array.isArray(a.readBy)&&a.readBy.some(r=>String(r?.key||'')===key)));
+    }
+    function updateGeneralAnnouncementIndicators(){
+        const btn=document.getElementById('btnAnnouncementsNav'); if(!btn)return;
+        const unread=getUnreadGeneralAnnouncementsForCurrentUser();
+        const has=unread.length>0;
+        btn.classList.toggle('general-message-unread',has);
+        btn.title=has?`يوجد ${unread.length} رسالة عامة جديدة`:'التنبيهات والرسائل';
+        if(has)btn.setAttribute('aria-label',`يوجد ${unread.length} رسالة عامة جديدة`); else btn.removeAttribute('aria-label');
+    }
+    function markGeneralAnnouncementRead(id){
+        if(!currentUser)return;
+        const a=announcementsData.find(x=>String(x?.id||'')===String(id)); if(!a)return;
+        const key=getGeneralAnnouncementReaderKey(); if(!key)return;
+        if(!Array.isArray(a.readBy))a.readBy=[];
+        if(!a.readBy.some(r=>String(r?.key||'')===key)) a.readBy.push({key,name:String(currentUser.name||'مستخدم'),readAt:new Date().toISOString(),role:currentUser.role});
+        saveData();
+    }
+
     // ===== رسائل أولياء الأمور إلى المعلمين =====
     const PARENT_TEACHER_MESSAGE_DAILY_LIMIT = 1;
     let parentTeacherMessageIndicatorTimer = null;
@@ -9686,7 +9761,7 @@ function updateCloudStatus(text, color) {
         const key=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
         if(!key) return [];
         return (Array.isArray(parentTeacherMessagesData)?parentTeacherMessagesData:[])
-            .filter(m=>m && String(m.teacherKey||'')===key)
+            .filter(m=>m && String(m.teacherKey||'')===key && (m.senderRole||'parent')==='parent')
             .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
     }
     function parentTeacherMessageTodayKey(v){
@@ -9697,10 +9772,10 @@ function updateCloudStatus(text, color) {
         const key=getParentTeacherMessageParentKey();
         if(!key) return null;
         const today=parentTeacherMessageTodayKey();
-        return (parentTeacherMessagesData||[]).find(m=>m && String(m.parentKey||'')===key && parentTeacherMessageTodayKey(m.createdAt)===today) || null;
+        return (parentTeacherMessagesData||[]).find(m=>m && (m.senderRole||'parent')==='parent' && String(m.parentKey||'')===key && parentTeacherMessageTodayKey(m.createdAt)===today) || null;
     }
     function getUnreadParentTeacherMessagesForParent(){
-        return getParentTeacherMessagesForParent().filter(m=>m.response && !m.responseReadAt);
+        return getParentTeacherMessagesForParent().filter(m=>String(m.senderRole||'parent')==='teacher' && !m.parentReadAt);
     }
     function getUnreadParentTeacherMessagesForTeacher(){
         return getParentTeacherMessagesForTeacher().filter(m=>!m.teacherReadAt);
@@ -9718,9 +9793,9 @@ function updateCloudStatus(text, color) {
         if(currentUser?.role!=='parent') return;
         const key=getParentTeacherMessageParentKey();
         const m=parentTeacherMessagesData.find(x=>String(x.id)===String(id)&&String(x.parentKey||'')===key);
-        if(!m || !m.response || m.responseReadAt) return;
-        m.responseReadAt=new Date().toISOString();
-        m.responseReadBy=String(currentUser.name||'ولي الأمر');
+        if(!m || String(m.senderRole||'parent')!=='teacher' || m.parentReadAt) return;
+        m.parentReadAt=new Date().toISOString();
+        m.parentReadBy=String(currentUser.name||'ولي الأمر');
         saveData();
     }
     function getParentTeachersForCurrentStudent(){
@@ -9763,9 +9838,11 @@ function updateCloudStatus(text, color) {
     function startParentTeacherMessageIndicatorPulse(){
         if(parentTeacherMessageIndicatorTimer) clearInterval(parentTeacherMessageIndicatorTimer);
         updateParentTeacherMessageIndicators();
+        updateGeneralAnnouncementIndicators();
         parentTeacherMessageIndicatorTimer=setInterval(()=>{
             if(!currentUser){clearInterval(parentTeacherMessageIndicatorTimer);parentTeacherMessageIndicatorTimer=null;return;}
             updateParentTeacherMessageIndicators();
+            updateGeneralAnnouncementIndicators();
         },3000);
     }
     async function sendParentTeacherMessage(){
@@ -9786,7 +9863,7 @@ function updateCloudStatus(text, color) {
         const id=createStableId('parentmsg');
         const parentName=String(currentUser.parentName||currentUser.guardianName||currentUser.name||'ولي الأمر');
         const msg={
-            id,parentKey:getParentTeacherMessageParentKey(),parentName,
+            id,senderRole:'parent',direction:'parent_to_teacher',parentKey:getParentTeacherMessageParentKey(),parentName,
             studentId:String(f.student.id||''),studentName:String(f.student.name||''),
             classIndex:Number(f.classIndex),classId:String(f.classObj?.id||schoolData[f.classIndex]?.id||''),className:String(f.classObj?.name||schoolData[f.classIndex]?.name||''),
             teacherKey:target.key,teacherId:String(target.teacher?.id||''),teacherName:target.name,teacherSpec:target.spec,
@@ -9809,8 +9886,8 @@ function updateCloudStatus(text, color) {
         if(currentUser?.role!=='teacher') return;
         const t=getCurrentTeacher();
         const key=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
-        const m=parentTeacherMessagesData.find(x=>String(x.id)===String(id)&&String(x.teacherKey||'')===key);
-        if(!m){alert('لم يتم العثور على الرسالة.');return;}
+        const m=parentTeacherMessagesData.find(x=>String(x.id)===String(id)&&String(x.teacherKey||'')===key&&(x.senderRole||'parent')==='parent');
+        if(!m){alert('لم يتم العثور على رسالة ولي الأمر.');return;}
         const text=String(prompt('اكتب ردك على ولي الأمر:',m.response||'')||'').trim();
         if(!text)return;
         m.response=text;m.responseAt=new Date().toISOString();m.responseReadAt='';m.responseReadBy='';m.teacherReadAt=m.teacherReadAt||new Date().toISOString();
@@ -9825,6 +9902,43 @@ function updateCloudStatus(text, color) {
         if(index<0)return;
         if(!confirm('هل تريد حذف هذه الرسالة نهائياً؟'))return;
         parentTeacherMessagesData.splice(index,1);saveData();renderParentTeacherMessagesForTeacher();updateParentTeacherMessageIndicators();
+    }
+    function getTeacherMessageTargetStudents(){
+        return getTeacherHomeworkStudents().filter(x=>x && x.studentId);
+    }
+    function sendTeacherToParentsMessage(){
+        if(currentUser?.role!=='teacher') return;
+        const audience=String(document.getElementById('teacherParentMessageAudience')?.value||'all');
+        const text=String(document.getElementById('teacherParentMessageInput')?.value||'').trim();
+        if(!text){alert('اكتب الرسالة أولاً.');return;}
+        const students=getTeacherMessageTargetStudents();
+        let targets=students;
+        if(audience==='student'){
+            const idx=Number(document.getElementById('teacherParentMessageStudent')?.value);
+            if(!Number.isInteger(idx)||!students[idx]){alert('اختر الطالب المطلوب.');return;}
+            targets=[students[idx]];
+        }
+        if(!targets.length){alert('لا يوجد طلاب ضمن الصف المحدد.');return;}
+        const t=getCurrentTeacher();
+        const teacherKey=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
+        const now=new Date().toISOString();
+        const className=String(schoolData[Number(currentUser.selectedClassIndex)]?.name||students[0]?.className||'');
+        targets.forEach(st=>{
+            const parentKey=String(st.studentId||st.code||'').trim();
+            parentTeacherMessagesData.unshift({
+                id:createStableId('teachermsg'),senderRole:'teacher',direction:'teacher_to_parent',
+                parentKey,parentStudentId:String(st.studentId||''),parentCode:String(st.code||''),
+                parentName:'ولي أمر '+String(st.name||''),studentId:String(st.studentId||''),studentName:String(st.name||''),
+                classIndex:Number(st.classIndex),classId:String(st.classId||schoolData[st.classIndex]?.id||''),className:String(st.className||className||''),
+                teacherKey,teacherId:String(t?.id||currentUser.teacherId||''),teacherName:String(t?.name||currentUser.name||'المعلم'),teacherSpec:String(getCurrentTeacherSpec()||t?.spec||''),
+                message:text,createdAt:now,parentReadAt:'',parentReadBy:'',response:'',responseAt:'',responseReadAt:'',responseReadBy:'',teacherReadAt:now,teacherReadBy:String(currentUser.name||t?.name||'المعلم')
+            });
+        });
+        saveData();
+        try{ if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){ clearTimeout(cloudSaveTimer); saveCurrentCloudPayload(); } }catch(e){console.error(e);}
+        const input=document.getElementById('teacherParentMessageInput'); if(input)input.value='';
+        alert(audience==='all' ? `تم إرسال الرسالة إلى ${targets.length} ولي أمر ضمن الصف المحدد.` : 'تم إرسال الرسالة إلى ولي أمر الطالب المحدد.');
+        openParentTeacherMessagesForTeacher();
     }
     function renderParentTeacherMessagesForTeacher(){
         const box=document.getElementById('teacherParentMessagesList'); if(!box)return;
@@ -9845,9 +9959,13 @@ function updateCloudStatus(text, color) {
     function openParentTeacherMessagesForTeacher(){
         if(currentUser?.role!=='teacher')return;
         const old=document.getElementById('teacherParentMessagesModal');if(old)old.remove();
+        const students=getTeacherMessageTargetStudents();
+        const studentOptions=students.length?students.map((st,i)=>`<option value="${i}">${escapeGlobalSearchHTML(st.name)} — ${escapeGlobalSearchHTML(st.className||'-')}</option>`).join(''):'<option value="">لا يوجد طلاب في الصف المحدد</option>';
         const modal=document.createElement('div');modal.id='teacherParentMessagesModal';modal.className='modal';modal.style.cssText='display:flex;position:fixed;inset:0;z-index:2147483645;background:rgba(4,20,35,.78);padding:12px;align-items:center;justify-content:center;direction:rtl;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(900px,98vw);max-height:94vh;overflow:auto;padding:20px"><div class="pro-toolbar" style="justify-content:space-between"><div><h2 style="margin:0">📨 رسائل أولياء الأمور</h2><small>الرسائل الموجهة إليك من أولياء أمور طلاب الصفوف المخصصة لك.</small></div><button type="button" onclick="document.getElementById('teacherParentMessagesModal')?.remove()">✕</button></div><div id="teacherParentMessagesList"></div></div>`;
-        document.body.appendChild(modal);renderParentTeacherMessagesForTeacher();
+        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:20px"><div class="pro-toolbar" style="justify-content:space-between"><div><h2 style="margin:0">📨 رسائل أولياء الأمور</h2><small>استقبال الرسائل والرد عليها، وإرسال رسالة لجميع أولياء أمور الصف أو لولي أمر طالب محدد.</small></div><button type="button" onclick="document.getElementById('teacherParentMessagesModal')?.remove()">✕</button></div>
+        <div class="teacher-parent-compose"><h3 style="margin-top:0">📤 إرسال رسالة إلى أولياء الأمور</h3><div class="teacher-parent-compose-grid"><div><label>نوع الإرسال</label><select id="teacherParentMessageAudience" onchange="document.getElementById('teacherParentMessageStudentWrap').style.display=this.value==='student'?'block':'none'"><option value="all">جميع أولياء أمور طلاب الصف</option><option value="student">ولي أمر طالب محدد</option></select></div><div id="teacherParentMessageStudentWrap" style="display:none"><label>اختر الطالب</label><select id="teacherParentMessageStudent">${studentOptions}</select></div></div><label style="display:block;margin-top:10px">نص الرسالة</label><textarea id="teacherParentMessageInput" maxlength="1000" placeholder="اكتب الرسالة التي تريد إرسالها..."></textarea><div class="compose-actions"><button type="button" onclick="sendTeacherToParentsMessage()" style="background:#16a085;color:#fff;font-weight:900">📤 إرسال الرسالة</button></div></div>
+        <div id="teacherParentMessagesList"></div></div>`;
+        document.body.appendChild(modal);renderParentTeacherMessagesForTeacher();updateParentTeacherMessageIndicators();
     }
     function renderParentTeacherMessagePage(){
         if(currentUser?.role!=='parent')return;
@@ -9860,7 +9978,7 @@ function updateCloudStatus(text, color) {
         const history=getParentTeacherMessagesForParent();
         const page=document.createElement('div');page.id='parentTeacherMessagePage';page.className='parent-section-page';page.style.cssText='position:fixed;inset:0;z-index:100130;display:block;overflow:auto;background:var(--parent-bg,#f4f7fa);padding:12px;direction:rtl;';
         const teacherOptions=teachers.length?teachers.map(t=>`<option value="${escapeGlobalSearchHTML(t.key)}">${escapeGlobalSearchHTML(t.name)} — ${escapeGlobalSearchHTML(t.spec||'معلم الصف')}</option>`).join(''):'<option value="">لا يوجد معلمون مخصصون لهذا الصف</option>';
-        const historyHtml=history.slice(0,20).map(m=>`<div class="parent-teacher-message-card"><div class="parent-teacher-message-head"><div><b>👨‍🏫 ${escapeGlobalSearchHTML(m.teacherName||'-')}</b><div class="parent-teacher-message-meta">${escapeGlobalSearchHTML(m.createdAt?new Date(m.createdAt).toLocaleString('ar-IQ'):'')}</div></div>${m.response?'<span class="parent-reply-badge">تم الرد</span>':'<span class="parent-wait-badge">بانتظار الرد</span>'}</div><div class="parent-teacher-message-body"><b>رسالتك:</b><div>${escapeGlobalSearchHTML(m.message||'')}</div></div>${m.response?`<div class="parent-teacher-message-response"><b>رد المعلم:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small></div>`:''}</div>`).join('')||'<div class="pro-empty">لا توجد رسائل سابقة.</div>';
+        const historyHtml=history.slice(0,30).map(m=>{const incoming=String(m.senderRole||'parent')==='teacher';return `<div class="parent-teacher-message-card ${incoming?'parent-incoming-teacher-message':''}"><div class="parent-teacher-message-head"><div><b>${incoming?'📢 رسالة من المعلم':'👨‍🏫 '+escapeGlobalSearchHTML(m.teacherName||'-')}</b><div class="parent-teacher-message-meta">${escapeGlobalSearchHTML(m.createdAt?new Date(m.createdAt).toLocaleString('ar-IQ'):'')}</div></div>${incoming?'<span class="parent-reply-badge">رسالة واردة</span>':(m.response?'<span class="parent-reply-badge">تم الرد</span>':'<span class="parent-wait-badge">بانتظار الرد</span>')}</div><div class="parent-teacher-message-body"><b>${incoming?'رسالة المعلم:':'رسالتك:'}</b><div>${escapeGlobalSearchHTML(m.message||'')}</div></div>${m.response?`<div class="parent-teacher-message-response"><b>رد المعلم:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small></div>`:''}</div>`}).join('')||'<div class="pro-empty">لا توجد رسائل سابقة.</div>';
         page.innerHTML=`<div class="parent-section-page-inner parent-portal parent-portal-${String(f.student.gender||'').toLowerCase()==='female'?'female':'male'}"><div class="parent-section-page-head"><div><div class="parent-kicker">🏫 بوابة ولي الأمر</div><h2>💬 رسالة إلى معلم</h2><p>الطالب: <b>${escapeGlobalSearchHTML(f.student.name||'-')}</b> — الصف: <b>${escapeGlobalSearchHTML(f.classObj?.name||'-')}</b></p></div><button type="button" class="parent-section-back" onclick="document.getElementById('parentTeacherMessagePage')?.remove();document.getElementById('studentRoleDashboardModal')?.scrollTo?.({top:0,behavior:'smooth'});">↩ الرئيسية</button></div>
             <div class="pro-panel"><h3>📨 إرسال رسالة إلى معلم</h3><div class="parent-message-note">يسمح النظام بإرسال <b>رسالة واحدة فقط في اليوم</b> من ولي الأمر.</div><label>اختر المعلم المختص بالصف</label><select id="parentTeacherSelect" ${todayMsg?'disabled':''}>${teacherOptions}</select><label style="display:block;margin-top:10px">نص الرسالة</label><textarea id="parentTeacherMessageInput" rows="7" maxlength="1000" ${todayMsg?'disabled':''} placeholder="اكتب رسالتك للمعلم..."></textarea><div style="display:flex;justify-content:flex-start;margin-top:10px"><button type="button" onclick="sendParentTeacherMessage()" ${todayMsg?'disabled':''} style="background:#1976d2;color:#fff;font-weight:900">📨 إرسال الرسالة</button></div>${todayMsg?'<div class="parent-message-limit">✓ تم إرسال رسالة اليوم. يمكنك إرسال رسالة جديدة غداً.</div>':''}</div>
             <div class="pro-panel"><h3>📬 رسائلك وردود المعلمين</h3>${historyHtml}</div></div>`;
