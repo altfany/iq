@@ -1356,6 +1356,26 @@ table td,table th { line-height:1.55; }
 .announcement-compose-grid select:focus,.announcement-compose-grid textarea:focus{border-color:#8e44ad;box-shadow:0 0 0 3px rgba(142,68,173,.10)}
 .announcement-compose-actions{display:flex;align-items:center;gap:10px;margin-top:10px}.announcement-compose-actions button{border:0;color:#fff;border-radius:10px;padding:9px 16px;font-weight:800;cursor:pointer}.announcement-compose-actions span{font-size:11px;color:#8794a2}
 .announcement-list-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-weight:900;color:#243b53}.announcement-list-head small{font-weight:600;color:#8996a4}
+
+/* ===== تطوير مركز الرسائل العام والمراسلة بين المعلم وولي الأمر ===== */
+.announcement-tab-general{background:linear-gradient(135deg,#16a085,#1abc9c)!important;color:#fff!important}
+.announcement-tab-general.active{box-shadow:0 0 0 3px rgba(22,160,133,.16),0 8px 20px rgba(22,160,133,.20)!important}
+.parent-messages-teacher-unread{animation:parentTeacherInboxPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(231,76,60,.16),0 0 22px rgba(231,76,60,.72)!important}
+.general-message-unread{animation:parentTeacherInboxPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(22,160,133,.16),0 0 22px rgba(22,160,133,.72)!important}
+@keyframes parentTeacherInboxPulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.045);filter:brightness(1.2)}}
+.teacher-parent-compose{border:1px solid #dbe7f1;border-radius:16px;padding:14px;background:linear-gradient(180deg,#f8fbff,#fff);margin:12px 0 16px}
+.teacher-parent-compose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.teacher-parent-compose textarea{min-height:110px;resize:vertical}
+.teacher-parent-compose .compose-actions{display:flex;justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:10px}
+.parent-incoming-teacher-message{border-right:5px solid #16a085!important;background:#f4fffc!important}
+.general-announcement-card{border-right:5px solid #16a085!important}
+@media(prefers-reduced-motion:reduce){.parent-messages-teacher-unread,.general-message-unread{animation:none!important}}
+.parent-message-status{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}
+.parent-message-status.sent{background:#eef2f5;color:#66727d}
+.parent-message-status.delivered{background:#eaf4ff;color:#1976d2}
+.parent-message-status.read{background:#eafaf1;color:#16803c}
+
+
 .announcements-list{display:grid;gap:10px}.announcement-card{position:relative;border:1px solid #e0e7ef;border-radius:15px;padding:14px;background:#fff;box-shadow:0 6px 18px rgba(30,50,80,.06);overflow:hidden}.announcement-card:before{content:'';position:absolute;right:0;top:0;bottom:0;width:5px;background:#8e44ad}.announcement-card.teacher:before{background:#3498db}.announcement-card.parent:before{background:#16a085}.announcement-card-title{font-weight:900;color:#263b50;margin-bottom:5px}.announcement-card-message{font-size:14px;line-height:1.8;color:#334e68;white-space:pre-wrap}.announcement-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10px;color:#8a97a5}.announcement-badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:20px;background:#f0eafa;color:#6c5ce7;font-weight:800}.announcement-card-actions{margin-top:10px;text-align:left}.announcement-card-actions button{background:#e74c3c!important;color:#fff!important;border:0!important;border-radius:8px!important;padding:6px 10px!important;font-size:11px!important}.recipient-highlight{animation:announcementPulse 1.8s ease-in-out infinite}@keyframes announcementPulse{0%,100%{box-shadow:0 6px 18px rgba(142,68,173,.08)}50%{box-shadow:0 0 0 5px rgba(142,68,173,.10),0 12px 28px rgba(142,68,173,.18)}}
 @media(max-width:650px){.announcement-compose-grid{grid-template-columns:1fr}.announcement-compose-grid .full{grid-column:auto}.announcement-list-head{align-items:flex-start;gap:5px;flex-direction:column}}
 /* إشعار مضيء يظهر للمستخدم عند الدخول */
@@ -1523,7 +1543,7 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
       'teachersData', 'announcementsData', 'complaintsData', 'homeworkData',
       'subjectsData', 'assistantsData', 'managerNotesData',
       'assistantActionNotificationsData', 'guestSupervisorsData', 'monitorsData',
-      'monitorNotesData', 'monitorInventoryReportsData', 'monitorMessagesData',
+      'monitorNotesData', 'monitorInventoryReportsData', 'monitorMessagesData', 'parentTeacherMessagesData',
       'attendanceData', 'auditLog'
     ];
     arrayFields.forEach(field => {
@@ -1561,7 +1581,7 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
       teachersData: [], announcementsData: [], complaintsData: [], homeworkData: [],
       subjectsData: [], assistantsData: [], managerNotesData: [],
       assistantActionNotificationsData: [], guestSupervisorsData: [], monitorsData: [],
-      monitorNotesData: [], monitorInventoryReportsData: [], monitorMessagesData: [],
+      monitorNotesData: [], monitorInventoryReportsData: [], monitorMessagesData: [], parentTeacherMessagesData: [],
       attendanceData: [], auditLog: [], teachersAbsenceData: {}
     };
     Object.keys(defaults).forEach(k => {
@@ -2217,6 +2237,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
+            <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
             <button onclick="openAnnouncementsModal()" id="btnAnnouncementsNav" style="background: #8e44ad;">🔔 التنبيهات والرسائل</button>
             <button onclick="openComplaintsManagerModal()" id="btnComplaintsNav" style="background:#c0398a;">📮 الشكاوي</button>
             <button onclick="openComplaintSenderModal()" id="btnTeacherComplaintsNav" style="background:#8e44ad;display:none;font-weight:900;">📨 إرسال شكوى إلى المدير</button>
@@ -2225,7 +2246,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
             <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
             <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقب</button>
-            <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none; padding:10px 14px; font-size:13px; min-height:40px;">📊 ملخص الحضور الشهري</button>
+            <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none;">📊 ملخص الحضور الشهري</button>
             <button onclick="openAddModal()" id="btnAddClassNav">+ إضافة صف جديد</button>
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
         </div>
@@ -2606,6 +2627,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         <div class="announcement-tabs">
             <button id="annTabTeachers" class="announcement-tab active" onclick="switchAnnouncementTab('teachers')">👨‍🏫 رسائل المعلمين</button>
             <button id="annTabParents" class="announcement-tab" onclick="switchAnnouncementTab('parents')">👨‍👩‍👧 رسائل أولياء الأمور</button>
+            <button id="annTabGeneral" class="announcement-tab announcement-tab-general" onclick="switchAnnouncementTab('general')">📢 رسالة عامة</button>
         </div>
         <div id="announcementAdminPanel" class="announcement-admin-panel">
             <div class="announcement-compose-head">✍️ إرسال تنبيه جديد</div>
@@ -2626,6 +2648,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                         <option value="teacher">معلم محدد</option>
                         <option value="all_parents">جميع أولياء الأمور</option>
                         <option value="parent">ولي أمر طالب محدد</option>
+                        <option value="all_users">📢 رسالة عامة — جميع الموجودين</option>
                     </select>
                 </div>
                 <div class="form-group pro-field" id="announcementRecipientGroup" style="display:none;">
@@ -3287,6 +3310,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let announcementsData = JSON.parse(cloudOnlyStorage.getItem('announcementsData')) || [];
     let complaintsData = JSON.parse(cloudOnlyStorage.getItem('complaintsData')) || [];
     if (!Array.isArray(complaintsData)) complaintsData = [];
+    let parentTeacherMessagesData = JSON.parse(cloudOnlyStorage.getItem('parentTeacherMessagesData')) || [];
+    if (!Array.isArray(parentTeacherMessagesData)) parentTeacherMessagesData = [];
     let homeworkData = JSON.parse(cloudOnlyStorage.getItem('homeworkData')) || [];
     if (!Array.isArray(homeworkData)) homeworkData = [];
     let subjectsData = JSON.parse(cloudOnlyStorage.getItem('subjectsData')) || [];
@@ -3830,6 +3855,7 @@ function acknowledgeAnnouncement(id) {
             teachersAbsenceData,
             announcementsData,
             complaintsData,
+            parentTeacherMessagesData,
             homeworkData,
             subjectsData,
             attendanceData: (typeof window.__professionalAttendanceDataForCloud === 'function' ? window.__professionalAttendanceDataForCloud() : []),
@@ -4037,6 +4063,7 @@ function updateCloudStatus(text, color) {
         if (cloud.teachersAbsenceData !== undefined) teachersAbsenceData = cloud.teachersAbsenceData || {};
         if (cloud.announcementsData !== undefined) announcementsData = Array.isArray(cloud.announcementsData) ? cloud.announcementsData : [];
                 if (cloud.complaintsData !== undefined) complaintsData = Array.isArray(cloud.complaintsData) ? cloud.complaintsData : [];
+                if (cloud.parentTeacherMessagesData !== undefined) parentTeacherMessagesData = Array.isArray(cloud.parentTeacherMessagesData) ? cloud.parentTeacherMessagesData : [];
                 pruneExpiredComplaintsData();
         if (cloud.homeworkData !== undefined) homeworkData = Array.isArray(cloud.homeworkData) ? cloud.homeworkData : [];
         if (cloud.subjectsData !== undefined) subjectsData = Array.isArray(cloud.subjectsData) ? cloud.subjectsData : [];
@@ -4119,7 +4146,7 @@ function updateCloudStatus(text, color) {
         if (realtimeUnsubscribe) { try{realtimeUnsubscribe();}catch(_){} realtimeUnsubscribe=null; }
         try { if (typeof window.__loadProfessionalAttendanceFromCloud === 'function') window.__loadProfessionalAttendanceFromCloud([]); } catch(_) {}
         try { if (typeof window.__loadProfessionalAuditFromCloud === 'function') window.__loadProfessionalAuditFromCloud([]); } catch(_) {}
-        schoolData=[]; teachersData=[]; teachersAbsenceData={}; announcementsData=[]; complaintsData=[]; homeworkData=[]; subjectsData=[]; assistantsData=[]; guestSupervisorsData=[]; monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[];
+        schoolData=[]; teachersData=[]; teachersAbsenceData={}; announcementsData=[]; complaintsData=[]; parentTeacherMessagesData=[]; homeworkData=[]; subjectsData=[]; assistantsData=[]; guestSupervisorsData=[]; monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[];
         alert('⚠️ تم تنفيذ ترسيت عام من جهاز آخر. تم تجاهل ومسح أي نسخة قديمة من هذا الجهاز لمنع رجوع البيانات.');
         window.location.reload();
     }
@@ -4229,6 +4256,8 @@ function updateCloudStatus(text, color) {
             if (typeof window.__loadProfessionalAttendanceFromCloud === 'function' && cloud.attendanceData !== undefined) window.__loadProfessionalAttendanceFromCloud(cloud.attendanceData);
             if (typeof window.__loadProfessionalAuditFromCloud === 'function' && cloud.auditLog !== undefined) window.__loadProfessionalAuditFromCloud(cloud.auditLog);
             updateCloudStatus('مزامنة مباشرة ✓', '#16803c');
+            try{updateParentTeacherMessageIndicators();}catch(e){}
+            try{if(document.getElementById('teacherParentMessagesModal'))renderParentTeacherMessagesForTeacher();}catch(e){}
         });
     }
 
@@ -4236,7 +4265,7 @@ function updateCloudStatus(text, color) {
         return {
             format:'school-system-backup', version:3, exportedAt:new Date().toISOString(),
             resetGeneration:String(factoryResetGeneration || '0'),
-            schoolData, teachersData, teachersAbsenceData, announcementsData, homeworkData, subjectsData, adminCredentials, printManagerName, printSchoolName, studyYearFrom, studyYearTo, assistantsData, guestSupervisorsData, monitorsData, monitorNotesData, monitorInventoryReportsData, monitorMessagesData,
+            schoolData, teachersData, teachersAbsenceData, announcementsData, complaintsData, parentTeacherMessagesData, homeworkData, subjectsData, adminCredentials, printManagerName, printSchoolName, studyYearFrom, studyYearTo, assistantsData, guestSupervisorsData, monitorsData, monitorNotesData, monitorInventoryReportsData, monitorMessagesData,
             attendanceData:(typeof window.__professionalAttendanceDataForCloud==='function'?window.__professionalAttendanceDataForCloud():[]),
             auditLog:(typeof window.__professionalAuditLogForCloud==='function'?window.__professionalAuditLogForCloud():[])
         };
@@ -4310,7 +4339,7 @@ function updateCloudStatus(text, color) {
 
     function getTeacherAssignedClassIndicesForRecord(teacher) {
         return getTeacherAssignedClassIdsForRecord(teacher)
-            .map(id => schoolData.findIndex(cls => cls && String(cls.id || '').trim() === String(id || '').trim()))
+            .map(id => schoolData.findIndex(cls => cls && cls.id === id))
             .filter(idx => idx >= 0);
     }
 
@@ -4412,33 +4441,14 @@ function updateCloudStatus(text, color) {
         if(!getTeacherAssignedClassIdsForRecord(t).map(String).includes(classId) || !getTeacherSubjectsForClass(t,classId).includes(spec)){alert('هذا الصف أو هذه المادة غير مسموح بها لهذا المعلم.');return;}
         const p=pendingTeacherLogin; pendingTeacherLogin=null;
         const modal=document.getElementById('teacherSpecialtyLoginModal'); if(modal) modal.style.display='none';
-        // حفظ الاختيار قبل إغلاق نافذة الدخول، ثم فتح الصف المحدد مباشرة.
         completeTeacherLogin(p.teacherObj,p.enteredCode,spec,classId);
     }
     function completeTeacherLogin(teacherObj, enteredCode, spec, classId){
         const assignedClassIndices=getTeacherAssignedClassIndicesForRecord(teacherObj);
-        const normalizedClassId=String(classId||'').trim();
-        const normalizedSubject=String(spec||'عام').trim();
-        const safeSelectedClassIndex=schoolData.findIndex(c=>String(c?.id||'').trim()===normalizedClassId);
-        if(safeSelectedClassIndex < 0){
-            alert('تعذر العثور على الصف المحدد. أعد اختيار الصف من القائمة.');
-            return;
-        }
-        currentUser={
-            role:'teacher',
-            name:teacherObj.name,
-            teacherId:teacherObj.id||'',
-            assignedClassIds:assignedClassIndices.map(i=>schoolData[i]?.id).filter(Boolean),
-            assignedClassIndices,
-            teacherSubject:normalizedSubject,
-            selectedClassId:normalizedClassId,
-            selectedClassIndex:safeSelectedClassIndex,
-            selectedTeacherClassSubject:{classId:normalizedClassId,subject:normalizedSubject}
-        };
+        const selectedClassIndex=schoolData.findIndex(c=>String(c?.id||'')===String(classId||''));
+        currentUser={role:'teacher',name:teacherObj.name,teacherId:teacherObj.id||'',assignedClassIds:assignedClassIndices.map(i=>schoolData[i]?.id).filter(Boolean),assignedClassIndices,teacherSubject:String(spec||'عام').trim(),selectedClassId:String(classId||''),selectedClassIndex,selectedTeacherClassSubject:{classId:String(classId||''),subject:String(spec||'').trim()}};
         applyUserPermissions();
-        const login=document.getElementById('loginOverlay'); if(login) login.style.display='none';
-        // دخول مباشر وفوري إلى الصف الذي اختاره المعلم.
-        selectClass(safeSelectedClassIndex);
+        document.getElementById('loginOverlay').style.display='none';
         setTimeout(function(){ showLiveAnnouncements(); showComplaintResponses(); },250);
     }
 
@@ -5008,6 +5018,7 @@ function updateCloudStatus(text, color) {
         let btnLogNavTab = document.getElementById('btnLogNavTab');
         let btnTeachersAbsenceNav = document.getElementById('btnTeachersAbsenceNav');
         let btnHomeworkNav = document.getElementById('btnHomeworkNav');
+        let btnTeacherParentMessagesNav = document.getElementById('btnTeacherParentMessagesNav');
         let btnTeacherMonthlyReportNav = document.getElementById('btnTeacherMonthlyReportNav');
         let btnDailySchoolStudentReportNav = document.getElementById('btnDailySchoolStudentReportNav');
         let btnAdminManagementNav = document.getElementById('btnAdminManagementNav');
@@ -5121,7 +5132,7 @@ function updateCloudStatus(text, color) {
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
-            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
+            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
             const professionalQuickMenu=document.getElementById('professionalQuickMenu'); if(professionalQuickMenu) professionalQuickMenu.style.display='none';
             const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
@@ -5156,6 +5167,7 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNavTeacher=document.getElementById('btnSystemResetNav'); if(btnSystemResetNavTeacher) btnSystemResetNavTeacher.style.display='none';
             const btnMonitorsNavTeacher=document.getElementById('btnMonitorsNav'); if(btnMonitorsNavTeacher) btnMonitorsNavTeacher.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'inline-block';
+            if(btnTeacherParentMessagesNav) btnTeacherParentMessagesNav.style.display = 'inline-block';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'inline-block';
             if(btnDailySchoolStudentReportNav) btnDailySchoolStudentReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
@@ -5375,21 +5387,32 @@ function updateCloudStatus(text, color) {
         if(a==='all_teachers') return 'جميع المعلمين';
         if(a==='teacher') return 'معلم محدد';
         if(a==='all_parents') return 'جميع أولياء الأمور';
+        if(a==='all_users') return 'رسالة عامة — جميع الموجودين';
         return 'ولي أمر طالب محدد';
     }
     function openAnnouncementsModal(){
         if(!currentUser) return;
-        currentAnnouncementTab = currentUser.role==='parent' ? 'parents' : 'teachers';
+        currentAnnouncementTab = currentUser.role==='parent' ? 'general' : 'teachers';
         document.getElementById('announcementsModal').style.display='flex';
         const adminPanel=document.getElementById('announcementAdminPanel');
-        adminPanel.style.display=currentUser.role==='admin'?'block':'none';
-        if(currentUser.role==='admin') updateAnnouncementRecipientOptions();
+        const isPrimaryAdmin=!!(currentUser.role==='admin' && currentUser.isPrimaryAdmin);
+        if(adminPanel) adminPanel.style.display=isPrimaryAdmin?'block':'none';
+        const parentsTab=document.getElementById('annTabParents');
+        const teachersTab=document.getElementById('annTabTeachers');
+        const generalTab=document.getElementById('annTabGeneral');
+        if(parentsTab) parentsTab.style.display=currentUser.role==='teacher'?'none':'';
+        if(teachersTab) teachersTab.style.display=currentUser.role==='parent'?'none':'';
+        if(generalTab) generalTab.style.display='inline-flex';
+        if(isPrimaryAdmin) updateAnnouncementRecipientOptions();
         renderAnnouncementsList();
+        updateGeneralAnnouncementIndicators();
     }
     function switchAnnouncementTab(tab){
         currentAnnouncementTab=tab;
-        document.getElementById('annTabTeachers').classList.toggle('active',tab==='teachers');
-        document.getElementById('annTabParents').classList.toggle('active',tab==='parents');
+        const t=document.getElementById('annTabTeachers'), p=document.getElementById('annTabParents'), g=document.getElementById('annTabGeneral');
+        if(t)t.classList.toggle('active',tab==='teachers');
+        if(p)p.classList.toggle('active',tab==='parents');
+        if(g)g.classList.toggle('active',tab==='general');
         renderAnnouncementsList();
     }
     function updateAnnouncementRecipientOptions(){
@@ -5459,6 +5482,7 @@ function updateCloudStatus(text, color) {
     function sendAnnouncement(){
         if(!currentUser || currentUser.role!=='admin') return;
         const audience=document.getElementById('announcementAudience').value;
+        if(audience==='all_users' && !currentUser.isPrimaryAdmin){ alert('الرسالة العامة متاحة لمدير النظام الأساسي فقط.'); return; }
         const type=document.getElementById('announcementType')?.value||'normal';
         const message=document.getElementById('announcementMessageInput').value.trim();
         if(!message){alert('اكتب نص الرسالة أولاً.');return;}
@@ -5506,7 +5530,7 @@ function updateCloudStatus(text, color) {
         if(currentUser.role==='teacher'){
             const teacherId=String(currentUser.teacherId||currentUser.id||'');
             const teacherName=String(currentUser.name||'').trim();
-            return a.audience==='all_teachers' ||
+            return a.audience==='all_users' || a.audience==='all_teachers' ||
                    (a.audience==='teacher' &&
                     (String(a.targetId||'')===teacherId || String(a.targetId||'')===teacherName || String(a.targetName||'')===teacherName));
         }
@@ -5518,7 +5542,7 @@ function updateCloudStatus(text, color) {
                 ? {key:`${currentUser.classIndex}:${currentUser.deskIndex}:${currentUser.studentSnapshot.slot||''}`,name:studentName}
                 : getAllStudentsForAnnouncements().find(x=>x.name===studentName);
 
-            return a.audience==='all_parents' ||
+            return a.audience==='all_users' || a.audience==='all_parents' ||
                    (a.audience==='parent' && (
                        (student && String(a.targetId||'')===String(student.key||'')) ||
                        (studentId && String(a.targetStudentId||'')===studentId) ||
@@ -5560,10 +5584,22 @@ function updateCloudStatus(text, color) {
 
     function renderAnnouncementsList(){
         const c=document.getElementById('announcementsList'); if(!c) return;
-        let list=announcementsData.filter(a=> currentUser.role==='admin' ? (currentAnnouncementTab==='teachers'?a.audience==='all_teachers'||a.audience==='teacher':a.audience==='all_parents'||a.audience==='parent') : announcementBelongsToCurrentUser(a));
+        let list;
+        if(currentUser.role==='admin'){
+            list=announcementsData.filter(a=> currentAnnouncementTab==='teachers' ? (a.audience==='all_teachers'||a.audience==='teacher') : currentAnnouncementTab==='parents' ? (a.audience==='all_parents'||a.audience==='parent') : currentAnnouncementTab==='general' ? a.audience==='all_users' : false);
+        }else if(currentAnnouncementTab==='general'){
+            list=announcementsData.filter(a=>a.audience==='all_users');
+        }else if(currentAnnouncementTab==='teachers'){
+            list=announcementsData.filter(a=>announcementBelongsToCurrentUser(a) && (a.audience==='all_teachers'||a.audience==='teacher'));
+        }else if(currentAnnouncementTab==='parents'){
+            list=announcementsData.filter(a=>announcementBelongsToCurrentUser(a) && (a.audience==='all_parents'||a.audience==='parent'));
+        }else{
+            list=[];
+        }
         if(!list.length){c.innerHTML='<div class="pro-empty">🔔<br><strong>لا توجد رسائل</strong><br><span>لا توجد تنبيهات ضمن هذا القسم حالياً.</span></div>';return;}
+        if(currentAnnouncementTab==='general' && currentUser.role!=='admin'){ list.filter(a=>a.audience==='all_users').forEach(a=>markGeneralAnnouncementRead(a.id)); updateGeneralAnnouncementIndicators(); }
         c.innerHTML=list.map(a=>`
-            <div class="announcement-card ${a.audience.includes('parent')?'parent':'teacher'}">
+            <div class="announcement-card ${a.audience==='all_users'?'general-announcement-card':(a.audience.includes('parent')?'parent':'teacher')}">
                 <div class="announcement-card-title">🔔 ${escapeAnnouncementHTML(getAnnouncementRecipientLabel(a.audience))}${a.targetName?' — '+escapeAnnouncementHTML(a.targetName):''}</div>
                 ${renderAnnouncementTypeBadge(a)}
                 <div class="announcement-card-message">${escapeAnnouncementHTML(a.message)}</div>
@@ -6276,7 +6312,7 @@ function updateCloudStatus(text, color) {
             }
         });
         const cardsContainer=document.getElementById('monthlyReportSummaryCards');
-        cardsContainer.innerHTML=`<div style="flex:1;background:#fdedec;border:1px solid #c0392b;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#c0392b;font-weight:bold;">أيام الغياب ❌</div><div style="font-size:18px;font-weight:bold;color:#c0392b;margin-top:4px;">${absentCount}</div></div><div style="flex:1;background:#fef9e7;border:1px solid #f39c12;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#d35400;font-weight:bold;">أيام الإجازة 🏖️</div><div style="font-size:18px;font-weight:bold;color:#d35400;margin-top:4px;">${leaveCount}</div></div>`;
+        cardsContainer.innerHTML=`<div style="flex:1;background:#e8f8f5;border:1px solid #27ae60;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#27ae60;font-weight:bold;">أيام الحضور ✔️</div><div style="font-size:18px;font-weight:bold;color:#27ae60;margin-top:4px;">${presentCount}</div></div><div style="flex:1;background:#fdedec;border:1px solid #c0392b;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#c0392b;font-weight:bold;">أيام الغياب ❌</div><div style="font-size:18px;font-weight:bold;color:#c0392b;margin-top:4px;">${absentCount}</div></div><div style="flex:1;background:#fef9e7;border:1px solid #f39c12;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#d35400;font-weight:bold;">أيام الإجازة 🏖️</div><div style="font-size:18px;font-weight:bold;color:#d35400;margin-top:4px;">${leaveCount}</div></div>`;
         const tbody=document.getElementById('teacherMonthlyDetailsBody');
         tbody.innerHTML='';
         if(!teacherName){tbody.innerHTML='<tr><td colspan="2">اختر معلماً أولاً.</td></tr>';return;}
@@ -7262,13 +7298,6 @@ function updateCloudStatus(text, color) {
         if (nav) nav.style.display = '';
 
         currentClassIndex = null;
-        // عند رجوع المعلم إلى الصفوف، نلغي قيد الصف الذي كان مختاراً في جلسة الدخول
-        // حتى تظهر له جميع الصفوف المسموحة له، ويمكنه اختيار صف آخر بشكل صحيح.
-        if(currentUser && currentUser.role==='teacher'){
-            currentUser.selectedClassId='';
-            currentUser.selectedClassIndex=-1;
-            currentUser.selectedTeacherClassSubject=null;
-        }
         renderClassesNav();
     }
 
@@ -7277,7 +7306,7 @@ function updateCloudStatus(text, color) {
         if (currentUser?.role === 'parent' && Number(index) !== Number(currentUser.classIndex)) { alert('لا يمكنك مشاهدة بيانات أي صف أو طالب آخر.'); return; }
         if (currentUser && currentUser.role === 'teacher') {
             const selectedClassId = String(currentUser.selectedClassId || '').trim();
-            if (selectedClassId && String(schoolData[index]?.id || '').trim() !== selectedClassId) {
+            if (selectedClassId && String(schoolData[index]?.id || '') !== selectedClassId) {
                 alert('عذراً، هذا الصف ليس الصف المحدد عند دخول المعلم.');
                 return;
             }
@@ -9580,8 +9609,458 @@ function updateCloudStatus(text, color) {
         return Array.from(byDate.values()).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     }
 
+    /* ===== تنبيهات أزرار بوابة ولي الأمر: واجب / غياب / درجة / سلوك ===== */
+    const PARENT_ACTIVITY_STORAGE_KEY = 'parentPortalSectionSeen_v1';
+    let parentActivityPulseTimer = null;
+
+    function getParentActivityStorage(){
+        try{
+            const raw=localStorage.getItem(PARENT_ACTIVITY_STORAGE_KEY);
+            const obj=raw?JSON.parse(raw):{};
+            return obj&&typeof obj==='object'?obj:{};
+        }catch(e){ return {}; }
+    }
+    function setParentActivityStorage(obj){
+        try{ localStorage.setItem(PARENT_ACTIVITY_STORAGE_KEY,JSON.stringify(obj)); }catch(e){}
+    }
+    function getParentActivityStudentKey(){
+        if(!currentUser||currentUser.role!=='parent') return '';
+        return String(currentUser.studentId||currentUser.code||currentUser.studentSnapshot?.id||currentUser.name||'').trim();
+    }
+    function parentActivityNowSignature(section){
+        if(currentUser?.role!=='parent') return '';
+        const f=currentStudentForDashboard();
+        if(!f) return '';
+        const liveClass=schoolData[f.classIndex]||f.classObj||{};
+        const studentName=String(f.student?.name||'').trim();
+        const studentId=String(f.student?.id||currentUser.studentId||'').trim();
+        const cleanTime=v=>{const t=new Date(v||'').getTime();return Number.isFinite(t)?t:0;};
+
+        if(section==='grades'){
+            const rows=ensureStudentGrades(liveClass).filter(g=>
+                String(g.studentName||'').trim()===studentName ||
+                String(g.studentKey||'')===String(f.student.deskIndex+':'+f.student.slot)
+            );
+            return rows.map(g=>[String(g.id||g.studentKey||g.subject||''),cleanTime(g.updatedAt||g.modifiedAt||g.createdAt),String(g.score??''),String(g.maxScore??''),String(g.subject||'')].join('|')).sort().join('||');
+        }
+        if(section==='homework'){
+            const classId=String(liveClass.id||'');
+            const rows=homeworkData.filter(h=>{
+                if(!h)return false;
+                if(h.audience==='student')return String(h.targetCode||'')===String(currentUser.code||'');
+                if(h.audience!=='all')return false;
+                const hc=String(h.classId||'');
+                if(hc)return hc===classId;
+                if(h.classIndex!=null&&f.classIndex!=null)return Number(h.classIndex)===Number(f.classIndex);
+                return true;
+            });
+            return rows.map(h=>[String(h.id||h.title||''),cleanTime(h.updatedAt||h.createdAt),String(h.date||''),String(h.title||'')].join('|')).sort().join('||');
+        }
+        if(section==='behavior'){
+            const key=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
+            const behavior=liveClass.behaviorNotes?.[key];
+            const levels=Array.isArray(liveClass.studentLevels?.[key])?liveClass.studentLevels[key]:[];
+            return JSON.stringify({updated:cleanTime(liveClass.behaviorUpdatedAt?.[key]),behavior:behavior||'',levels});
+        }
+        if(section==='absence'){
+            let records=[];
+            try{records=getParentAttendanceHistory(f,liveClass,studentId,studentName,ensureParentAbsencePageReset(studentId))||[];}catch(e){records=[];}
+            return records.map(r=>[String(r.id||r.date||''),String(r.date||''),String(r.status||''),cleanTime(r.updatedAt||r.createdAt||r.date)].join('|')).sort().join('||');
+        }
+        return '';
+    }
+    function ensureParentActivityBaseline(){
+        const key=getParentActivityStudentKey(); if(!key)return;
+        const store=getParentActivityStorage();
+        if(!store[key]){
+            store[key]={grades:parentActivityNowSignature('grades'),absence:parentActivityNowSignature('absence'),behavior:parentActivityNowSignature('behavior'),homework:parentActivityNowSignature('homework'),initializedAt:new Date().toISOString()};
+            setParentActivityStorage(store);
+        }
+    }
+    function isParentActivityUnread(section){
+        const key=getParentActivityStudentKey(); if(!key)return false;
+        const store=getParentActivityStorage(); if(!store[key])return false;
+        return parentActivityNowSignature(section)!==String(store[key][section]??'');
+    }
+    function markParentSectionViewed(section){
+        const key=getParentActivityStudentKey();
+        if(!key||!['grades','absence','behavior','homework'].includes(section))return;
+        const store=getParentActivityStorage(); if(!store[key])store[key]={};
+        store[key][section]=parentActivityNowSignature(section); store[key].lastViewedAt=new Date().toISOString();
+        setParentActivityStorage(store); updateParentActivityButtonStates();
+    }
+    function updateParentActivityButtonStates(){
+        const root=document.getElementById('studentRoleDashboardModal'); if(!root)return;
+        const map={absence:'parentActionAbsence',grades:'parentActionGrades',behavior:'parentActionBehavior',homework:'parentActionHomework'};
+        Object.entries(map).forEach(([section,id])=>{
+            const btn=document.getElementById(id); if(!btn)return;
+            const unread=isParentActivityUnread(section);
+            btn.classList.toggle('parent-activity-unread',unread);
+            btn.setAttribute('aria-label',unread?'يوجد تحديث جديد — اضغط للمشاهدة':btn.textContent.trim());
+        });
+    }
+    function startParentActivityPulse(){
+        if(parentActivityPulseTimer)clearInterval(parentActivityPulseTimer);
+        ensureParentActivityBaseline(); updateParentActivityButtonStates();
+        parentActivityPulseTimer=setInterval(()=>{
+            if(currentUser?.role!=='parent'||!document.getElementById('studentRoleDashboardModal')){clearInterval(parentActivityPulseTimer);parentActivityPulseTimer=null;return;}
+            updateParentActivityButtonStates();
+        },3000);
+    }
+
+
+    // ===== الرسالة العامة من مدير النظام =====
+    function getGeneralAnnouncementsForCurrentUser(){
+        if(!currentUser) return [];
+        return (Array.isArray(announcementsData)?announcementsData:[]).filter(a=>a && a.audience==='all_users').sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    }
+    function getGeneralAnnouncementReaderKey(){
+        if(!currentUser)return '';
+        if(currentUser.role==='teacher') return `teacher:${String(currentUser.teacherId||currentUser.id||currentUser.name||'')}`;
+        if(currentUser.role==='parent') return `parent:${String(currentUser.studentId||currentUser.code||currentUser.name||'')}`;
+        if(currentUser.role==='admin') return currentUser.isAssistant ? `assistant:${String(currentUser.assistantId||currentUser.name||'')}` : `admin:${String(currentUser.name||'')}`;
+        return `${String(currentUser.role||'user')}:${String(currentUser.name||'')}`;
+    }
+    function getUnreadGeneralAnnouncementsForCurrentUser(){
+        const key=getGeneralAnnouncementReaderKey(); if(!key)return [];
+        return getGeneralAnnouncementsForCurrentUser().filter(a=>!(Array.isArray(a.readBy)&&a.readBy.some(r=>String(r?.key||'')===key)));
+    }
+    function updateGeneralAnnouncementIndicators(){
+        const btn=document.getElementById('btnAnnouncementsNav'); if(!btn)return;
+        const unread=getUnreadGeneralAnnouncementsForCurrentUser();
+        const has=unread.length>0;
+        btn.classList.toggle('general-message-unread',has);
+        btn.title=has?`يوجد ${unread.length} رسالة عامة جديدة`:'التنبيهات والرسائل';
+        if(has)btn.setAttribute('aria-label',`يوجد ${unread.length} رسالة عامة جديدة`); else btn.removeAttribute('aria-label');
+    }
+    function markGeneralAnnouncementRead(id){
+        if(!currentUser)return;
+        const a=announcementsData.find(x=>String(x?.id||'')===String(id)); if(!a)return;
+        const key=getGeneralAnnouncementReaderKey(); if(!key)return;
+        if(!Array.isArray(a.readBy))a.readBy=[];
+        if(!a.readBy.some(r=>String(r?.key||'')===key)) a.readBy.push({key,name:String(currentUser.name||'مستخدم'),readAt:new Date().toISOString(),role:currentUser.role});
+        saveData();
+    }
+
+    // ===== رسائل أولياء الأمور إلى المعلمين =====
+    const PARENT_TEACHER_MESSAGE_DAILY_LIMIT = 1;
+    let parentTeacherMessageIndicatorTimer = null;
+    let parentTeacherMessageTeacherSeen = {};
+    let parentTeacherMessageParentSeen = {};
+
+    function getParentTeacherMessageParentKey(){
+        if(currentUser?.role!=='parent') return '';
+        const f=currentStudentForDashboard();
+        return String(currentUser.studentId||currentUser.code||f?.student?.id||currentUser.name||'').trim();
+    }
+    function getParentTeacherMessageTeacherKey(teacher){
+        return String(teacher?.id||teacher?.name||'').trim();
+    }
+    function getParentTeacherMessagesForParent(){
+        const key=getParentTeacherMessageParentKey();
+        if(!key) return [];
+        return (Array.isArray(parentTeacherMessagesData)?parentTeacherMessagesData:[])
+            .filter(m=>m && String(m.parentKey||'')===key)
+            .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    }
+    function getParentTeacherMessagesForTeacher(){
+        if(currentUser?.role!=='teacher') return [];
+        const t=getCurrentTeacher();
+        const key=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
+        if(!key) return [];
+        return (Array.isArray(parentTeacherMessagesData)?parentTeacherMessagesData:[])
+            .filter(m=>m && String(m.teacherKey||'')===key && (m.senderRole||'parent')==='parent')
+            .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    }
+    function parentTeacherMessageTodayKey(v){
+        const d=v?new Date(v):new Date();
+        return Number.isFinite(d.getTime()) ? getFormattedDate(d) : getFormattedDate();
+    }
+    function getParentTeacherMessageSentToday(teacherKey){
+        const parentKey=getParentTeacherMessageParentKey();
+        if(!parentKey) return null;
+        const targetTeacherKey=String(teacherKey||'').trim();
+        if(!targetTeacherKey) return null;
+        const today=parentTeacherMessageTodayKey();
+        return (parentTeacherMessagesData||[]).find(m=>m && (m.senderRole||'parent')==='parent' && String(m.parentKey||'')===parentKey && String(m.teacherKey||'')===targetTeacherKey && parentTeacherMessageTodayKey(m.createdAt)===today) || null;
+    }
+    function cleanupParentTeacherMessagesEveryTwoDays(){
+        const cutoff=Date.now()-(48*60*60*1000);
+        if(!Array.isArray(parentTeacherMessagesData)||!parentTeacherMessagesData.length) return false;
+        const before=parentTeacherMessagesData.length;
+        parentTeacherMessagesData=parentTeacherMessagesData.filter(m=>{
+            const t=Date.parse(m?.createdAt||'');
+            return !Number.isFinite(t) || t>=cutoff;
+        });
+        if(parentTeacherMessagesData.length!==before){
+            saveData();
+            try{
+                if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){
+                    clearTimeout(cloudSaveTimer); saveCurrentCloudPayload();
+                }
+            }catch(e){console.error('Parent teacher messages cleanup failed:',e);}
+            return true;
+        }
+        return false;
+    }
+    function getUnreadParentTeacherMessagesForParent(){
+        return getParentTeacherMessagesForParent().filter(m=>String(m.senderRole||'parent')==='teacher' && !m.parentReadAt);
+    }
+    function getUnreadParentTeacherMessagesForTeacher(){
+        return getParentTeacherMessagesForTeacher().filter(m=>!m.teacherReadAt);
+    }
+    function markParentTeacherMessageTeacherRead(id){
+        if(currentUser?.role!=='teacher') return;
+        const t=getCurrentTeacher(), key=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
+        const m=parentTeacherMessagesData.find(x=>String(x.id)===String(id)&&String(x.teacherKey||'')===key);
+        if(!m || m.teacherReadAt) return;
+        m.teacherReadAt=new Date().toISOString();
+        m.teacherReadBy=String(currentUser.name||t?.name||'المعلم');
+        saveData();
+    }
+    function markParentTeacherMessageParentRead(id){
+        if(currentUser?.role!=='parent') return;
+        const key=getParentTeacherMessageParentKey();
+        const m=parentTeacherMessagesData.find(x=>String(x.id)===String(id)&&String(x.parentKey||'')===key);
+        if(!m || String(m.senderRole||'parent')!=='teacher' || m.parentReadAt) return;
+        m.parentReadAt=new Date().toISOString();
+        m.parentReadBy=String(currentUser.name||'ولي الأمر');
+        saveData();
+    }
+    function getParentTeachersForCurrentStudent(){
+        if(currentUser?.role!=='parent') return [];
+        const f=currentStudentForDashboard();
+        if(!f) return [];
+        const cls=f.classObj||schoolData[f.classIndex]||{};
+        const classId=String(cls.id||'');
+        const out=[];
+        (teachersData||[]).forEach(t=>{
+            if(!t) return;
+            const ids=getTeacherAssignedClassIdsForRecord(t).map(String);
+            const assignedIndex=Number(t.assignedClassIndex);
+            const belongs=classId ? ids.includes(classId) : assignedIndex===Number(f.classIndex);
+            if(!belongs) return;
+            const name=String(t.name||'').trim();
+            if(!name) return;
+            const key=getParentTeacherMessageTeacherKey(t);
+            if(!out.some(x=>x.key===key)) out.push({teacher:t,key,name,spec:getTeacherSpecialties(t).join('، ')||String(t.spec||'عام')});
+        });
+        return out;
+    }
+    function updateParentTeacherMessageIndicators(){
+        const parentBtn=document.getElementById('parentActionTeacherMessage');
+        if(parentBtn && currentUser?.role==='parent'){
+            const unread=getUnreadParentTeacherMessagesForParent().length>0;
+            parentBtn.classList.toggle('parent-activity-unread',unread);
+            parentBtn.setAttribute('aria-label',unread?'يوجد رد جديد من المعلم — اضغط للمشاهدة':'رسالة إلى معلم');
+            parentBtn.title=unread?'يوجد رد جديد من المعلم':'رسالة إلى معلم';
+        }
+        const teacherBtn=document.getElementById('teacherParentMessagesButton');
+        if(teacherBtn && currentUser?.role==='teacher'){
+            const unread=getUnreadParentTeacherMessagesForTeacher();
+            const has=unread.length>0;
+            teacherBtn.classList.toggle('parent-messages-teacher-unread',has);
+            teacherBtn.setAttribute('aria-label',has?`يوجد ${unread.length} رسالة جديدة من أولياء الأمور`:'رسائل أولياء الأمور');
+            teacherBtn.title=has?`يوجد ${unread.length} رسالة جديدة من أولياء الأمور`:'رسائل أولياء الأمور';
+        }
+    }
+    function startParentTeacherMessageIndicatorPulse(){
+        if(parentTeacherMessageIndicatorTimer) clearInterval(parentTeacherMessageIndicatorTimer);
+        cleanupParentTeacherMessagesEveryTwoDays();
+        updateParentTeacherMessageIndicators();
+        updateGeneralAnnouncementIndicators();
+        parentTeacherMessageIndicatorTimer=setInterval(()=>{
+            if(!currentUser){clearInterval(parentTeacherMessageIndicatorTimer);parentTeacherMessageIndicatorTimer=null;return;}
+            updateParentTeacherMessageIndicators();
+            updateGeneralAnnouncementIndicators();
+        },3000);
+    }
+    function getParentTeacherMessageStatusHtml(m, senderRole){
+        const sentAt=m?.createdAt||'';
+        const deliveredAt=senderRole==='parent' ? (m?.teacherDeliveredAt||'') : (m?.parentDeliveredAt||'');
+        const readAt=senderRole==='parent' ? (m?.teacherReadAt||'') : (m?.parentReadAt||'');
+        let label='✓ تم الإرسال', cls='sent';
+        if(deliveredAt){ label='✓✓ تم الوصول'; cls='delivered'; }
+        if(readAt){ label='✓✓ تمت القراءة'; cls='read'; }
+        const time=readAt||deliveredAt||sentAt;
+        return `<span class="parent-message-status ${cls}" title="${time?escapeGlobalSearchHTML(new Date(time).toLocaleString('ar-IQ')):''}">${label}</span>`;
+    }
+    function getParentTeacherIncomingStatusHtml(m){
+        if(m?.parentReadAt) return '<span class="parent-message-status read">✓✓ تمت القراءة</span>';
+        if(m?.parentDeliveredAt) return '<span class="parent-message-status delivered">✓✓ تم الوصول</span>';
+        return '<span class="parent-message-status sent">✓ تم الإرسال</span>';
+    }
+    async function sendParentTeacherMessage(){
+        if(currentUser?.role!=='parent') return;
+        const teacherId=String(document.getElementById('parentTeacherSelect')?.value||'').trim();
+        const input=document.getElementById('parentTeacherMessageInput');
+        const message=String(input?.value||'').trim();
+        if(!teacherId){alert('اختر المعلم أولاً.');return;}
+        if(!message){alert('اكتب الرسالة أولاً.');return;}
+        const f=currentStudentForDashboard(), teachers=getParentTeachersForCurrentStudent();
+        const target=teachers.find(x=>String(x.key)===teacherId);
+        if(!f||!target){alert('المعلم المحدد غير متاح ضمن صف الطالب.');return;}
+        const existing=getParentTeacherMessageSentToday(target.key);
+        if(existing){
+            alert(`لقد أرسلت رسالة إلى المعلم ${target.name} اليوم. يمكنك مخاطبة هذا المعلم مرة أخرى غداً، أو اختيار معلم آخر وإرسال رسالة له اليوم.`);
+            return;
+        }
+        const id=createStableId('parentmsg');
+        const parentName=String(currentUser.parentName||currentUser.guardianName||currentUser.name||'ولي الأمر');
+        const msg={
+            id,senderRole:'parent',direction:'parent_to_teacher',parentKey:getParentTeacherMessageParentKey(),parentName,
+            studentId:String(f.student.id||''),studentName:String(f.student.name||''),
+            classIndex:Number(f.classIndex),classId:String(f.classObj?.id||schoolData[f.classIndex]?.id||''),className:String(f.classObj?.name||schoolData[f.classIndex]?.name||''),
+            teacherKey:target.key,teacherId:String(target.teacher?.id||''),teacherName:target.name,teacherSpec:target.spec,
+            message,createdAt:new Date().toISOString(),teacherDeliveredAt:'',teacherReadAt:'',teacherReadBy:'',
+            response:'',responseAt:'',responseDeliveredAt:'',responseReadAt:'',responseReadBy:''
+        };
+        parentTeacherMessagesData.unshift(msg);
+        saveData();
+        try{
+            if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){
+                clearTimeout(cloudSaveTimer); await saveCurrentCloudPayload();
+            }
+        }catch(e){console.error('Parent teacher message cloud save failed:',e);alert('تعذر تأكيد حفظ الرسالة في السحابة. تحقق من الاتصال.');return;}
+        msg.teacherDeliveredAt=new Date().toISOString();
+        if(input) input.value='';
+        updateParentTeacherMessageIndicators();
+        renderParentTeacherMessagePage();
+        alert('تم إرسال الرسالة إلى المعلم بنجاح.');
+    }
+    async function replyToParentTeacherMessage(id){
+        if(currentUser?.role!=='teacher') return;
+        const t=getCurrentTeacher();
+        const key=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
+        const m=parentTeacherMessagesData.find(x=>String(x.id)===String(id)&&String(x.teacherKey||'')===key&&(x.senderRole||'parent')==='parent');
+        if(!m){alert('لم يتم العثور على رسالة ولي الأمر.');return;}
+        const text=String(prompt('اكتب ردك على ولي الأمر:',m.response||'')||'').trim();
+        if(!text)return;
+        m.response=text;m.responseAt=new Date().toISOString();m.responseDeliveredAt='';m.responseReadAt='';m.responseReadBy='';m.teacherReadAt=m.teacherReadAt||new Date().toISOString();
+        saveData();
+        try{if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){clearTimeout(cloudSaveTimer);await saveCurrentCloudPayload();}}catch(e){console.error(e);}
+        m.responseDeliveredAt=new Date().toISOString();
+        renderParentTeacherMessagesForTeacher();updateParentTeacherMessageIndicators();alert('تم إرسال الرد إلى ولي الأمر.');
+    }
+    function deleteParentTeacherMessage(id){
+        if(currentUser?.role!=='teacher') return;
+        const t=getCurrentTeacher(), key=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
+        const index=parentTeacherMessagesData.findIndex(x=>String(x.id)===String(id)&&String(x.teacherKey||'')===key);
+        if(index<0)return;
+        if(!confirm('هل تريد حذف هذه الرسالة نهائياً؟'))return;
+        parentTeacherMessagesData.splice(index,1);saveData();renderParentTeacherMessagesForTeacher();updateParentTeacherMessageIndicators();
+    }
+    function getTeacherMessageTargetStudents(){
+        return getTeacherHomeworkStudents().filter(x=>x && x.studentId);
+    }
+    async function sendTeacherToParentsMessage(){
+        if(currentUser?.role!=='teacher') return;
+        const audience=String(document.getElementById('teacherParentMessageAudience')?.value||'all');
+        const text=String(document.getElementById('teacherParentMessageInput')?.value||'').trim();
+        if(!text){alert('اكتب الرسالة أولاً.');return;}
+        const students=getTeacherMessageTargetStudents();
+        let targets=students;
+        if(audience==='student'){
+            const idx=Number(document.getElementById('teacherParentMessageStudent')?.value);
+            if(!Number.isInteger(idx)||!students[idx]){alert('اختر الطالب المطلوب.');return;}
+            targets=[students[idx]];
+        }
+        if(!targets.length){alert('لا يوجد طلاب ضمن الصف المحدد.');return;}
+        const t=getCurrentTeacher();
+        const teacherKey=getParentTeacherMessageTeacherKey(t)||String(currentUser.teacherId||currentUser.name||'');
+        const now=new Date().toISOString();
+        const className=String(schoolData[Number(currentUser.selectedClassIndex)]?.name||students[0]?.className||'');
+        targets.forEach(st=>{
+            const parentKey=String(st.studentId||st.code||'').trim();
+            parentTeacherMessagesData.unshift({
+                id:createStableId('teachermsg'),senderRole:'teacher',direction:'teacher_to_parent',
+                parentKey,parentStudentId:String(st.studentId||''),parentCode:String(st.code||''),
+                parentName:'ولي أمر '+String(st.name||''),studentId:String(st.studentId||''),studentName:String(st.name||''),
+                classIndex:Number(st.classIndex),classId:String(st.classId||schoolData[st.classIndex]?.id||''),className:String(st.className||className||''),
+                teacherKey,teacherId:String(t?.id||currentUser.teacherId||''),teacherName:String(t?.name||currentUser.name||'المعلم'),teacherSpec:String(getCurrentTeacherSpec()||t?.spec||''),
+                message:text,createdAt:now,parentDeliveredAt:'',parentReadAt:'',parentReadBy:'',response:'',responseAt:'',responseDeliveredAt:'',responseReadAt:'',responseReadBy:'',teacherReadAt:now,teacherReadBy:String(currentUser.name||t?.name||'المعلم')
+            });
+        });
+        saveData();
+        try{ if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){ clearTimeout(cloudSaveTimer); await saveCurrentCloudPayload(); } }catch(e){console.error(e);alert('تعذر تأكيد حفظ الرسالة في السحابة. تحقق من الاتصال.');return;}
+        const sentIds=new Set(parentTeacherMessagesData.slice(0,targets.length).map(x=>String(x.id||'')));
+        const deliveredAt=new Date().toISOString();
+        parentTeacherMessagesData.forEach(x=>{if(sentIds.has(String(x.id||'')))x.parentDeliveredAt=deliveredAt;});
+        const input=document.getElementById('teacherParentMessageInput'); if(input)input.value='';
+        alert(audience==='all' ? `تم إرسال الرسالة إلى ${targets.length} ولي أمر ضمن الصف المحدد.` : 'تم إرسال الرسالة إلى ولي أمر الطالب المحدد.');
+        openParentTeacherMessagesForTeacher();
+    }
+    function renderParentTeacherMessagesForTeacher(){
+        const box=document.getElementById('teacherParentMessagesList'); if(!box)return;
+        const rows=getParentTeacherMessagesForTeacher();
+        if(!rows.length){box.innerHTML='<div class="pro-empty">لا توجد رسائل من أولياء الأمور حالياً.</div>';return;}
+        box.innerHTML=rows.map(m=>{
+            const unread=!m.teacherReadAt;
+            if(unread) markParentTeacherMessageTeacherRead(m.id);
+            return `<div class="parent-teacher-message-card ${unread?'is-new':''}">
+                <div class="parent-teacher-message-head"><div><b>👨‍👩‍👦 ${escapeGlobalSearchHTML(m.parentName||'ولي الأمر')}</b><div class="parent-teacher-message-meta">الطالب: ${escapeGlobalSearchHTML(m.studentName||'-')} — الصف: ${escapeGlobalSearchHTML(m.className||'-')}</div></div><small>${escapeGlobalSearchHTML(new Date(m.createdAt).toLocaleString('ar-IQ'))}</small></div>
+                <div class="parent-teacher-message-body"><b>الرسالة:</b><div>${escapeGlobalSearchHTML(m.message||'')}</div><div style="margin-top:8px">${getParentTeacherMessageStatusHtml(m,'parent')}</div></div>
+                ${m.response?`<div class="parent-teacher-message-response"><b>ردك:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small><div style="margin-top:6px">${m.responseDeliveredAt?'<span class="parent-message-status delivered">✓✓ تم الوصول إلى ولي الأمر</span>':'<span class="parent-message-status sent">✓ تم إرسال الرد</span>'}</div></div>`:''}
+                <div class="parent-teacher-message-actions"><button type="button" onclick="replyToParentTeacherMessage('${String(m.id).replace(/'/g,"\\'")}')">↩️ ${m.response?'تعديل الرد':'الرد على ولي الأمر'}</button><button type="button" onclick="deleteParentTeacherMessage('${String(m.id).replace(/'/g,"\\'")}')" style="background:#c0392b">🗑 حذف</button></div>
+            </div>`;
+        }).join('');
+        updateParentTeacherMessageIndicators();
+    }
+    function openParentTeacherMessagesForTeacher(){
+        if(currentUser?.role!=='teacher')return;
+        const old=document.getElementById('teacherParentMessagesModal');if(old)old.remove();
+        const students=getTeacherMessageTargetStudents();
+        const studentOptions=students.length?students.map((st,i)=>`<option value="${i}">${escapeGlobalSearchHTML(st.name)} — ${escapeGlobalSearchHTML(st.className||'-')}</option>`).join(''):'<option value="">لا يوجد طلاب في الصف المحدد</option>';
+        const modal=document.createElement('div');modal.id='teacherParentMessagesModal';modal.className='modal';modal.style.cssText='display:flex;position:fixed;inset:0;z-index:2147483645;background:rgba(4,20,35,.78);padding:12px;align-items:center;justify-content:center;direction:rtl;';
+        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:20px"><div class="pro-toolbar" style="justify-content:space-between"><div><h2 style="margin:0">📨 رسائل أولياء الأمور</h2><small>استقبال الرسائل والرد عليها، وإرسال رسالة لجميع أولياء أمور الصف أو لولي أمر طالب محدد.</small></div><button type="button" onclick="document.getElementById('teacherParentMessagesModal')?.remove()">✕</button></div>
+        <div class="teacher-parent-compose"><h3 style="margin-top:0">📤 إرسال رسالة إلى أولياء الأمور</h3><div class="teacher-parent-compose-grid"><div><label>نوع الإرسال</label><select id="teacherParentMessageAudience" onchange="document.getElementById('teacherParentMessageStudentWrap').style.display=this.value==='student'?'block':'none'"><option value="all">جميع أولياء أمور طلاب الصف</option><option value="student">ولي أمر طالب محدد</option></select></div><div id="teacherParentMessageStudentWrap" style="display:none"><label>اختر الطالب</label><select id="teacherParentMessageStudent">${studentOptions}</select></div></div><label style="display:block;margin-top:10px">نص الرسالة</label><textarea id="teacherParentMessageInput" maxlength="1000" placeholder="اكتب الرسالة التي تريد إرسالها..."></textarea><div class="compose-actions"><button type="button" onclick="sendTeacherToParentsMessage()" style="background:#16a085;color:#fff;font-weight:900">📤 إرسال الرسالة</button></div></div>
+        <div id="teacherParentMessagesList"></div></div>`;
+        document.body.appendChild(modal);renderParentTeacherMessagesForTeacher();updateParentTeacherMessageIndicators();
+    }
+    function updateParentTeacherDailyLimitUI(){
+        if(currentUser?.role!=='parent') return;
+        const select=document.getElementById('parentTeacherSelect');
+        const status=document.getElementById('parentTeacherDailyStatus');
+        const button=document.getElementById('parentTeacherSendButton');
+        const input=document.getElementById('parentTeacherMessageInput');
+        const teacherKey=String(select?.value||'').trim();
+        const teachers=getParentTeachersForCurrentStudent();
+        const teacher=teachers.find(t=>String(t.key)===teacherKey);
+        const sent=teacherKey?getParentTeacherMessageSentToday(teacherKey):null;
+        if(sent){
+            if(status) status.innerHTML=`<div class="parent-message-limit">✓ تم إرسال رسالة إلى المعلم <b>${escapeGlobalSearchHTML(teacher?.name||'المعلم')}</b> اليوم. يمكنك مراسلته غداً، أو اختيار معلم آخر.</div>`;
+            if(button) button.disabled=true;
+            if(input) input.disabled=true;
+        }else{
+            if(status) status.innerHTML=teacher?`<div style="padding:8px 10px;border-radius:9px;background:#eef8ff;color:#175b86">✓ يمكنك إرسال رسالة واحدة اليوم إلى <b>${escapeGlobalSearchHTML(teacher.name)}</b>.</div>`:'';
+            if(button) button.disabled=false;
+            if(input) input.disabled=false;
+        }
+    }
+
+    function renderParentTeacherMessagePage(){
+        if(currentUser?.role!=='parent')return;
+        cleanupParentTeacherMessagesEveryTwoDays();
+        const old=document.getElementById('parentTeacherMessagePage');if(old)old.remove();
+        const f=currentStudentForDashboard();if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
+        const teachers=getParentTeachersForCurrentStudent();
+        const unread=getUnreadParentTeacherMessagesForParent();
+        const sentTodayByTeacher=new Set(teachers.filter(t=>getParentTeacherMessageSentToday(t.key)).map(t=>String(t.key)));
+        unread.forEach(m=>markParentTeacherMessageParentRead(m.id));
+        const history=getParentTeacherMessagesForParent();
+        const page=document.createElement('div');page.id='parentTeacherMessagePage';page.className='parent-section-page';page.style.cssText='position:fixed;inset:0;z-index:100130;display:block;overflow:auto;background:var(--parent-bg,#f4f7fa);padding:12px;direction:rtl;';
+        const teacherOptions=teachers.length?teachers.map(t=>`<option value="${escapeGlobalSearchHTML(t.key)}">${escapeGlobalSearchHTML(t.name)} — ${escapeGlobalSearchHTML(t.spec||'معلم الصف')}</option>`).join(''):'<option value="">لا يوجد معلمون مخصصون لهذا الصف</option>';
+        const historyHtml=history.slice(0,30).map(m=>{const incoming=String(m.senderRole||'parent')==='teacher';return `<div class="parent-teacher-message-card ${incoming?'parent-incoming-teacher-message':''}"><div class="parent-teacher-message-head"><div><b>${incoming?'📢 رسالة من المعلم':'👨‍🏫 '+escapeGlobalSearchHTML(m.teacherName||'-')}</b><div class="parent-teacher-message-meta">${escapeGlobalSearchHTML(m.createdAt?new Date(m.createdAt).toLocaleString('ar-IQ'):'')}</div></div>${incoming?'<span class="parent-reply-badge">رسالة واردة</span>':(m.response?'<span class="parent-reply-badge">تم الرد</span>':'<span class="parent-wait-badge">بانتظار الرد</span>')}</div><div class="parent-teacher-message-body"><b>${incoming?'رسالة المعلم:':'رسالتك:'}</b><div>${escapeGlobalSearchHTML(m.message||'')}</div><div style="margin-top:8px">${incoming?getParentTeacherIncomingStatusHtml(m):getParentTeacherMessageStatusHtml(m,'parent')}</div></div>${m.response?`<div class="parent-teacher-message-response"><b>رد المعلم:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small><div style="margin-top:6px">${m.responseReadAt?'<span class="parent-message-status read">✓✓ تمت القراءة</span>':m.responseDeliveredAt?'<span class="parent-message-status delivered">✓✓ تم الوصول</span>':'<span class="parent-message-status sent">✓ تم الإرسال</span>'}</div></div>`:''}</div>`}).join('')||'<div class="pro-empty">لا توجد رسائل سابقة.</div>';
+        page.innerHTML=`<div class="parent-section-page-inner parent-portal parent-portal-${String(f.student.gender||'').toLowerCase()==='female'?'female':'male'}"><div class="parent-section-page-head"><div><div class="parent-kicker">🏫 بوابة ولي الأمر</div><h2>💬 رسالة إلى معلم</h2><p>الطالب: <b>${escapeGlobalSearchHTML(f.student.name||'-')}</b> — الصف: <b>${escapeGlobalSearchHTML(f.classObj?.name||'-')}</b></p></div><button type="button" class="parent-section-back" onclick="document.getElementById('parentTeacherMessagePage')?.remove();document.getElementById('studentRoleDashboardModal')?.scrollTo?.({top:0,behavior:'smooth'});">↩ الرئيسية</button></div>
+            <div class="pro-panel"><h3>📨 إرسال رسالة إلى معلم</h3><div class="parent-message-note">يسمح النظام لولي الأمر بإرسال <b>رسالة واحدة يومياً لكل معلم بشكل مستقل</b>. مثال: يمكنك مراسلة أحمد مرة وسرمد مرة في اليوم نفسه.</div><label>اختر المعلم المختص بالصف</label><select id="parentTeacherSelect" onchange="updateParentTeacherDailyLimitUI()">${teacherOptions}</select><div id="parentTeacherDailyStatus" style="margin-top:8px"></div><label style="display:block;margin-top:10px">نص الرسالة</label><textarea id="parentTeacherMessageInput" rows="7" maxlength="1000" placeholder="اكتب رسالتك للمعلم..."></textarea><div style="display:flex;justify-content:flex-start;margin-top:10px"><button type="button" id="parentTeacherSendButton" onclick="sendParentTeacherMessage()" style="background:#1976d2;color:#fff;font-weight:900">📨 إرسال الرسالة</button></div></div>
+            <div class="pro-panel"><h3>📬 رسائلك وردود المعلمين</h3>${historyHtml}</div></div>`;
+        document.body.appendChild(page);updateParentTeacherDailyLimitUI();updateParentTeacherMessageIndicators();
+    }
+    function openParentTeacherMessagePage(){renderParentTeacherMessagePage();}
+
     function openParentAbsencePage(){
         if(currentUser?.role!=='parent') return;
+        markParentSectionViewed('absence');
         const f=currentStudentForDashboard();
         if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
         const liveClass=schoolData[f.classIndex]||f.classObj||{};
@@ -9608,6 +10087,7 @@ function updateCloudStatus(text, color) {
 
     function openParentSectionPage(section){
         if(currentUser?.role!=='parent') return;
+        if(['grades','behavior','homework'].includes(section)) markParentSectionViewed(section);
         const f=currentStudentForDashboard();
         if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
         const liveClass=schoolData[f.classIndex]||f.classObj||{};
@@ -9674,8 +10154,6 @@ function updateCloudStatus(text, color) {
         const legacyKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
         const todayRecord=myAtt.find(r=>String(r.date)===String(today));
         const todayStatus=todayRecord?.status||legacyMap?.[today]?.[legacyKey]||'present';
-        const parentNewNotifications=getParentNewActivityNotifications(f,liveClass,studentId,studentName);
-        const parentNotificationsHtml=`<div class="parent-new-notifications"><h3>🔔 ماذا حصل اليوم؟ ${parentNewNotifications.length?`<span style="font-size:12px;background:#c0392b;color:#fff;padding:4px 8px;border-radius:999px">${parentNewNotifications.length} جديد</span>`:''}</h3><div class="parent-new-notification-list">${parentNewNotifications.length?parentNewNotifications.map(n=>`<div class="parent-new-notification"><span class="parent-new-notification-icon">${n.icon}</span><div><b>${escapeGlobalSearchHTML(n.title)}</b><div>${escapeGlobalSearchHTML(n.text)}</div><span class="parent-new-notification-time">${escapeGlobalSearchHTML(new Date(n.time).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}))}</span></div></div>`).join(''):'<div class="parent-new-notifications-empty">لا توجد إضافات جديدة تخص الطالب اليوم.</div>'}</div></div>`;
         const todayMessage=todayStatus==='absent'?`<div class="parent-alert parent-alert-absent">🚨 <b>تنبيه:</b> تم تسجيل ${childPossessive} اليوم <b>غائباً</b>.</div>`:todayStatus==='leave'?`<div class="parent-alert parent-alert-leave">🏖️ <b>تنبيه:</b> تم تسجيل ${childPossessive} اليوم <b>مجازاً</b>.</div>`:todayStatus==='late'?`<div class="parent-alert parent-alert-late">⏰ <b>تنبيه:</b> تم تسجيل تأخر ${childPossessive} اليوم.</div>`:`<div class="parent-alert parent-alert-ok">✅ حالة اليوم: <b>حاضر</b> أو لم يُسجّل عليه غياب.</div>`;
         const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,50).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة لـ'+escapeGlobalSearchHTML(childPossessive)+' حالياً.</td></tr>';
         const parentBehaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
@@ -9695,8 +10173,10 @@ function updateCloudStatus(text, color) {
         const scheduleHead=scheduleDays.map(d=>`<th class="parent-schedule-day ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}"><span>${d.name}</span>${d.index===todayIndex?'<small>اليوم</small>':''}${d.index===tomorrowIndex?'<small>غداً</small>':''}</th>`).join('');
         const scheduleBody=Array.from({length:lessons},(_,l)=>`<tr><th class="parent-schedule-lesson">الحصة ${l+1}</th>${scheduleDays.map(d=>{const e=d.enabled?getScheduleEntryData(liveClass,`${d.index}_${l}`):{subject:'',teacherName:'',emergency:false};const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');return `<td class="parent-schedule-cell ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}">${e.subject?`<b>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</b><small>${escapeGlobalSearchHTML(t||'-')}</small>`:'<span class="schedule-empty">—</span>'}</td>`;}).join('')}</tr>`).join('');
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" id="parentActionAbsence" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" id="parentActionGrades" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" id="parentActionBehavior" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" id="parentActionHomework" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" id="parentActionTeacherMessage" onclick="openParentTeacherMessagePage()" style="background:#1976d2!important;color:#fff">💬 رسالة إلى معلم</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
         document.body.appendChild(modal);
+        startParentActivityPulse();
+        startParentTeacherMessageIndicatorPulse();
     }
 
     function openTeacherDashboard(){
@@ -9705,8 +10185,8 @@ function updateCloudStatus(text, color) {
         const att=ProfessionalModules?.attendanceData||[], today=getFormattedDate(); const mySubjects=subjectsData.filter(s=>!s.teacherId||String(s.teacherId)===String(t.id));
         const modal=document.createElement('div');modal.id='teacherRoleDashboardModal';modal.className='modal';modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100006;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
         const trs=students.slice(0,200).map(s=>{const r=att.find(x=>String(x.studentId)===String(s.studentId)&&x.date===today);return `<tr><td>${escapeGlobalSearchHTML(s.name)}</td><td>${escapeGlobalSearchHTML(s.classObj.name||'-')}</td><td>${r?(r.status==='absent'?'غائب':r.status==='late'?'متأخر':'حاضر'):'غير مسجل'}</td><td><button onclick="openProfessionalStudentProfile('${String(s.studentId).replace(/'/g,"\'")}')">الملف</button></td></tr>`}).join('')||'<tr><td colspan="4" class="pro-empty">لا يوجد طلاب.</td></tr>';
-        modal.innerHTML=`<div class="modal-content" style="width:min(1100px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 style="margin:0">👨‍🏫 لوحة المعلم — ${escapeGlobalSearchHTML(t.name)}</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" onclick="openHomeworkModal()" style="background:linear-gradient(135deg,#d35400,#e67e22);color:#fff;font-weight:900;border-radius:12px;padding:10px 15px;box-shadow:0 6px 16px rgba(211,84,0,.25)">📚 الواجبات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff;font-weight:900;border-radius:12px;padding:10px 15px">📮 شكوى للمدير</button><button type="button" onclick="document.getElementById('teacherRoleDashboardModal')?.remove()">✕</button></div></div><div class="pro-dashboard-grid"><div class="pro-stat"><div class="lbl">الصفوف</div><div class="num">${(currentUser.assignedClassIds||[]).length}</div></div><div class="pro-stat"><div class="lbl">الطلاب</div><div class="num">${students.length}</div></div><div class="pro-stat"><div class="lbl">موادك</div><div class="num">${mySubjects.length}</div></div><div class="pro-stat"><div class="lbl">سجلات اليوم</div><div class="num">${att.filter(r=>r.date===today&&students.some(s=>String(s.studentId)===String(r.studentId))).length}</div></div></div><div class="pro-panel"><h3>📚 موادك</h3><div class="pro-mini-grid">${mySubjects.map(s=>`<div class="pro-info"><small>${escapeGlobalSearchHTML(s.className||'عام')}</small>${escapeGlobalSearchHTML(s.name||'-')}</div>`).join('')||'<div class="pro-empty">لا توجد مواد مرتبطة بك.</div>'}</div></div><div class="pro-panel"><h3>👨‍🎓 طلاب صفوفك</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الحالة اليوم</th><th>إجراء</th></tr></thead><tbody>${trs}</tbody></table></div></div></div>`;
-        document.body.appendChild(modal); if(window.ProfessionalModules?.addAudit)window.ProfessionalModules.addAudit('فتح لوحة المعلم',t.name);
+        modal.innerHTML=`<div class="modal-content" style="width:min(1100px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h2 style="margin:0">👨‍🏫 لوحة المعلم — ${escapeGlobalSearchHTML(t.name)}</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" onclick="openHomeworkModal()" style="background:linear-gradient(135deg,#d35400,#e67e22);color:#fff;font-weight:900;border-radius:12px;padding:10px 15px;box-shadow:0 6px 16px rgba(211,84,0,.25)">📚 الواجبات</button><button type="button" id="teacherParentMessagesButton" onclick="openParentTeacherMessagesForTeacher()" style="background:linear-gradient(135deg,#1976d2,#3498db);color:#fff;font-weight:900;border-radius:12px;padding:10px 15px">📨 رسائل أولياء الأمور</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad;color:#fff;font-weight:900;border-radius:12px;padding:10px 15px">📮 شكوى للمدير</button><button type="button" onclick="document.getElementById('teacherRoleDashboardModal')?.remove()">✕</button></div></div><div class="pro-dashboard-grid"><div class="pro-stat"><div class="lbl">الصفوف</div><div class="num">${(currentUser.assignedClassIds||[]).length}</div></div><div class="pro-stat"><div class="lbl">الطلاب</div><div class="num">${students.length}</div></div><div class="pro-stat"><div class="lbl">موادك</div><div class="num">${mySubjects.length}</div></div><div class="pro-stat"><div class="lbl">سجلات اليوم</div><div class="num">${att.filter(r=>r.date===today&&students.some(s=>String(s.studentId)===String(r.studentId))).length}</div></div></div><div class="pro-panel"><h3>📚 موادك</h3><div class="pro-mini-grid">${mySubjects.map(s=>`<div class="pro-info"><small>${escapeGlobalSearchHTML(s.className||'عام')}</small>${escapeGlobalSearchHTML(s.name||'-')}</div>`).join('')||'<div class="pro-empty">لا توجد مواد مرتبطة بك.</div>'}</div></div><div class="pro-panel"><h3>👨‍🎓 طلاب صفوفك</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الحالة اليوم</th><th>إجراء</th></tr></thead><tbody>${trs}</tbody></table></div></div></div>`;
+        document.body.appendChild(modal); startParentTeacherMessageIndicatorPulse(); if(window.ProfessionalModules?.addAudit)window.ProfessionalModules.addAudit('فتح لوحة المعلم',t.name);
     }
     function getTeacherHomeworkStudents(){
         const t=getCurrentTeacher(); if(!t) return [];
@@ -11956,6 +12436,34 @@ body.parent-only-mode #globalSearchWrapper,
 body.parent-only-mode header { display:none !important; }
 </style>
 
+<style id="parent-portal-activity-notifications">
+
+.parent-portal-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px!important;padding:14px!important;align-items:stretch!important;}
+.parent-portal-actions button{min-height:58px!important;border:0!important;border-radius:15px!important;font-weight:900!important;font-size:15px!important;box-shadow:0 6px 16px rgba(31,45,61,.12)!important;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease!important;}
+.parent-portal-actions button:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(31,45,61,.18)!important;}
+.parent-messages-teacher-unread{animation:parentMessagesTeacherPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(231,76,60,.18),0 0 24px rgba(231,76,60,.82),0 8px 20px rgba(31,45,61,.2)!important;filter:brightness(1.2)!important;position:relative!important;z-index:3;}
+.parent-messages-teacher-unread::after{content:'جديد'!important;position:absolute!important;top:-9px!important;left:-7px!important;min-width:38px!important;height:22px!important;padding:0 6px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:999px!important;background:#e53935!important;color:#fff!important;font-size:10px!important;font-weight:900!important;box-shadow:0 3px 9px rgba(0,0,0,.22)!important;}
+.parent-teacher-message-card{background:#fff;border:1px solid #dfe7ef;border-radius:15px;padding:14px;margin:10px 0;box-shadow:0 5px 16px rgba(31,45,61,.07);}
+.parent-teacher-message-card.is-new{border-color:#e74c3c;box-shadow:0 0 0 2px rgba(231,76,60,.10),0 8px 22px rgba(231,76,60,.12);}
+.parent-teacher-message-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #edf1f5;padding-bottom:9px;margin-bottom:10px;}
+.parent-teacher-message-meta{font-size:12px;color:#6b7b88;margin-top:4px;}
+.parent-teacher-message-body,.parent-teacher-message-response{padding:11px;border-radius:11px;line-height:1.9;margin-top:8px;white-space:normal;}
+.parent-teacher-message-body{background:#f5f8fb;}
+.parent-teacher-message-response{background:#eefaf3;border:1px solid #cfead8;}
+.parent-teacher-message-actions{display:flex;gap:8px;justify-content:flex-start;margin-top:10px;flex-wrap:wrap;}
+.parent-teacher-message-actions button{border:0;border-radius:10px;padding:9px 13px;color:#fff;font-weight:800;cursor:pointer;background:#1976d2;}
+.parent-reply-badge,.parent-wait-badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap;}
+.parent-reply-badge{background:#eaf8ef;color:#16803c;}.parent-wait-badge{background:#fff5e6;color:#a85d00;}
+.parent-message-note{background:#eef7ff;border:1px solid #cfe5f8;border-radius:11px;padding:10px;margin-bottom:12px;color:#28516f;}
+.parent-message-limit{margin-top:10px;padding:10px;border-radius:10px;background:#eefaf3;color:#16803c;font-weight:800;}
+@keyframes parentMessagesTeacherPulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.045);filter:brightness(1.28)}}
+@media(max-width:620px){.parent-portal-actions{grid-template-columns:1fr!important;gap:10px!important;}.parent-portal-actions button{min-height:54px!important;font-size:14px!important;}.parent-teacher-message-head{flex-direction:column;}.parent-teacher-message-actions button{width:100%;}}
+@media(prefers-reduced-motion:reduce){.parent-messages-teacher-unread{animation:none!important;}}
+.parent-portal-actions button.parent-activity-unread{position:relative!important;animation:parentActivityPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(231,76,60,.18),0 0 22px rgba(231,76,60,.78),0 7px 18px rgba(31,45,61,.18)!important;filter:brightness(1.16)!important;z-index:2;}
+.parent-portal-actions button.parent-activity-unread::after{content:'جديد'!important;position:absolute!important;top:-9px!important;left:-7px!important;min-width:38px!important;height:22px!important;padding:0 6px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:999px!important;background:#e53935!important;color:#fff!important;font-size:10px!important;font-weight:900!important;line-height:1!important;box-shadow:0 3px 9px rgba(0,0,0,.22)!important;}
+@keyframes parentActivityPulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.045);filter:brightness(1.28)}}
+@media(prefers-reduced-motion:reduce){.parent-portal-actions button.parent-activity-unread{animation:none!important}}
+</style>
 <style id="parent-portal-professional-css">
 .parent-portal-hero{padding:22px 24px;background:linear-gradient(135deg,#16324f,#28779f);color:#fff;display:flex;justify-content:space-between;gap:15px;align-items:center}.parent-kicker{font-size:12px;opacity:.8;font-weight:800}.parent-portal-hero h2{margin:4px 0;font-size:26px}.parent-portal-hero p{margin:0;opacity:.9}.parent-logout{background:#d64545!important;border-radius:12px!important;padding:10px 15px!important;font-weight:900}.parent-alert{margin:14px 16px 0;padding:14px;border-radius:14px;font-size:14px;box-shadow:0 5px 15px rgba(0,0,0,.06)}.parent-alert-absent{background:#fff0f0;color:#b42318;border:1px solid #f3b4b0}.parent-alert-leave{background:#fff8df;color:#8a5a00;border:1px solid #efd487}.parent-alert-late{background:#fff5e7;color:#a85b00;border:1px solid #f1cf9c}.parent-alert-ok{background:#edf9f1;color:#176b3b;border:1px solid #bfe6cb}.parent-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px}.parent-stats>div{background:#fff;border:1px solid #e1e8ee;border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(25,55,80,.06)}.parent-stats span{font-size:22px;display:block}.parent-stats small{display:block;color:#778693;margin-top:5px}.parent-stats b{display:block;margin-top:4px;color:#20384c;font-size:18px}.parent-portal-actions{display:flex;gap:9px;flex-wrap:wrap;padding:0 16px 4px}.parent-portal-actions button{background:linear-gradient(135deg,#1f668f,#2980b9)!important;border-radius:12px!important;font-weight:900!important}.parent-portal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px 0}.parent-att-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.parent-att-summary div{padding:11px;border-radius:12px;background:#f7f9fb;text-align:center}.parent-att-summary b{display:block;font-size:23px;color:#1f4058}.parent-att-summary span{font-size:11px;color:#6e7d89}.parent-portal .pro-panel{margin:12px 16px}.parent-portal-grid .pro-panel{margin:0}.parent-portal .pro-table{font-size:12px}@media(max-width:700px){.parent-portal-hero{padding:17px;display:block}.parent-logout{margin-top:12px}.parent-stats{grid-template-columns:repeat(2,1fr);padding:12px}.parent-portal-grid{grid-template-columns:1fr;padding:8px 12px 0}.parent-portal .pro-panel{margin:10px 12px}.parent-att-summary{grid-template-columns:repeat(2,1fr)}}
 </style>
