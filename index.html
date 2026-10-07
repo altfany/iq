@@ -3738,8 +3738,14 @@ function getAnnouncementReaderKey() {
         return `teacher:${String(currentUser.teacherId || currentUser.id || currentUser.name || '')}`;
     }
     if (currentUser.role === 'parent') {
+        const studentId = String(currentUser.studentId || currentUser.studentSnapshot?.id || '').trim();
+        if (studentId) return `parent:studentId:${studentId}`;
+        if (currentUser.studentSnapshot) {
+            const s = currentUser.studentSnapshot;
+            return `parent:student:${String(currentUser.classIndex ?? '').trim()}:${String(currentUser.deskIndex ?? '').trim()}:${String(s.slot ?? '').trim()}`;
+        }
         const student = getAllStudentsForAnnouncements().find(x => x.name === currentUser.name);
-        return `parent:${String(currentUser.id || currentUser.uid || (student && student.key) || currentUser.name || '')}`;
+        return `parent:student:${String((student && student.key) || currentUser.name || '').trim()}`;
     }
     return '';
 }
@@ -3780,7 +3786,9 @@ function acknowledgeAnnouncement(id) {
         a.readBy.push({ key, name, readAt: now, role: currentUser.role });
     }
 
+    // احفظ القراءة فوراً في Firebase حتى لا تضيع عند تسجيل الخروج أو إعادة الدخول.
     saveData();
+    queueCloudSave(50);
     renderAnnouncementsList();
     setTimeout(()=>showLiveAnnouncements(), 80);
 }
@@ -5552,7 +5560,7 @@ function updateCloudStatus(text, color) {
         if(!currentUser || currentUser.role==='admin') return;
 
         const relevant=announcementsData
-            .filter(a=>announcementBelongsToCurrentUser(a))
+            .filter(a=>announcementBelongsToCurrentUser(a) && !announcementIsReadByCurrentUser(a))
             .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')))
             .slice(0,5);
 
@@ -9560,10 +9568,11 @@ function updateCloudStatus(text, color) {
         const page=document.createElement('div');
         page.id='parentAbsencePage';
         page.className='parent-absence-page';
+        page.style.cssText='position:fixed;inset:0;z-index:100120;display:block;overflow:auto;background:var(--parent-bg,#f4f7fa);padding:12px;direction:rtl;';
         const rows=records.map(r=>`<tr><td><b>${escapeGlobalSearchHTML(r.date)}</b></td><td><span class="parent-absence-status ${r.status}">${parentStatusLabel(r.status)}</span></td><td>${escapeGlobalSearchHTML(parentActorLabel(r.actorRole,r.actorName))}</td><td>${escapeGlobalSearchHTML(r.source||'—')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات غياب أو إجازة أو تأخير ضمن دورة العرض الحالية.</td></tr>';
         const nextReset=new Date(resetAt+390*24*60*60*1000).toLocaleDateString('ar-IQ',{year:'numeric',month:'long',day:'numeric'});
         page.innerHTML=`<div class="parent-absence-page-inner">
-            <div class="parent-absence-page-head"><div><div class="parent-kicker">📌 بوابة ولي الأمر</div><h2>سجل الغيابات والحضور</h2><p>الطالب: <b>${escapeGlobalSearchHTML(studentName)}</b> — الصف: <b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></p></div><button type="button" class="parent-absence-close" onclick="document.getElementById('parentAbsencePage')?.remove()">↩ العودة للرئيسية</button></div>
+            <div class="parent-absence-page-head"><div><div class="parent-kicker">📌 بوابة ولي الأمر</div><h2>سجل الغيابات والحضور</h2><p>الطالب: <b>${escapeGlobalSearchHTML(studentName)}</b> — الصف: <b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></p></div><button type="button" class="parent-absence-close" onclick="document.getElementById('parentAbsencePage')?.remove(); document.getElementById('studentRoleDashboardModal')?.scrollTo?.({top:0,behavior:'smooth'});">↩ العودة للرئيسية</button></div>
             <div class="parent-absence-stats"><div class="absence-stat absent"><span>❌</span><small>عدد الغيابات</small><b>${counts.absent}</b></div><div class="absence-stat leave"><span>🏖️</span><small>عدد الإجازات</small><b>${counts.leave}</b></div><div class="absence-stat late"><span>⏰</span><small>عدد التأخيرات</small><b>${counts.late}</b></div></div>
             <div class="parent-absence-note">يتم عرض السجلات التي حددها <b>المدير أو المراقب أو مرشد الصف</b> حسب البيانات المحفوظة في النظام. تبدأ دورة هذه الصفحة من ${new Date(resetAt).toLocaleDateString('ar-IQ',{year:'numeric',month:'long',day:'numeric'})}، وتُعاد تلقائياً كل <b>390 يوماً</b> دون حذف السجلات الأصلية من النظام. موعد الترسيت التالي: <b>${nextReset}</b>.</div>
             <div class="parent-absence-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>حددها بواسطة</th><th>المصدر</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -9604,13 +9613,14 @@ function updateCloudStatus(text, color) {
         const scheduleHtml=`<div class="pro-panel parent-weekly-schedule"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📅 جدول الحصص الأسبوعي</h3><span class="parent-schedule-legend"><i class="today-dot"></i> اليوم <i class="tomorrow-dot"></i> غداً</span></div><div class="parent-schedule-wrap"><table class="parent-schedule-table"><thead><tr><th>الحصة</th>${scheduleHead}</tr></thead><tbody>${scheduleBody}</tbody></table></div></div>`;
         const page=document.createElement('div');
         page.id='parentSectionPage'; page.className='parent-section-page';
+        page.style.cssText='position:fixed;inset:0;z-index:100120;display:block;overflow:auto;background:var(--parent-bg,#f4f7fa);padding:12px;direction:rtl;';
         let title='',body='';
         if(section==='schedule'){title='📅 جدول الحصص';body=scheduleHtml;}
         else if(section==='grades'){title='📝 درجات الطالب';body=`<div class="pro-panel"><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th><th>الفترة</th><th>المعلم</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;}
         else if(section==='behavior'){title='⭐ السلوك والمستوى';body=`<div class="parent-section-two"><div class="pro-panel"><h3>📝 السلوك</h3>${parentBehaviorText}</div><div class="pro-panel"><h3>⭐ المستوى</h3>${parentLevelRows}</div></div>`;}
         else if(section==='homework'){title=`📚 واجبات ${childWord}`;body=`<div class="pro-panel"><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المعلم</th><th>تاريخ الإعطاء</th></tr></thead><tbody>${parentHomeworkRows}</tbody></table></div></div>`;}
         else return;
-        page.innerHTML=`<div class="parent-section-page-inner parent-portal parent-portal-${portalTheme}"><div class="parent-section-page-head"><div><div class="parent-kicker">🏫 بوابة ولي الأمر</div><h2>${title}</h2><p>الطالب: <b>${escapeGlobalSearchHTML(studentName)}</b> — الصف: <b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></p></div><button type="button" class="parent-section-back" onclick="document.getElementById('parentSectionPage')?.remove()">↩ الرئيسية</button></div><div class="parent-section-page-body">${body}</div></div>`;
+        page.innerHTML=`<div class="parent-section-page-inner parent-portal parent-portal-${portalTheme}"><div class="parent-section-page-head"><div><div class="parent-kicker">🏫 بوابة ولي الأمر</div><h2>${title}</h2><p>الطالب: <b>${escapeGlobalSearchHTML(studentName)}</b> — الصف: <b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></p></div><button type="button" class="parent-section-back" onclick="document.getElementById('parentSectionPage')?.remove(); document.getElementById('studentRoleDashboardModal')?.scrollTo?.({top:0,behavior:'smooth'});">↩ الرئيسية</button></div><div class="parent-section-page-body">${body}</div></div>`;
         document.body.appendChild(page);
     }
 
@@ -9659,7 +9669,7 @@ function updateCloudStatus(text, color) {
         const scheduleHead=scheduleDays.map(d=>`<th class="parent-schedule-day ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}"><span>${d.name}</span>${d.index===todayIndex?'<small>اليوم</small>':''}${d.index===tomorrowIndex?'<small>غداً</small>':''}</th>`).join('');
         const scheduleBody=Array.from({length:lessons},(_,l)=>`<tr><th class="parent-schedule-lesson">الحصة ${l+1}</th>${scheduleDays.map(d=>{const e=d.enabled?getScheduleEntryData(liveClass,`${d.index}_${l}`):{subject:'',teacherName:'',emergency:false};const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');return `<td class="parent-schedule-cell ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}">${e.subject?`<b>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</b><small>${escapeGlobalSearchHTML(t||'-')}</small>`:'<span class="schedule-empty">—</span>'}</td>`;}).join('')}</tr>`).join('');
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
         document.body.appendChild(modal);
     }
 
