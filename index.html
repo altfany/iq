@@ -1370,6 +1370,11 @@ table td,table th { line-height:1.55; }
 .parent-incoming-teacher-message{border-right:5px solid #16a085!important;background:#f4fffc!important}
 .general-announcement-card{border-right:5px solid #16a085!important}
 @media(prefers-reduced-motion:reduce){.parent-messages-teacher-unread,.general-message-unread{animation:none!important}}
+.parent-message-status{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}
+.parent-message-status.sent{background:#eef2f5;color:#66727d}
+.parent-message-status.delivered{background:#eaf4ff;color:#1976d2}
+.parent-message-status.read{background:#eafaf1;color:#16803c}
+
 
 .announcements-list{display:grid;gap:10px}.announcement-card{position:relative;border:1px solid #e0e7ef;border-radius:15px;padding:14px;background:#fff;box-shadow:0 6px 18px rgba(30,50,80,.06);overflow:hidden}.announcement-card:before{content:'';position:absolute;right:0;top:0;bottom:0;width:5px;background:#8e44ad}.announcement-card.teacher:before{background:#3498db}.announcement-card.parent:before{background:#16a085}.announcement-card-title{font-weight:900;color:#263b50;margin-bottom:5px}.announcement-card-message{font-size:14px;line-height:1.8;color:#334e68;white-space:pre-wrap}.announcement-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10px;color:#8a97a5}.announcement-badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:20px;background:#f0eafa;color:#6c5ce7;font-weight:800}.announcement-card-actions{margin-top:10px;text-align:left}.announcement-card-actions button{background:#e74c3c!important;color:#fff!important;border:0!important;border-radius:8px!important;padding:6px 10px!important;font-size:11px!important}.recipient-highlight{animation:announcementPulse 1.8s ease-in-out infinite}@keyframes announcementPulse{0%,100%{box-shadow:0 6px 18px rgba(142,68,173,.08)}50%{box-shadow:0 0 0 5px rgba(142,68,173,.10),0 12px 28px rgba(142,68,173,.18)}}
 @media(max-width:650px){.announcement-compose-grid{grid-template-columns:1fr}.announcement-compose-grid .full{grid-column:auto}.announcement-list-head{align-items:flex-start;gap:5px;flex-direction:column}}
@@ -9870,6 +9875,21 @@ function updateCloudStatus(text, color) {
             updateGeneralAnnouncementIndicators();
         },3000);
     }
+    function getParentTeacherMessageStatusHtml(m, senderRole){
+        const sentAt=m?.createdAt||'';
+        const deliveredAt=senderRole==='parent' ? (m?.teacherDeliveredAt||'') : (m?.parentDeliveredAt||'');
+        const readAt=senderRole==='parent' ? (m?.teacherReadAt||'') : (m?.parentReadAt||'');
+        let label='✓ تم الإرسال', cls='sent';
+        if(deliveredAt){ label='✓✓ تم الوصول'; cls='delivered'; }
+        if(readAt){ label='✓✓ تمت القراءة'; cls='read'; }
+        const time=readAt||deliveredAt||sentAt;
+        return `<span class="parent-message-status ${cls}" title="${time?escapeGlobalSearchHTML(new Date(time).toLocaleString('ar-IQ')):''}">${label}</span>`;
+    }
+    function getParentTeacherIncomingStatusHtml(m){
+        if(m?.parentReadAt) return '<span class="parent-message-status read">✓✓ تمت القراءة</span>';
+        if(m?.parentDeliveredAt) return '<span class="parent-message-status delivered">✓✓ تم الوصول</span>';
+        return '<span class="parent-message-status sent">✓ تم الإرسال</span>';
+    }
     async function sendParentTeacherMessage(){
         if(currentUser?.role!=='parent') return;
         const teacherId=String(document.getElementById('parentTeacherSelect')?.value||'').trim();
@@ -9892,8 +9912,8 @@ function updateCloudStatus(text, color) {
             studentId:String(f.student.id||''),studentName:String(f.student.name||''),
             classIndex:Number(f.classIndex),classId:String(f.classObj?.id||schoolData[f.classIndex]?.id||''),className:String(f.classObj?.name||schoolData[f.classIndex]?.name||''),
             teacherKey:target.key,teacherId:String(target.teacher?.id||''),teacherName:target.name,teacherSpec:target.spec,
-            message,createdAt:new Date().toISOString(),teacherReadAt:'',teacherReadBy:'',
-            response:'',responseAt:'',responseReadAt:'',responseReadBy:''
+            message,createdAt:new Date().toISOString(),teacherDeliveredAt:'',teacherReadAt:'',teacherReadBy:'',
+            response:'',responseAt:'',responseDeliveredAt:'',responseReadAt:'',responseReadBy:''
         };
         parentTeacherMessagesData.unshift(msg);
         saveData();
@@ -9902,6 +9922,7 @@ function updateCloudStatus(text, color) {
                 clearTimeout(cloudSaveTimer); await saveCurrentCloudPayload();
             }
         }catch(e){console.error('Parent teacher message cloud save failed:',e);alert('تعذر تأكيد حفظ الرسالة في السحابة. تحقق من الاتصال.');return;}
+        msg.teacherDeliveredAt=new Date().toISOString();
         if(input) input.value='';
         updateParentTeacherMessageIndicators();
         renderParentTeacherMessagePage();
@@ -9915,9 +9936,10 @@ function updateCloudStatus(text, color) {
         if(!m){alert('لم يتم العثور على رسالة ولي الأمر.');return;}
         const text=String(prompt('اكتب ردك على ولي الأمر:',m.response||'')||'').trim();
         if(!text)return;
-        m.response=text;m.responseAt=new Date().toISOString();m.responseReadAt='';m.responseReadBy='';m.teacherReadAt=m.teacherReadAt||new Date().toISOString();
+        m.response=text;m.responseAt=new Date().toISOString();m.responseDeliveredAt='';m.responseReadAt='';m.responseReadBy='';m.teacherReadAt=m.teacherReadAt||new Date().toISOString();
         saveData();
         try{if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){clearTimeout(cloudSaveTimer);await saveCurrentCloudPayload();}}catch(e){console.error(e);}
+        m.responseDeliveredAt=new Date().toISOString();
         renderParentTeacherMessagesForTeacher();updateParentTeacherMessageIndicators();alert('تم إرسال الرد إلى ولي الأمر.');
     }
     function deleteParentTeacherMessage(id){
@@ -9931,7 +9953,7 @@ function updateCloudStatus(text, color) {
     function getTeacherMessageTargetStudents(){
         return getTeacherHomeworkStudents().filter(x=>x && x.studentId);
     }
-    function sendTeacherToParentsMessage(){
+    async function sendTeacherToParentsMessage(){
         if(currentUser?.role!=='teacher') return;
         const audience=String(document.getElementById('teacherParentMessageAudience')?.value||'all');
         const text=String(document.getElementById('teacherParentMessageInput')?.value||'').trim();
@@ -9956,11 +9978,14 @@ function updateCloudStatus(text, color) {
                 parentName:'ولي أمر '+String(st.name||''),studentId:String(st.studentId||''),studentName:String(st.name||''),
                 classIndex:Number(st.classIndex),classId:String(st.classId||schoolData[st.classIndex]?.id||''),className:String(st.className||className||''),
                 teacherKey,teacherId:String(t?.id||currentUser.teacherId||''),teacherName:String(t?.name||currentUser.name||'المعلم'),teacherSpec:String(getCurrentTeacherSpec()||t?.spec||''),
-                message:text,createdAt:now,parentReadAt:'',parentReadBy:'',response:'',responseAt:'',responseReadAt:'',responseReadBy:'',teacherReadAt:now,teacherReadBy:String(currentUser.name||t?.name||'المعلم')
+                message:text,createdAt:now,parentDeliveredAt:'',parentReadAt:'',parentReadBy:'',response:'',responseAt:'',responseDeliveredAt:'',responseReadAt:'',responseReadBy:'',teacherReadAt:now,teacherReadBy:String(currentUser.name||t?.name||'المعلم')
             });
         });
         saveData();
-        try{ if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){ clearTimeout(cloudSaveTimer); saveCurrentCloudPayload(); } }catch(e){console.error(e);}
+        try{ if(window.FirebaseCloud?.enabled&&cloudReady&&navigator.onLine&&typeof saveCurrentCloudPayload==='function'){ clearTimeout(cloudSaveTimer); await saveCurrentCloudPayload(); } }catch(e){console.error(e);alert('تعذر تأكيد حفظ الرسالة في السحابة. تحقق من الاتصال.');return;}
+        const sentIds=new Set(parentTeacherMessagesData.slice(0,targets.length).map(x=>String(x.id||'')));
+        const deliveredAt=new Date().toISOString();
+        parentTeacherMessagesData.forEach(x=>{if(sentIds.has(String(x.id||'')))x.parentDeliveredAt=deliveredAt;});
         const input=document.getElementById('teacherParentMessageInput'); if(input)input.value='';
         alert(audience==='all' ? `تم إرسال الرسالة إلى ${targets.length} ولي أمر ضمن الصف المحدد.` : 'تم إرسال الرسالة إلى ولي أمر الطالب المحدد.');
         openParentTeacherMessagesForTeacher();
@@ -9974,8 +9999,8 @@ function updateCloudStatus(text, color) {
             if(unread) markParentTeacherMessageTeacherRead(m.id);
             return `<div class="parent-teacher-message-card ${unread?'is-new':''}">
                 <div class="parent-teacher-message-head"><div><b>👨‍👩‍👦 ${escapeGlobalSearchHTML(m.parentName||'ولي الأمر')}</b><div class="parent-teacher-message-meta">الطالب: ${escapeGlobalSearchHTML(m.studentName||'-')} — الصف: ${escapeGlobalSearchHTML(m.className||'-')}</div></div><small>${escapeGlobalSearchHTML(new Date(m.createdAt).toLocaleString('ar-IQ'))}</small></div>
-                <div class="parent-teacher-message-body"><b>الرسالة:</b><div>${escapeGlobalSearchHTML(m.message||'')}</div></div>
-                ${m.response?`<div class="parent-teacher-message-response"><b>ردك:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small></div>`:''}
+                <div class="parent-teacher-message-body"><b>الرسالة:</b><div>${escapeGlobalSearchHTML(m.message||'')}</div><div style="margin-top:8px">${getParentTeacherMessageStatusHtml(m,'parent')}</div></div>
+                ${m.response?`<div class="parent-teacher-message-response"><b>ردك:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small><div style="margin-top:6px">${m.responseDeliveredAt?'<span class="parent-message-status delivered">✓✓ تم الوصول إلى ولي الأمر</span>':'<span class="parent-message-status sent">✓ تم إرسال الرد</span>'}</div></div>`:''}
                 <div class="parent-teacher-message-actions"><button type="button" onclick="replyToParentTeacherMessage('${String(m.id).replace(/'/g,"\\'")}')">↩️ ${m.response?'تعديل الرد':'الرد على ولي الأمر'}</button><button type="button" onclick="deleteParentTeacherMessage('${String(m.id).replace(/'/g,"\\'")}')" style="background:#c0392b">🗑 حذف</button></div>
             </div>`;
         }).join('');
@@ -10025,7 +10050,7 @@ function updateCloudStatus(text, color) {
         const history=getParentTeacherMessagesForParent();
         const page=document.createElement('div');page.id='parentTeacherMessagePage';page.className='parent-section-page';page.style.cssText='position:fixed;inset:0;z-index:100130;display:block;overflow:auto;background:var(--parent-bg,#f4f7fa);padding:12px;direction:rtl;';
         const teacherOptions=teachers.length?teachers.map(t=>`<option value="${escapeGlobalSearchHTML(t.key)}">${escapeGlobalSearchHTML(t.name)} — ${escapeGlobalSearchHTML(t.spec||'معلم الصف')}</option>`).join(''):'<option value="">لا يوجد معلمون مخصصون لهذا الصف</option>';
-        const historyHtml=history.slice(0,30).map(m=>{const incoming=String(m.senderRole||'parent')==='teacher';return `<div class="parent-teacher-message-card ${incoming?'parent-incoming-teacher-message':''}"><div class="parent-teacher-message-head"><div><b>${incoming?'📢 رسالة من المعلم':'👨‍🏫 '+escapeGlobalSearchHTML(m.teacherName||'-')}</b><div class="parent-teacher-message-meta">${escapeGlobalSearchHTML(m.createdAt?new Date(m.createdAt).toLocaleString('ar-IQ'):'')}</div></div>${incoming?'<span class="parent-reply-badge">رسالة واردة</span>':(m.response?'<span class="parent-reply-badge">تم الرد</span>':'<span class="parent-wait-badge">بانتظار الرد</span>')}</div><div class="parent-teacher-message-body"><b>${incoming?'رسالة المعلم:':'رسالتك:'}</b><div>${escapeGlobalSearchHTML(m.message||'')}</div></div>${m.response?`<div class="parent-teacher-message-response"><b>رد المعلم:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small></div>`:''}</div>`}).join('')||'<div class="pro-empty">لا توجد رسائل سابقة.</div>';
+        const historyHtml=history.slice(0,30).map(m=>{const incoming=String(m.senderRole||'parent')==='teacher';return `<div class="parent-teacher-message-card ${incoming?'parent-incoming-teacher-message':''}"><div class="parent-teacher-message-head"><div><b>${incoming?'📢 رسالة من المعلم':'👨‍🏫 '+escapeGlobalSearchHTML(m.teacherName||'-')}</b><div class="parent-teacher-message-meta">${escapeGlobalSearchHTML(m.createdAt?new Date(m.createdAt).toLocaleString('ar-IQ'):'')}</div></div>${incoming?'<span class="parent-reply-badge">رسالة واردة</span>':(m.response?'<span class="parent-reply-badge">تم الرد</span>':'<span class="parent-wait-badge">بانتظار الرد</span>')}</div><div class="parent-teacher-message-body"><b>${incoming?'رسالة المعلم:':'رسالتك:'}</b><div>${escapeGlobalSearchHTML(m.message||'')}</div><div style="margin-top:8px">${incoming?getParentTeacherIncomingStatusHtml(m):getParentTeacherMessageStatusHtml(m,'parent')}</div></div>${m.response?`<div class="parent-teacher-message-response"><b>رد المعلم:</b><div>${escapeGlobalSearchHTML(m.response)}</div><small>${escapeGlobalSearchHTML(new Date(m.responseAt).toLocaleString('ar-IQ'))}</small><div style="margin-top:6px">${m.responseReadAt?'<span class="parent-message-status read">✓✓ تمت القراءة</span>':m.responseDeliveredAt?'<span class="parent-message-status delivered">✓✓ تم الوصول</span>':'<span class="parent-message-status sent">✓ تم الإرسال</span>'}</div></div>`:''}</div>`}).join('')||'<div class="pro-empty">لا توجد رسائل سابقة.</div>';
         page.innerHTML=`<div class="parent-section-page-inner parent-portal parent-portal-${String(f.student.gender||'').toLowerCase()==='female'?'female':'male'}"><div class="parent-section-page-head"><div><div class="parent-kicker">🏫 بوابة ولي الأمر</div><h2>💬 رسالة إلى معلم</h2><p>الطالب: <b>${escapeGlobalSearchHTML(f.student.name||'-')}</b> — الصف: <b>${escapeGlobalSearchHTML(f.classObj?.name||'-')}</b></p></div><button type="button" class="parent-section-back" onclick="document.getElementById('parentTeacherMessagePage')?.remove();document.getElementById('studentRoleDashboardModal')?.scrollTo?.({top:0,behavior:'smooth'});">↩ الرئيسية</button></div>
             <div class="pro-panel"><h3>📨 إرسال رسالة إلى معلم</h3><div class="parent-message-note">يسمح النظام لولي الأمر بإرسال <b>رسالة واحدة يومياً لكل معلم بشكل مستقل</b>. مثال: يمكنك مراسلة أحمد مرة وسرمد مرة في اليوم نفسه.</div><label>اختر المعلم المختص بالصف</label><select id="parentTeacherSelect" onchange="updateParentTeacherDailyLimitUI()">${teacherOptions}</select><div id="parentTeacherDailyStatus" style="margin-top:8px"></div><label style="display:block;margin-top:10px">نص الرسالة</label><textarea id="parentTeacherMessageInput" rows="7" maxlength="1000" placeholder="اكتب رسالتك للمعلم..."></textarea><div style="display:flex;justify-content:flex-start;margin-top:10px"><button type="button" id="parentTeacherSendButton" onclick="sendParentTeacherMessage()" style="background:#1976d2;color:#fff;font-weight:900">📨 إرسال الرسالة</button></div></div>
             <div class="pro-panel"><h3>📬 رسائلك وردود المعلمين</h3>${historyHtml}</div></div>`;
