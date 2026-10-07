@@ -4310,7 +4310,7 @@ function updateCloudStatus(text, color) {
 
     function getTeacherAssignedClassIndicesForRecord(teacher) {
         return getTeacherAssignedClassIdsForRecord(teacher)
-            .map(id => schoolData.findIndex(cls => cls && cls.id === id))
+            .map(id => schoolData.findIndex(cls => cls && String(cls.id || '').trim() === String(id || '').trim()))
             .filter(idx => idx >= 0);
     }
 
@@ -4412,18 +4412,33 @@ function updateCloudStatus(text, color) {
         if(!getTeacherAssignedClassIdsForRecord(t).map(String).includes(classId) || !getTeacherSubjectsForClass(t,classId).includes(spec)){alert('هذا الصف أو هذه المادة غير مسموح بها لهذا المعلم.');return;}
         const p=pendingTeacherLogin; pendingTeacherLogin=null;
         const modal=document.getElementById('teacherSpecialtyLoginModal'); if(modal) modal.style.display='none';
+        // حفظ الاختيار قبل إغلاق نافذة الدخول، ثم فتح الصف المحدد مباشرة.
         completeTeacherLogin(p.teacherObj,p.enteredCode,spec,classId);
     }
     function completeTeacherLogin(teacherObj, enteredCode, spec, classId){
         const assignedClassIndices=getTeacherAssignedClassIndicesForRecord(teacherObj);
-        const selectedClassIndex=schoolData.findIndex(c=>String(c?.id||'')===String(classId||''));
-        currentUser={role:'teacher',name:teacherObj.name,teacherId:teacherObj.id||'',assignedClassIds:assignedClassIndices.map(i=>schoolData[i]?.id).filter(Boolean),assignedClassIndices,teacherSubject:String(spec||'عام').trim(),selectedClassId:String(classId||''),selectedClassIndex,selectedTeacherClassSubject:{classId:String(classId||''),subject:String(spec||'').trim()}};
-        applyUserPermissions();
-        document.getElementById('loginOverlay').style.display='none';
-        // بعد اختيار الصف والمادة، يدخل المعلم مباشرة إلى الصف المحدد بدلاً من البقاء في قائمة الصفوف.
-        if(Number.isInteger(selectedClassIndex) && selectedClassIndex >= 0 && schoolData[selectedClassIndex]){
-            setTimeout(function(){ selectClass(selectedClassIndex); },50);
+        const normalizedClassId=String(classId||'').trim();
+        const normalizedSubject=String(spec||'عام').trim();
+        const safeSelectedClassIndex=schoolData.findIndex(c=>String(c?.id||'').trim()===normalizedClassId);
+        if(safeSelectedClassIndex < 0){
+            alert('تعذر العثور على الصف المحدد. أعد اختيار الصف من القائمة.');
+            return;
         }
+        currentUser={
+            role:'teacher',
+            name:teacherObj.name,
+            teacherId:teacherObj.id||'',
+            assignedClassIds:assignedClassIndices.map(i=>schoolData[i]?.id).filter(Boolean),
+            assignedClassIndices,
+            teacherSubject:normalizedSubject,
+            selectedClassId:normalizedClassId,
+            selectedClassIndex:safeSelectedClassIndex,
+            selectedTeacherClassSubject:{classId:normalizedClassId,subject:normalizedSubject}
+        };
+        applyUserPermissions();
+        const login=document.getElementById('loginOverlay'); if(login) login.style.display='none';
+        // دخول مباشر وفوري إلى الصف الذي اختاره المعلم.
+        selectClass(safeSelectedClassIndex);
         setTimeout(function(){ showLiveAnnouncements(); showComplaintResponses(); },250);
     }
 
@@ -7247,6 +7262,13 @@ function updateCloudStatus(text, color) {
         if (nav) nav.style.display = '';
 
         currentClassIndex = null;
+        // عند رجوع المعلم إلى الصفوف، نلغي قيد الصف الذي كان مختاراً في جلسة الدخول
+        // حتى تظهر له جميع الصفوف المسموحة له، ويمكنه اختيار صف آخر بشكل صحيح.
+        if(currentUser && currentUser.role==='teacher'){
+            currentUser.selectedClassId='';
+            currentUser.selectedClassIndex=-1;
+            currentUser.selectedTeacherClassSubject=null;
+        }
         renderClassesNav();
     }
 
@@ -7255,7 +7277,7 @@ function updateCloudStatus(text, color) {
         if (currentUser?.role === 'parent' && Number(index) !== Number(currentUser.classIndex)) { alert('لا يمكنك مشاهدة بيانات أي صف أو طالب آخر.'); return; }
         if (currentUser && currentUser.role === 'teacher') {
             const selectedClassId = String(currentUser.selectedClassId || '').trim();
-            if (selectedClassId && String(schoolData[index]?.id || '') !== selectedClassId) {
+            if (selectedClassId && String(schoolData[index]?.id || '').trim() !== selectedClassId) {
                 alert('عذراً، هذا الصف ليس الصف المحدد عند دخول المعلم.');
                 return;
             }
