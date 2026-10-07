@@ -2136,6 +2136,17 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 @media(max-width:600px){.parent-schedule-table{min-width:760px}.parent-schedule-day{min-width:98px}.parent-schedule-cell{height:54px}.parent-absence-page{padding:0}.parent-absence-page-inner{min-height:100vh;border-radius:0}.parent-absence-page-head{padding:14px}.parent-absence-page-head h2{font-size:18px}.parent-absence-stats{padding:12px;gap:7px}.absence-stat{padding:10px 5px}.absence-stat b{font-size:23px}.parent-absence-note{margin:0 12px 12px}.parent-absence-table-wrap{margin:0 12px 18px}}
 </style>
 
+
+<style id="manager-layout-and-announcement-types">
+#staffAdminBar button{font-weight:900;}
+@media(max-width:600px){
+  #adminDailySchoolReportBox>div{align-items:stretch!important;}
+  #adminDailySchoolReportBox>div>div:last-child{width:100%;display:grid!important;grid-template-columns:1fr 1fr;}
+  #adminDailySchoolReportBox button{width:100%;min-width:0;}
+  #staffAdminBar>div>div:last-child{display:grid!important;grid-template-columns:1fr;}
+  #staffAdminBar button{width:100%;}
+}
+</style>
 </head>
 <body>
 
@@ -2189,8 +2200,8 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
             <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 جرد الصفوف</button>
-            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);">👨‍🏫 المعلمون ومراقب</button>
-            <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);">📋 سجل غياب معلم</button>
+            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
+            <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openAnnouncementsModal()" id="btnAnnouncementsNav" style="background: #8e44ad;">🔔 التنبيهات والرسائل</button>
             <button onclick="openComplaintsManagerModal()" id="btnComplaintsNav" style="background:#c0398a;">📮 الشكاوي</button>
@@ -2210,7 +2221,21 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     <div id="adminDailySchoolReportBox" style="display:none;margin:12px auto;max-width:1400px;padding:0 12px;direction:rtl;">
       <div style="background:linear-gradient(135deg,#0f7c8c,#126b78);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 7px 22px rgba(15,124,140,.22);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div><div style="font-size:18px;font-weight:900;">📋 كشف طلاب المدرسة اليومي</div><div style="font-size:12px;opacity:.92;margin-top:4px;">الحضور والغياب والتأخر والطلاب الذين تجاوز غيابهم 5 أيام في الشهر الحالي</div></div>
-        <button type="button" onclick="openDailySchoolStudentReport()" style="background:#fff;color:#0f7c8c;border:0;border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">فتح الكشف</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button type="button" onclick="openDailySchoolStudentReport()" style="background:#fff;color:#0f7c8c;border:0;border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">فتح الكشف</button>
+          <button type="button" id="btnDailyInventoryInsideReport" onclick="openMonitorDailyInventory()" style="background:#16a085;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📋 جرد الصفوف</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="staffAdminBar" style="display:none;margin:0 auto 12px;max-width:1400px;padding:0 12px;direction:rtl;">
+      <div style="background:#fff;border:1px solid #d9e2e9;border-radius:16px;padding:10px 12px;box-shadow:0 4px 15px rgba(31,45,61,.08);">
+        <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);">📋 سجل غياب معلم</button>
+          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون ومراقب</button>
+          <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
+        </div>
       </div>
     </div>
 
@@ -2572,6 +2597,15 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
         <div id="announcementAdminPanel" class="announcement-admin-panel">
             <div class="announcement-compose-head">✍️ إرسال تنبيه جديد</div>
             <div class="announcement-compose-grid">
+                <div class="form-group pro-field">
+                    <label>نوع التنبيه</label>
+                    <select id="announcementType">
+                        <option value="warning">🔴 تحذير مهم</option>
+                        <option value="alert">🟠 تنبيه</option>
+                        <option value="notice">🔵 إعلان</option>
+                        <option value="normal">🟢 إشعار عادي</option>
+                    </select>
+                </div>
                 <div class="form-group pro-field">
                     <label>إرسال إلى</label>
                     <select id="announcementAudience" onchange="updateAnnouncementRecipientOptions()">
@@ -4943,6 +4977,8 @@ function updateCloudStatus(text, color) {
         let globalSearchWrapper = document.getElementById('globalSearchWrapper');
 
         if (!currentUser) return;
+        const staffAdminBarInit=document.getElementById('staffAdminBar'); if(staffAdminBarInit) staffAdminBarInit.style.display='none';
+        const insideInventoryInit=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryInit) insideInventoryInit.style.display='none';
 
         // صندوق الشكاوى: يظهر للمدير فقط، ويُعاد ضبطه صراحةً عند كل تسجيل دخول
         // حتى لا يبقى مخفياً بسبب صلاحيات الحساب السابق.
@@ -4978,6 +5014,12 @@ function updateCloudStatus(text, color) {
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'inline-block';
             if(btnDailySchoolStudentReportNav){ btnDailySchoolStudentReportNav.style.display='inline-block'; btnDailySchoolStudentReportNav.style.visibility='visible'; btnDailySchoolStudentReportNav.style.opacity='1'; }
             if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='block';
+            const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='block';
+            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='inline-block';
+            const staffAdminManagementButton=document.getElementById('staffAdminManagementButton'); if(staffAdminManagementButton) staffAdminManagementButton.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
+            if(btnTeachers) btnTeachers.style.display='none';
+            if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display='none';
+            if(btnAdminManagementNav) btnAdminManagementNav.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'none';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
@@ -4985,7 +5027,7 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNav=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav) btnSystemResetNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
+            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
@@ -4993,6 +5035,8 @@ function updateCloudStatus(text, color) {
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'monitor') {
+            const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
+            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             // المراقب له واجهة مستقلة: الصفوف والطلاب + الحضور/الغياب + ملاحظات للمدير فقط.
             badge.innerText = `الصلاحية: مراقب 👁️ (${currentUser.name})`;
@@ -5032,6 +5076,8 @@ function updateCloudStatus(text, color) {
             if(classesNav) classesNav.style.display='none';
             if(classContent) classContent.style.display='none';
         } else if (currentUser.role === 'guestSupervisor') {
+            const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
+            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
@@ -5373,6 +5419,7 @@ function updateCloudStatus(text, color) {
     function sendAnnouncement(){
         if(!currentUser || currentUser.role!=='admin') return;
         const audience=document.getElementById('announcementAudience').value;
+        const type=document.getElementById('announcementType')?.value||'normal';
         const message=document.getElementById('announcementMessageInput').value.trim();
         if(!message){alert('اكتب نص الرسالة أولاً.');return;}
         let targetId='',targetName='',targetStudentId='';
@@ -5393,6 +5440,7 @@ function updateCloudStatus(text, color) {
             targetId,
             targetName,
             targetStudentId,
+            type,
             message,
             createdAt:new Date().toISOString(),
             createdBy:currentUser.name||'المدير',
@@ -5440,6 +5488,20 @@ function updateCloudStatus(text, color) {
         return false;
     }
 
+    function getAnnouncementTypeInfo(type){
+        const map={
+            warning:{icon:'🔴',label:'تحذير مهم',color:'#c0392b',bg:'#fff0f0'},
+            alert:{icon:'🟠',label:'تنبيه',color:'#d35400',bg:'#fff4e8'},
+            notice:{icon:'🔵',label:'إعلان',color:'#2980b9',bg:'#eef6ff'},
+            normal:{icon:'🟢',label:'إشعار عادي',color:'#16803c',bg:'#edf9f0'}
+        };
+        return map[String(type||'normal')]||map.normal;
+    }
+    function renderAnnouncementTypeBadge(a){
+        const t=getAnnouncementTypeInfo(a?.type);
+        return `<div class="announcement-type-badge" style="display:inline-flex;align-items:center;gap:5px;background:${t.bg};color:${t.color};border:1px solid ${t.color}33;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:900;margin-bottom:7px;">${t.icon} ${t.label}</div>`;
+    }
+
     function renderAnnouncementReaders(a){
         const readers=getAnnouncementReaders(a);
         if(!readers.length){
@@ -5463,6 +5525,7 @@ function updateCloudStatus(text, color) {
         c.innerHTML=list.map(a=>`
             <div class="announcement-card ${a.audience.includes('parent')?'parent':'teacher'}">
                 <div class="announcement-card-title">🔔 ${escapeAnnouncementHTML(getAnnouncementRecipientLabel(a.audience))}${a.targetName?' — '+escapeAnnouncementHTML(a.targetName):''}</div>
+                ${renderAnnouncementTypeBadge(a)}
                 <div class="announcement-card-message">${escapeAnnouncementHTML(a.message)}</div>
                 <div class="announcement-meta"><span class="announcement-badge">${escapeAnnouncementHTML(a.createdBy||'المدير')}</span><span>${new Date(a.createdAt).toLocaleString('ar-IQ')}</span></div>
                 ${currentUser.role==='admin'?renderAnnouncementReaders(a):renderAnnouncementAcknowledgeButton(a)}
@@ -5495,6 +5558,7 @@ function updateCloudStatus(text, color) {
         box.innerHTML=relevant.map(a=>`
             <div class="live-announcement recipient-highlight">
                 <div class="live-title">🔔 تنبيه من إدارة النظام</div>
+                ${renderAnnouncementTypeBadge(a)}
                 <div class="live-msg">${escapeAnnouncementHTML(a.message)}</div>
                 <div class="live-meta">${new Date(a.createdAt).toLocaleString('ar-IQ')}</div>
                 ${renderAnnouncementAcknowledgeButton(a)}
