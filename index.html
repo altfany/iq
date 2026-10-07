@@ -2194,6 +2194,7 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openAnnouncementsModal()" id="btnAnnouncementsNav" style="background: #8e44ad;">🔔 التنبيهات والرسائل</button>
             <button onclick="openComplaintsManagerModal()" id="btnComplaintsNav" style="background:#c0398a;">📮 الشكاوي</button>
+            <button onclick="openDailySchoolStudentReport()" id="btnDailySchoolStudentReportNav" style="background:#0f7c8c;display:none;font-weight:900;">📋 كشف طلاب المدرسة اليومي</button>
             <button onclick="openComplaintSenderModal()" id="btnTeacherComplaintsNav" style="background:#8e44ad;display:none;font-weight:900;">📨 إرسال شكوى إلى المدير</button>
             <button onclick="openTransferSeparationModal()" id="btnTransferNav" style="background:#7d3c98;display:none;">🔄  نقل وفصل وتعليق</button>
             <button onclick="openAdminManagementModal()" id="btnAdminManagementNav" style="background: var(--orange); display:none;">⚙️ إدارة المدير والمعاون</button>
@@ -2206,6 +2207,13 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
         </div>
     </header>
+
+    <div id="adminDailySchoolReportBox" style="display:none;margin:12px auto;max-width:1400px;padding:0 12px;direction:rtl;">
+      <div style="background:linear-gradient(135deg,#0f7c8c,#126b78);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 7px 22px rgba(15,124,140,.22);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div><div style="font-size:18px;font-weight:900;">📋 كشف طلاب المدرسة اليومي</div><div style="font-size:12px;opacity:.92;margin-top:4px;">الحضور والغياب والتأخر والطلاب الذين تجاوز غيابهم 5 أيام في الشهر الحالي</div></div>
+        <button type="button" onclick="openDailySchoolStudentReport()" style="background:#fff;color:#0f7c8c;border:0;border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">فتح الكشف</button>
+      </div>
+    </div>
 
     <div class="classes-nav" id="classesNav"></div>
 
@@ -3577,6 +3585,61 @@ function deleteAllComplaints(){
     updateComplaintsManagerIndicator();
 }
 
+
+/* كشف طلاب المدرسة اليومي — للمدير فقط */
+function getDailySchoolStudentRows(){
+    const rows=[];
+    (schoolData||[]).forEach((cls,ci)=>{
+        (cls?.desks||[]).forEach((desk,di)=>{
+            [1,2].forEach(slot=>{
+                const name=String(desk?.['student'+slot]||'').trim(); if(!name)return;
+                const id=canonicalStudentId(cls,ci,desk,di,slot);
+                rows.push({id,name,className:String(cls?.name||`الصف ${ci+1}`),deskNumber:String(desk?.deskNumber??(di+1)),seat:slot===1?'يمين':'يسار',code:String(desk?.['code'+slot]||'').trim(),phone:String(desk?.['phone'+slot]||desk?.['parentPhone'+slot]||'').trim(),address:String(desk?.['address'+slot]||'').trim(),legacyKey:`${desk?.deskNumber??(di+1)}_${slot===1?'يمين':'يسار'}_${name}`,cls});
+            });
+        });
+    });
+    return rows;
+}
+function getDailySchoolStudentStatus(row,dateStr){
+    const pro=(window.ProfessionalModules?.attendanceData||[]).find(r=>String(r?.studentId||'').trim()===String(row.id||'').trim()&&String(r?.date||'')===String(dateStr||''));
+    if(pro?.status)return pro.status;
+    return getStoredAttendanceStatus(row.cls,dateStr,row.legacyKey);
+}
+function getStudentMonthlyAbsenceCount(row,year,month){
+    const prefix=`${year}-${String(month).padStart(2,'0')}-`,days=new Set();
+    (window.ProfessionalModules?.attendanceData||[]).forEach(r=>{const d=String(r?.date||'');if(String(r?.studentId||'').trim()===String(row.id||'').trim()&&d.startsWith(prefix)&&r.status==='absent')days.add(d);});
+    const legacy=row.cls?.absenceRecords&&typeof row.cls.absenceRecords==='object'?row.cls.absenceRecords:{};
+    Object.keys(legacy).forEach(d=>{if(!d.startsWith(prefix))return;const a=legacy[d]?.[row.legacyKey],b=legacy[d]?.[row.id];if(a===true||a==='absent'||b===true||b==='absent')days.add(d);});
+    return days.size;
+}
+function openDailySchoolStudentReport(){
+    if(!currentUser||currentUser.role!=='admin')return;
+    document.getElementById('dailySchoolStudentReportModal')?.remove();
+    const modal=document.createElement('div'); modal.id='dailySchoolStudentReportModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100120;background:rgba(4,20,35,.72);padding:10px;align-items:center;justify-content:center;direction:rtl;';
+    modal.innerHTML=`<div class="modal-content" style="width:min(1250px,98vw);max-height:95vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h2 style="margin:0;color:#0f7c8c">📋 كشف طلاب المدرسة اليومي</h2><div id="dailySchoolReportDateLabel" style="font-size:12px;color:#667;margin-top:4px"></div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" onclick="printDailySchoolStudentReport()" style="background:#198754;font-weight:900">🖨️ طباعة A4</button><button type="button" onclick="document.getElementById('dailySchoolStudentReportModal')?.remove()" style="background:#dc3545">✕ إغلاق</button></div></div><div id="dailySchoolReportBody"></div></div>`;
+    document.body.appendChild(modal); renderDailySchoolStudentReport();
+}
+function renderDailySchoolStudentReport(){
+    const body=document.getElementById('dailySchoolReportBody'); if(!body)return;
+    const today=getFormattedDate(),now=new Date(),rows=getDailySchoolStudentRows();
+    const present=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='present').length,absent=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='absent').length,late=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='late').length,leave=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='leave').length;
+    const monthly=rows.map(r=>({...r,monthlyAbsences:getStudentMonthlyAbsenceCount(r,now.getFullYear(),now.getMonth()+1)})).filter(r=>r.monthlyAbsences>5).sort((a,b)=>b.monthlyAbsences-a.monthlyAbsences||a.name.localeCompare(b.name,'ar'));
+    const dl=document.getElementById('dailySchoolReportDateLabel'); if(dl)dl.textContent=`التاريخ: ${now.toLocaleDateString('ar-IQ',{year:'numeric',month:'long',day:'numeric'})} — الشهر الحالي: ${now.toLocaleDateString('ar-IQ',{year:'numeric',month:'long'})}`;
+    const esc=v=>escapeGlobalSearchHTML(String(v??'-')),card=(t,n,i,b)=>`<div style="background:${b};color:#fff;border-radius:16px;padding:16px"><div style="font-size:25px">${i}</div><div style="font-size:13px;font-weight:800">${t}</div><div style="font-size:30px;font-weight:900">${n}</div></div>`;
+    body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0">${card('عدد الحاضرين اليوم',present,'✅','#16803c')}${card('الغائبون اليوم',absent,'❌','#c0392b')}${card('المتأخرون اليوم',late,'⏰','#b26a00')}${card('المجازون اليوم',leave,'🏖️','#8e6a00')}${card('إجمالي الطلاب',rows.length,'👨‍🎓','#176b9c')}</div><div style="background:#f7fbfc;border:1px solid #cfe7eb;border-radius:16px;padding:14px"><div style="font-weight:900;color:#0f7c8c;font-size:16px;margin-bottom:6px">⚠️ الطلاب الذين تجاوزت غياباتهم 5 أيام هذا الشهر</div><div style="font-size:12px;color:#667;margin-bottom:10px">يُحسب «غائب» فقط، ولا يُحتسب «متأخر» أو «مجاز» ضمن الحد.</div><div style="overflow:auto"><table class="pro-table" style="min-width:900px;width:100%"><thead><tr><th>الطالب</th><th>الصف</th><th>المقعد</th><th>كود الطالب</th><th>هاتف ولي الأمر</th><th>العنوان</th><th>غياب هذا الشهر</th></tr></thead><tbody>${monthly.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.className)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${esc(r.phone||'—')}</td><td>${esc(r.address||'—')}</td><td><strong style="color:#c0392b;font-size:16px">${r.monthlyAbsences}</strong> أيام</td></tr>`).join('')||'<tr><td colspan="7" class="pro-empty">لا يوجد طالب تجاوز 5 أيام غياب في الشهر الحالي.</td></tr>'}</tbody></table></div></div><div style="margin-top:12px;padding:12px;background:#fff;border:1px solid #e6eaee;border-radius:14px;color:#667;font-size:12px">📌 التقرير مرتبط مباشرة بسجلات الحضور الموجودة في النظام، وأي تعديل ينعكس هنا تلقائياً.</div>`;
+}
+function printDailySchoolStudentReport(){
+    if(!currentUser||currentUser.role!=='admin'){alert('الطباعة متاحة للمدير فقط.');return;}
+    const rows=getDailySchoolStudentRows(),today=getFormattedDate(),now=new Date();
+    const present=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='present').length,absent=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='absent').length,late=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='late').length,leave=rows.filter(r=>getDailySchoolStudentStatus(r,today)==='leave').length;
+    const monthly=rows.map(r=>({...r,monthlyAbsences:getStudentMonthlyAbsenceCount(r,now.getFullYear(),now.getMonth()+1)})).filter(r=>r.monthlyAbsences>5).sort((a,b)=>b.monthlyAbsences-a.monthlyAbsences||a.name.localeCompare(b.name,'ar'));
+    const esc=v=>escapeGlobalSearchHTML(String(v??'-')),schoolName=String(printSchoolName||document.getElementById('systemHeaderTitle')?.textContent||'المدرسة').trim(),managerName=String(printManagerName||adminCredentials?.name||currentUser?.name||'مدير المدرسة').trim();
+    document.getElementById('dailySchoolStudentReportPrint')?.remove(); const root=document.createElement('div'); root.id='dailySchoolStudentReportPrint';
+    root.innerHTML=`<style>@page{size:A4 portrait;margin:10mm}#dailySchoolStudentReportPrint{direction:rtl;font-family:Tahoma,Arial,sans-serif;background:#fff;color:#172b3a}#dailySchoolStudentReportPrint .report-sheet{width:190mm;min-height:277mm;margin:0 auto;box-sizing:border-box}#dailySchoolStudentReportPrint .print-tools{position:fixed;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:999999;background:#17364f;padding:7px;border-radius:10px}#dailySchoolStudentReportPrint .print-tools button{border:0;border-radius:8px;padding:8px 14px;font-weight:900;color:#fff;cursor:pointer}#dailySchoolStudentReportPrint .title{border:3px double #0f7c8c;border-radius:14px;text-align:center;padding:13px;margin-bottom:10px}#dailySchoolStudentReportPrint .title h1{font-size:22px;margin:0 0 6px;color:#0f6571}#dailySchoolStudentReportPrint .title div{font-size:12px;line-height:1.8}#dailySchoolStudentReportPrint .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}#dailySchoolStudentReportPrint .stat{border:1px solid #cbdde2;border-radius:10px;padding:8px;text-align:center}#dailySchoolStudentReportPrint .stat b{display:block;font-size:19px;color:#0f6571}#dailySchoolStudentReportPrint .stat span{font-size:10px;color:#52697c}#dailySchoolStudentReportPrint h2{font-size:15px;color:#0f6571;margin:10px 0 7px}#dailySchoolStudentReportPrint table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}#dailySchoolStudentReportPrint th,#dailySchoolStudentReportPrint td{border:1px solid #b9cbd1;padding:5px 4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}#dailySchoolStudentReportPrint th{background:#0f7c8c;color:#fff;font-weight:900}#dailySchoolStudentReportPrint .footer{margin-top:12px;display:flex;justify-content:space-between;gap:20px;font-size:11px;font-weight:800}#dailySchoolStudentReportPrint .note{margin-top:7px;font-size:9px;color:#687b88;text-align:center}@media print{body>*:not(#dailySchoolStudentReportPrint){display:none!important}#dailySchoolStudentReportPrint{display:block!important}#dailySchoolStudentReportPrint .print-tools{display:none!important}#dailySchoolStudentReportPrint .report-sheet{width:190mm;min-height:277mm;margin:0}#dailySchoolStudentReportPrint tr{page-break-inside:avoid}}</style><div class="print-tools"><button type="button" onclick="window.print()" style="background:#198754">🖨️ طباعة</button><button type="button" onclick="document.getElementById('dailySchoolStudentReportPrint')?.remove()" style="background:#dc3545">✕ إغلاق</button></div><div class="report-sheet"><div class="title"><h1>📋 كشف طلاب المدرسة اليومي</h1><div><b>${esc(schoolName)}</b><br>التاريخ: ${esc(now.toLocaleDateString('ar-IQ',{year:'numeric',month:'long',day:'numeric'}))} — السنة الدراسية: ${esc((studyYearFrom&&studyYearTo)?`${studyYearFrom} - ${studyYearTo}`:'')}</div></div><div class="stats"><div class="stat"><b>${present}</b><span>الحاضرون اليوم</span></div><div class="stat"><b>${absent}</b><span>الغائبون اليوم</span></div><div class="stat"><b>${late}</b><span>المتأخرون اليوم</span></div><div class="stat"><b>${leave}</b><span>المجازون اليوم</span></div></div><h2>⚠️ الطلاب الذين تجاوزت غياباتهم 5 أيام في الشهر الحالي</h2><table><thead><tr><th>الطالب</th><th>الصف</th><th>المقعد</th><th>الكود</th><th>هاتف ولي الأمر</th><th>العنوان</th><th>الغياب</th></tr></thead><tbody>${monthly.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.className)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${esc(r.phone||'—')}</td><td>${esc(r.address||'—')}</td><td><b>${r.monthlyAbsences} أيام</b></td></tr>`).join('')||'<tr><td colspan="7">لا يوجد طالب تجاوز 5 أيام غياب في الشهر الحالي.</td></tr>'}</tbody></table><div class="footer"><span>اسم المدير: ${esc(managerName)}</span><span>إجمالي الطلاب: ${rows.length}</span></div><div class="note">هذا الكشف مستخرج مباشرة من سجلات الحضور والغياب في نظام إدارة المدرسة.</div></div>`;
+    document.body.appendChild(root); document.body.style.overflow='hidden'; const restore=()=>{document.body.style.overflow='';window.removeEventListener('afterprint',restore)}; window.addEventListener('afterprint',restore); setTimeout(()=>window.print(),250);
+}
+setInterval(()=>{ if(document.getElementById('dailySchoolStudentReportModal') && currentUser?.role==='admin') renderDailySchoolStudentReport(); },10000);
+
 function openComplaintsManagerModal(){
     if(!currentUser || currentUser.role!=='admin') return;
     pruneExpiredComplaintsData();
@@ -4873,6 +4936,7 @@ function updateCloudStatus(text, color) {
         let btnTeachersAbsenceNav = document.getElementById('btnTeachersAbsenceNav');
         let btnHomeworkNav = document.getElementById('btnHomeworkNav');
         let btnTeacherMonthlyReportNav = document.getElementById('btnTeacherMonthlyReportNav');
+        let btnDailySchoolStudentReportNav = document.getElementById('btnDailySchoolStudentReportNav');
         let btnAdminManagementNav = document.getElementById('btnAdminManagementNav');
         let btnSystemGradesNav = document.getElementById('btnSystemGradesNav');
         let btnMonitorsNav = document.getElementById('btnMonitorsNav');
@@ -4883,6 +4947,8 @@ function updateCloudStatus(text, color) {
 
         // صندوق الشكاوى: يظهر للمدير فقط، ويُعاد ضبطه صراحةً عند كل تسجيل دخول
         // حتى لا يبقى مخفياً بسبب صلاحيات الحساب السابق.
+        const adminDailySchoolReportBox=document.getElementById('adminDailySchoolReportBox');
+        if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='none';
         const complaintsNavBtn=document.getElementById('btnComplaintsNav');
         if(complaintsNavBtn){
             complaintsNavBtn.style.display='none';
@@ -4911,6 +4977,8 @@ function updateCloudStatus(text, color) {
             if(btnAbsenceTab) btnAbsenceTab.style.display = 'inline-block';
             if(btnLogNavTab) btnLogNavTab.style.display = 'inline-block';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'inline-block';
+            if(btnDailySchoolStudentReportNav){ btnDailySchoolStudentReportNav.style.display='inline-block'; btnDailySchoolStudentReportNav.style.visibility='visible'; btnDailySchoolStudentReportNav.style.opacity='1'; }
+            if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='block';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'none';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
@@ -4941,6 +5009,8 @@ function updateCloudStatus(text, color) {
             if(btnAbsenceTab) btnAbsenceTab.style.display='none';
             if(btnLogNavTab) btnLogNavTab.style.display='none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display='none';
+            if(btnDailySchoolStudentReportNav) btnDailySchoolStudentReportNav.style.display='none';
+            if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display='none';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display='none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display='none';
@@ -4966,7 +5036,7 @@ function updateCloudStatus(text, color) {
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
-            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherMonthlyReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
+            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
             const professionalQuickMenu=document.getElementById('professionalQuickMenu'); if(professionalQuickMenu) professionalQuickMenu.style.display='none';
             const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
@@ -5002,6 +5072,7 @@ function updateCloudStatus(text, color) {
             const btnMonitorsNavTeacher=document.getElementById('btnMonitorsNav'); if(btnMonitorsNavTeacher) btnMonitorsNavTeacher.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'inline-block';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'inline-block';
+            if(btnDailySchoolStudentReportNav) btnDailySchoolStudentReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display='none';
@@ -5027,6 +5098,7 @@ function updateCloudStatus(text, color) {
             // ولي الأمر لا يرى أي زر تنقل عام أو زر رجوع للصفوف؛ واجهته صفحة ابنه فقط.
             if(btnAbsenceTab) btnAbsenceTab.style.display = 'none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'none';
+            if(btnDailySchoolStudentReportNav) btnDailySchoolStudentReportNav.style.display = 'none';
             const btnTeacherComplaintsNavParent=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavParent) btnTeacherComplaintsNavParent.style.display='none';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
