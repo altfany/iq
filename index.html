@@ -3314,8 +3314,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
     let parentLoginUsage = {};
     // بوابة الغيابات لولي الأمر: دورة عرض مستقلة تُعاد كل 390 يوماً دون حذف سجلات النظام الأصلية.
     let parentAbsencePageResetData = {};
-    // وقت آخر فتح/قراءة لزر التنبيهات لدى كل ولي أمر — محفوظ في Firebase فقط.
-    let parentNotificationSeenAt = {};
     let showTeacherCodes = false;
     let monitorsData = [];
     let monitorNotesData = [];
@@ -3815,7 +3813,6 @@ function acknowledgeAnnouncement(id) {
             adminName: String(adminCredentials.name || 'مدير النظام'),
             parentLoginUsage: parentLoginUsage || {},
             parentAbsencePageResetData: parentAbsencePageResetData || {},
-            parentNotificationSeenAt: parentNotificationSeenAt || {},
             printManagerName: String(printManagerName || ''),
             printSchoolName: String(printSchoolName || ''),
             studyYearFrom: String(studyYearFrom || ''),
@@ -4047,8 +4044,6 @@ function updateCloudStatus(text, color) {
         if (cloud.adminName !== undefined && String(cloud.adminName).trim()) adminCredentials.name = String(cloud.adminName).trim();
         if (cloud.parentLoginUsage !== undefined && cloud.parentLoginUsage && typeof cloud.parentLoginUsage === 'object') parentLoginUsage = cloud.parentLoginUsage;
         if (cloud.parentAbsencePageResetData !== undefined && cloud.parentAbsencePageResetData && typeof cloud.parentAbsencePageResetData === 'object' && !Array.isArray(cloud.parentAbsencePageResetData)) parentAbsencePageResetData = cloud.parentAbsencePageResetData;
-        if (cloud.parentNotificationSeenAt !== undefined && cloud.parentNotificationSeenAt && typeof cloud.parentNotificationSeenAt === 'object' && !Array.isArray(cloud.parentNotificationSeenAt)) parentNotificationSeenAt = cloud.parentNotificationSeenAt;
-        setTimeout(()=>{ try{ updateParentNotificationButton(); }catch(e){} }, 0);
         if (cloud.printManagerName !== undefined) printManagerName = String(cloud.printManagerName || '').trim();
         if (cloud.printSchoolName !== undefined) printSchoolName = String(cloud.printSchoolName || '').trim();
         if (cloud.studyYearFrom !== undefined) studyYearFrom = String(cloud.studyYearFrom || '').trim();
@@ -9429,87 +9424,6 @@ function updateCloudStatus(text, color) {
         }
         return currentUser.code ? findStudentBySecretCode(currentUser.code) : null;
     }
-    function getParentNotificationKey(){
-        if(!currentUser || currentUser.role!=='parent') return '';
-        const f=currentStudentForDashboard();
-        if(f?.student?.id) return String(f.student.id);
-        const sid=String(currentUser.studentId||currentUser.studentSnapshot?.id||'').trim();
-        if(sid) return sid;
-        return String(currentUser.code||currentUser.name||'').trim();
-    }
-
-    function getParentNotificationLatestActivity(f, liveClass, studentId, studentName){
-        if(!f || !liveClass) return 0;
-        let latest=0;
-        const consider=(v)=>{
-            const t=Date.parse(String(v||''));
-            if(Number.isFinite(t) && t>latest) latest=t;
-        };
-        const grades=ensureStudentGrades(liveClass).filter(g=>
-            String(g.studentKey)===String(f.student.deskIndex+':'+f.student.slot) ||
-            String(g.studentName||'').trim()===String(studentName||'').trim()
-        );
-        grades.forEach(g=>consider(g.updatedAt||g.modifiedAt||g.createdAt));
-        homeworkData.filter(h=>{
-            if(!h) return false;
-            if(h.audience==='student') return String(h.targetCode||'')===String(currentUser?.code||'');
-            if(h.audience!=='all') return false;
-            const hc=String(h.classId||'');
-            if(hc) return hc===String(liveClass.id||'');
-            if(h.classIndex!=null && f.classIndex!=null) return Number(h.classIndex)===Number(f.classIndex);
-            return true;
-        }).forEach(h=>consider(h.createdAt||h.updatedAt||h.date));
-        const behaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
-        consider(liveClass.behaviorUpdatedAt?.[behaviorKey]);
-        (window.ProfessionalModules?.attendanceData||[]).filter(r=>String(r.studentId)===String(studentId)).forEach(r=>consider(r.updatedAt||r.createdAt||r.date));
-        const legacyMap=liveClass?.absenceRecords||{};
-        Object.keys(legacyMap).forEach(date=>{
-            const key=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
-            const raw=legacyMap?.[date]?.[key];
-            if(raw){ consider(raw?.updatedAt||raw?.changedAt||liveClass?.attendanceChangeLog?.[date]?.[key]?.at||date); }
-        });
-        announcementsData.filter(a=>announcementBelongsToCurrentUser(a)).forEach(a=>consider(a.createdAt||a.updatedAt));
-        return latest;
-    }
-
-    function parentHasUnreadNotifications(){
-        if(!currentUser || currentUser.role!=='parent') return false;
-        const f=currentStudentForDashboard();
-        if(!f) return false;
-        const liveClass=schoolData[f.classIndex]||f.classObj||{};
-        const studentId=String(f.student.id||currentUser.studentId||'');
-        const studentName=String(f.student.name||currentUser.name||'');
-        const latest=getParentNotificationLatestActivity(f,liveClass,studentId,studentName);
-        const key=getParentNotificationKey();
-        const seen=Number(parentNotificationSeenAt?.[key]?.time||parentNotificationSeenAt?.[key]||0);
-        return latest>seen;
-    }
-
-    function updateParentNotificationButton(){
-        const btn=document.getElementById('parentNotificationsButton');
-        if(!btn) return;
-        const unread=parentHasUnreadNotifications();
-        btn.classList.toggle('parent-notification-unread',unread);
-        btn.setAttribute('aria-label',unread?'لديك تحديثات جديدة':'التنبيهات والرسائل');
-        btn.title=unread?'لديك تحديثات جديدة — اضغط لعرضها':'التنبيهات والرسائل';
-    }
-
-    function markParentNotificationsSeen(){
-        if(!currentUser || currentUser.role!=='parent') return;
-        const f=currentStudentForDashboard();
-        if(!f) return;
-        const liveClass=schoolData[f.classIndex]||f.classObj||{};
-        const studentId=String(f.student.id||currentUser.studentId||'');
-        const studentName=String(f.student.name||currentUser.name||'');
-        const latest=getParentNotificationLatestActivity(f,liveClass,studentId,studentName);
-        const key=getParentNotificationKey();
-        if(!key) return;
-        if(!parentNotificationSeenAt || typeof parentNotificationSeenAt!=='object' || Array.isArray(parentNotificationSeenAt)) parentNotificationSeenAt={};
-        parentNotificationSeenAt[key]={time:Math.max(Date.now(),latest||0),updatedAt:new Date().toISOString()};
-        saveData();
-        updateParentNotificationButton();
-    }
-
     function getParentNewActivityNotifications(f, liveClass, studentId, studentName){
         const todayKey=(typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10));
         const todayStart=new Date(todayKey+'T00:00:00').getTime();
@@ -9640,8 +9554,108 @@ function updateCloudStatus(text, color) {
         return Array.from(byDate.values()).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     }
 
+    /* ===== تنبيهات أزرار بوابة ولي الأمر: واجب / غياب / درجة / سلوك ===== */
+    const PARENT_ACTIVITY_STORAGE_KEY = 'parentPortalSectionSeen_v1';
+    let parentActivityPulseTimer = null;
+
+    function getParentActivityStorage(){
+        try{
+            const raw=localStorage.getItem(PARENT_ACTIVITY_STORAGE_KEY);
+            const obj=raw?JSON.parse(raw):{};
+            return obj&&typeof obj==='object'?obj:{};
+        }catch(e){ return {}; }
+    }
+    function setParentActivityStorage(obj){
+        try{ localStorage.setItem(PARENT_ACTIVITY_STORAGE_KEY,JSON.stringify(obj)); }catch(e){}
+    }
+    function getParentActivityStudentKey(){
+        if(!currentUser||currentUser.role!=='parent') return '';
+        return String(currentUser.studentId||currentUser.code||currentUser.studentSnapshot?.id||currentUser.name||'').trim();
+    }
+    function parentActivityNowSignature(section){
+        if(currentUser?.role!=='parent') return '';
+        const f=currentStudentForDashboard();
+        if(!f) return '';
+        const liveClass=schoolData[f.classIndex]||f.classObj||{};
+        const studentName=String(f.student?.name||'').trim();
+        const studentId=String(f.student?.id||currentUser.studentId||'').trim();
+        const cleanTime=v=>{const t=new Date(v||'').getTime();return Number.isFinite(t)?t:0;};
+
+        if(section==='grades'){
+            const rows=ensureStudentGrades(liveClass).filter(g=>
+                String(g.studentName||'').trim()===studentName ||
+                String(g.studentKey||'')===String(f.student.deskIndex+':'+f.student.slot)
+            );
+            return rows.map(g=>[String(g.id||g.studentKey||g.subject||''),cleanTime(g.updatedAt||g.modifiedAt||g.createdAt),String(g.score??''),String(g.maxScore??''),String(g.subject||'')].join('|')).sort().join('||');
+        }
+        if(section==='homework'){
+            const classId=String(liveClass.id||'');
+            const rows=homeworkData.filter(h=>{
+                if(!h)return false;
+                if(h.audience==='student')return String(h.targetCode||'')===String(currentUser.code||'');
+                if(h.audience!=='all')return false;
+                const hc=String(h.classId||'');
+                if(hc)return hc===classId;
+                if(h.classIndex!=null&&f.classIndex!=null)return Number(h.classIndex)===Number(f.classIndex);
+                return true;
+            });
+            return rows.map(h=>[String(h.id||h.title||''),cleanTime(h.updatedAt||h.createdAt),String(h.date||''),String(h.title||'')].join('|')).sort().join('||');
+        }
+        if(section==='behavior'){
+            const key=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
+            const behavior=liveClass.behaviorNotes?.[key];
+            const levels=Array.isArray(liveClass.studentLevels?.[key])?liveClass.studentLevels[key]:[];
+            return JSON.stringify({updated:cleanTime(liveClass.behaviorUpdatedAt?.[key]),behavior:behavior||'',levels});
+        }
+        if(section==='absence'){
+            let records=[];
+            try{records=getParentAttendanceHistory(f,liveClass,studentId,studentName,ensureParentAbsencePageReset(studentId))||[];}catch(e){records=[];}
+            return records.map(r=>[String(r.id||r.date||''),String(r.date||''),String(r.status||''),cleanTime(r.updatedAt||r.createdAt||r.date)].join('|')).sort().join('||');
+        }
+        return '';
+    }
+    function ensureParentActivityBaseline(){
+        const key=getParentActivityStudentKey(); if(!key)return;
+        const store=getParentActivityStorage();
+        if(!store[key]){
+            store[key]={grades:parentActivityNowSignature('grades'),absence:parentActivityNowSignature('absence'),behavior:parentActivityNowSignature('behavior'),homework:parentActivityNowSignature('homework'),initializedAt:new Date().toISOString()};
+            setParentActivityStorage(store);
+        }
+    }
+    function isParentActivityUnread(section){
+        const key=getParentActivityStudentKey(); if(!key)return false;
+        const store=getParentActivityStorage(); if(!store[key])return false;
+        return parentActivityNowSignature(section)!==String(store[key][section]??'');
+    }
+    function markParentSectionViewed(section){
+        const key=getParentActivityStudentKey();
+        if(!key||!['grades','absence','behavior','homework'].includes(section))return;
+        const store=getParentActivityStorage(); if(!store[key])store[key]={};
+        store[key][section]=parentActivityNowSignature(section); store[key].lastViewedAt=new Date().toISOString();
+        setParentActivityStorage(store); updateParentActivityButtonStates();
+    }
+    function updateParentActivityButtonStates(){
+        const root=document.getElementById('studentRoleDashboardModal'); if(!root)return;
+        const map={absence:'parentActionAbsence',grades:'parentActionGrades',behavior:'parentActionBehavior',homework:'parentActionHomework'};
+        Object.entries(map).forEach(([section,id])=>{
+            const btn=document.getElementById(id); if(!btn)return;
+            const unread=isParentActivityUnread(section);
+            btn.classList.toggle('parent-activity-unread',unread);
+            btn.setAttribute('aria-label',unread?'يوجد تحديث جديد — اضغط للمشاهدة':btn.textContent.trim());
+        });
+    }
+    function startParentActivityPulse(){
+        if(parentActivityPulseTimer)clearInterval(parentActivityPulseTimer);
+        ensureParentActivityBaseline(); updateParentActivityButtonStates();
+        parentActivityPulseTimer=setInterval(()=>{
+            if(currentUser?.role!=='parent'||!document.getElementById('studentRoleDashboardModal')){clearInterval(parentActivityPulseTimer);parentActivityPulseTimer=null;return;}
+            updateParentActivityButtonStates();
+        },3000);
+    }
+
     function openParentAbsencePage(){
         if(currentUser?.role!=='parent') return;
+        markParentSectionViewed('absence');
         const f=currentStudentForDashboard();
         if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
         const liveClass=schoolData[f.classIndex]||f.classObj||{};
@@ -9668,6 +9682,7 @@ function updateCloudStatus(text, color) {
 
     function openParentSectionPage(section){
         if(currentUser?.role!=='parent') return;
+        if(['grades','behavior','homework'].includes(section)) markParentSectionViewed(section);
         const f=currentStudentForDashboard();
         if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
         const liveClass=schoolData[f.classIndex]||f.classObj||{};
@@ -9755,9 +9770,9 @@ function updateCloudStatus(text, color) {
         const scheduleHead=scheduleDays.map(d=>`<th class="parent-schedule-day ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}"><span>${d.name}</span>${d.index===todayIndex?'<small>اليوم</small>':''}${d.index===tomorrowIndex?'<small>غداً</small>':''}</th>`).join('');
         const scheduleBody=Array.from({length:lessons},(_,l)=>`<tr><th class="parent-schedule-lesson">الحصة ${l+1}</th>${scheduleDays.map(d=>{const e=d.enabled?getScheduleEntryData(liveClass,`${d.index}_${l}`):{subject:'',teacherName:'',emergency:false};const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');return `<td class="parent-schedule-cell ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}">${e.subject?`<b>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</b><small>${escapeGlobalSearchHTML(t||'-')}</small>`:'<span class="schedule-empty">—</span>'}</td>`;}).join('')}</tr>`).join('');
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" id="parentNotificationsButton" class="parent-notification-button" onclick="markParentNotificationsSeen(); openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}${parentNotificationsHtml}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" id="parentActionAbsence" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" id="parentActionGrades" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" id="parentActionBehavior" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" id="parentActionHomework" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
         document.body.appendChild(modal);
-        updateParentNotificationButton();
+        startParentActivityPulse();
     }
 
     function openTeacherDashboard(){
@@ -12017,12 +12032,14 @@ body.parent-only-mode #globalSearchWrapper,
 body.parent-only-mode header { display:none !important; }
 </style>
 
+<style id="parent-portal-activity-notifications">
+.parent-portal-actions button.parent-activity-unread{position:relative!important;animation:parentActivityPulse 1.15s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(231,76,60,.18),0 0 22px rgba(231,76,60,.78),0 7px 18px rgba(31,45,61,.18)!important;filter:brightness(1.16)!important;z-index:2;}
+.parent-portal-actions button.parent-activity-unread::after{content:'جديد'!important;position:absolute!important;top:-9px!important;left:-7px!important;min-width:38px!important;height:22px!important;padding:0 6px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:999px!important;background:#e53935!important;color:#fff!important;font-size:10px!important;font-weight:900!important;line-height:1!important;box-shadow:0 3px 9px rgba(0,0,0,.22)!important;}
+@keyframes parentActivityPulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.045);filter:brightness(1.28)}}
+@media(prefers-reduced-motion:reduce){.parent-portal-actions button.parent-activity-unread{animation:none!important}}
+</style>
 <style id="parent-portal-professional-css">
-.parent-portal-hero{padding:22px 24px;background:linear-gradient(135deg,#16324f,#28779f);color:#fff;display:flex;justify-content:space-between;gap:15px;align-items:center}.parent-kicker{font-size:12px;opacity:.8;font-weight:800}.parent-portal-hero h2{margin:4px 0;font-size:26px}.parent-portal-hero p{margin:0;opacity:.9}.parent-logout{background:#d64545!important;border-radius:12px!important;padding:10px 15px!important;font-weight:900}.parent-alert{margin:14px 16px 0;padding:14px;border-radius:14px;font-size:14px;box-shadow:0 5px 15px rgba(0,0,0,.06)}.parent-alert-absent{background:#fff0f0;color:#b42318;border:1px solid #f3b4b0}.parent-alert-leave{background:#fff8df;color:#8a5a00;border:1px solid #efd487}.parent-alert-late{background:#fff5e7;color:#a85b00;border:1px solid #f1cf9c}.parent-alert-ok{background:#edf9f1;color:#176b3b;border:1px solid #bfe6cb}.parent-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px}.parent-stats>div{background:#fff;border:1px solid #e1e8ee;border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(25,55,80,.06)}.parent-stats span{font-size:22px;display:block}.parent-stats small{display:block;color:#778693;margin-top:5px}.parent-stats b{display:block;margin-top:4px;color:#20384c;font-size:18px}.parent-portal-actions{display:flex;gap:9px;flex-wrap:wrap;padding:0 16px 4px}.parent-portal-actions button{background:linear-gradient(135deg,#1f668f,#2980b9)!important;border-radius:12px!important;font-weight:900!important}
-.parent-notification-button{position:relative;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
-.parent-notification-button.parent-notification-unread{animation:parentNotificationPulse 1.15s ease-in-out infinite;box-shadow:0 0 0 4px rgba(255,193,7,.28),0 0 20px rgba(255,140,0,.72)!important;filter:brightness(1.12)}
-.parent-notification-button.parent-notification-unread::after{content:'جديد';position:absolute;top:-9px;left:-7px;background:#e74c3c;color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:900;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-@keyframes parentNotificationPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}.parent-portal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px 0}.parent-att-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.parent-att-summary div{padding:11px;border-radius:12px;background:#f7f9fb;text-align:center}.parent-att-summary b{display:block;font-size:23px;color:#1f4058}.parent-att-summary span{font-size:11px;color:#6e7d89}.parent-portal .pro-panel{margin:12px 16px}.parent-portal-grid .pro-panel{margin:0}.parent-portal .pro-table{font-size:12px}@media(max-width:700px){.parent-portal-hero{padding:17px;display:block}.parent-logout{margin-top:12px}.parent-stats{grid-template-columns:repeat(2,1fr);padding:12px}.parent-portal-grid{grid-template-columns:1fr;padding:8px 12px 0}.parent-portal .pro-panel{margin:10px 12px}.parent-att-summary{grid-template-columns:repeat(2,1fr)}}
+.parent-portal-hero{padding:22px 24px;background:linear-gradient(135deg,#16324f,#28779f);color:#fff;display:flex;justify-content:space-between;gap:15px;align-items:center}.parent-kicker{font-size:12px;opacity:.8;font-weight:800}.parent-portal-hero h2{margin:4px 0;font-size:26px}.parent-portal-hero p{margin:0;opacity:.9}.parent-logout{background:#d64545!important;border-radius:12px!important;padding:10px 15px!important;font-weight:900}.parent-alert{margin:14px 16px 0;padding:14px;border-radius:14px;font-size:14px;box-shadow:0 5px 15px rgba(0,0,0,.06)}.parent-alert-absent{background:#fff0f0;color:#b42318;border:1px solid #f3b4b0}.parent-alert-leave{background:#fff8df;color:#8a5a00;border:1px solid #efd487}.parent-alert-late{background:#fff5e7;color:#a85b00;border:1px solid #f1cf9c}.parent-alert-ok{background:#edf9f1;color:#176b3b;border:1px solid #bfe6cb}.parent-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px}.parent-stats>div{background:#fff;border:1px solid #e1e8ee;border-radius:16px;padding:14px;box-shadow:0 6px 18px rgba(25,55,80,.06)}.parent-stats span{font-size:22px;display:block}.parent-stats small{display:block;color:#778693;margin-top:5px}.parent-stats b{display:block;margin-top:4px;color:#20384c;font-size:18px}.parent-portal-actions{display:flex;gap:9px;flex-wrap:wrap;padding:0 16px 4px}.parent-portal-actions button{background:linear-gradient(135deg,#1f668f,#2980b9)!important;border-radius:12px!important;font-weight:900!important}.parent-portal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px 0}.parent-att-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.parent-att-summary div{padding:11px;border-radius:12px;background:#f7f9fb;text-align:center}.parent-att-summary b{display:block;font-size:23px;color:#1f4058}.parent-att-summary span{font-size:11px;color:#6e7d89}.parent-portal .pro-panel{margin:12px 16px}.parent-portal-grid .pro-panel{margin:0}.parent-portal .pro-table{font-size:12px}@media(max-width:700px){.parent-portal-hero{padding:17px;display:block}.parent-logout{margin-top:12px}.parent-stats{grid-template-columns:repeat(2,1fr);padding:12px}.parent-portal-grid{grid-template-columns:1fr;padding:8px 12px 0}.parent-portal .pro-panel{margin:10px 12px}.parent-att-summary{grid-template-columns:repeat(2,1fr)}}
 </style>
 <style id="school-command-dashboard-css">
 #dev5QuickButtons{width:100%;display:block!important}
