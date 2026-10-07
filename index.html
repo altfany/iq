@@ -2138,13 +2138,27 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
 
 
 <style id="manager-layout-and-announcement-types">
-#staffAdminBar button{font-weight:900;}
+#adminDailySchoolReportBox button,#staffAdminBar button{
+  font-weight:900!important;
+  font-size:12px!important;
+  padding:7px 11px!important;
+  min-height:36px!important;
+  line-height:1.2!important;
+  border-radius:9px!important;
+}
+#staffAdminBar>div>div:last-child{gap:6px!important;}
+@media(max-width:900px){
+  #adminDailySchoolReportBox button,#staffAdminBar button{font-size:11.5px!important;padding:7px 9px!important;min-height:34px!important;}
+}
 @media(max-width:600px){
   #adminDailySchoolReportBox>div{align-items:stretch!important;}
-  #adminDailySchoolReportBox>div>div:last-child{width:100%;display:grid!important;grid-template-columns:1fr 1fr;}
+  #adminDailySchoolReportBox>div>div:last-child{width:100%;display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;}
   #adminDailySchoolReportBox button{width:100%;min-width:0;}
-  #staffAdminBar>div>div:last-child{display:grid!important;grid-template-columns:1fr;}
+  #staffAdminBar>div>div:last-child{display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;}
   #staffAdminBar button{width:100%;}
+}
+@media(max-width:380px){
+  #staffAdminBar>div>div:last-child{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -2207,7 +2221,6 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             <button onclick="openComplaintsManagerModal()" id="btnComplaintsNav" style="background:#c0398a;">📮 الشكاوي</button>
             <button onclick="openComplaintSenderModal()" id="btnTeacherComplaintsNav" style="background:#8e44ad;display:none;font-weight:900;">📨 إرسال شكوى إلى المدير</button>
             <button onclick="openTransferSeparationModal()" id="btnTransferNav" style="background:#7d3c98;display:none;">🔄  نقل وفصل وتعليق</button>
-            <button onclick="openAdminManagementModal()" id="btnAdminManagementNav" style="background: var(--orange); display:none;">⚙️ إدارة المدير والمعاون</button>
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
             <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
