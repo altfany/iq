@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>. إدارة مدرسة التفاني الابتدائية</title>
+    <title>2026نظام إدارة مدرسة التفاني الابتدائية</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -3337,17 +3337,25 @@ function getTeacherById(teacherId) {
   return teachersData.find(t => t && t.id === teacherId) || null;
 }
 
+function canonicalStudentId(cls, classIndex, desk, deskIndex, slot) {
+  const explicit = String(desk?.['student'+slot+'Id'] || desk?.['student'+slot+'Code'] || '').trim();
+  if (explicit) return explicit;
+  const classKey = String(cls?.id || classIndex || 0).trim();
+  const deskKey = String(desk?.id || desk?.deskNumber || deskIndex || 0).trim();
+  return `${classKey}_${deskKey}_${slot}`;
+}
+
 function getStudentById(studentId) {
-  if (!studentId) return null;
+  const wanted = String(studentId || '').trim();
+  if (!wanted) return null;
   for (let ci=0; ci<schoolData.length; ci++) {
     const cls=schoolData[ci];
     for (let di=0; di<(cls.desks||[]).length; di++) {
       const desk=cls.desks[di];
       for (const slot of [1,2]) {
-        const explicitStudentId=String(desk?.['student'+slot+'Id']||'').trim();
-        const storedStudentId=explicitStudentId || String(desk?.id||`${ci}_${di}_${slot}`);
-        if (storedStudentId !== String(studentId)) continue;
-        const name=String(desk['student'+slot]||'').trim();
+        const storedStudentId=canonicalStudentId(cls,ci,desk,di,slot);
+        if (storedStudentId !== wanted) continue;
+        const name=String(desk?.['student'+slot]||'').trim();
         if(!name) return null;
         return {student:{id:storedStudentId,name,code:desk['code'+slot]||'',phone:desk['phone'+slot]||'',address:desk['address'+slot]||'',gender:desk['gender'+slot]||'',seat:desk.deskNumber,deskNumber:desk.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di};
       }
@@ -3687,6 +3695,14 @@ function acknowledgeAnnouncement(id) {
             return window.FirebaseCloud.saveForGeneration(payload, factoryResetGeneration);
         }
         return window.FirebaseCloud.save(payload);
+    }
+
+    async function saveCurrentCloudPayloadWithPayload(payload) {
+        const safePayload=sanitizeForFirebase(payload);
+        if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
+            return window.FirebaseCloud.saveForGeneration(safePayload, factoryResetGeneration);
+        }
+        return window.FirebaseCloud.save(safePayload);
     }
 
     function getLastCloudRevision() {
@@ -8851,14 +8867,11 @@ function updateCloudStatus(text, color) {
         if (currentUser.role === 'parent' && studentName !== currentUser.name) return;
 
         let status = getStoredAttendanceStatus(cls, dateStr, studentKey);
-        // إذا كانت حالة المراقب محفوظة في السجل الاحترافي، اجعلها هي الحالة الظاهرة في زر الحضور والغياب.
-        const studentIdForRow = (() => {
-            const desks = Array.isArray(cls?.desks) ? cls.desks : [];
-            const d = desks.find(x => x && String(x.deskNumber)===String(deskNum));
-            if (!d) return '';
-            return String(seatPos==='يمين' ? (d.student1Id||'') : (d.student2Id||''));
-        })();
-        const professionalRow = (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId)===studentIdForRow && String(r.date)===String(dateStr));
+        // زر الحضور والغياب يجب أن يستخدم نفس المعرّف القياسي في القراءة والحفظ.
+        const deskForRow = (Array.isArray(cls?.desks) ? cls.desks : []).find(x => x && String(x.deskNumber)===String(deskNum));
+        const slotForRow = seatPos==='يمين' ? 1 : 2;
+        const studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,(cls.desks||[]).indexOf(deskForRow),slotForRow) : '';
+        const professionalRow = (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
         if (professionalRow?.status) status = professionalRow.status;
         const canEdit = canManageStudentAttendance(cls);
         const meta = cls?.attendanceChangeLog?.[dateStr]?.[studentKey];
@@ -8868,7 +8881,7 @@ function updateCloudStatus(text, color) {
         if (canEdit) {
             const bg = status === 'absent' ? '#f5b7b1' : (status === 'leave' ? '#f9e79f' : (status === 'late' ? '#fdebd0' : '#e8f8f5'));
             statusControl = `
-                <select onchange="updateStudentAbsence('${dateStr}', '${studentKey}', this.value)"
+                <select onchange="updateStudentAbsence('${dateStr}', '${studentIdForRow || studentKey}', this.value)"
                         style="padding:4px;border-radius:4px;font-size:12px;font-weight:bold;background:${bg};">
                     <option value="present" ${status === 'present' ? 'selected' : ''}>حاضر ✔️</option>
                     <option value="late" ${status === 'late' ? 'selected' : ''}>متأخر ⏰</option>
@@ -8892,8 +8905,8 @@ function updateCloudStatus(text, color) {
 
     function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const cls = schoolData[currentClassIndex];
-        if (statusVal === 'leave' && !isAdminUser()) {
-            alert('تغيير الطالب إلى مجاز من صلاحية المدير فقط.');
+        if (statusVal === 'leave' && !(currentUser?.role === 'admin' || (currentUser?.role === 'teacher' && isClassSupervisor(cls)))) {
+            alert('تغيير الطالب إلى مجاز متاح للمدير أو المعاون أو مرشد الصف فقط.');
             renderAbsenceTable();
             return;
         }
@@ -8905,6 +8918,7 @@ function updateCloudStatus(text, color) {
 
         if (!cls.absenceRecords) cls.absenceRecords = {};
         if (!cls.absenceRecords[dateStr]) cls.absenceRecords[dateStr] = {};
+        const rawStudentKey=String(studentKey||'').trim();
 
         if (statusVal === 'absent') {
             cls.absenceRecords[dateStr][studentKey] = 'absent';
@@ -8917,43 +8931,161 @@ function updateCloudStatus(text, color) {
         }
 
         // إبقاء سجل الحضور الاحترافي والقديم متطابقين عند تعديل المدير من زر الحضور والغياب.
-        const parts=String(studentKey||'').split('_');
-        const studentName=parts.length>=3 ? parts.slice(2).join('_') : '';
-        const foundStudent=(cls.desks||[]).flatMap((d,di)=>[
-            {slot:1,id:d?.student1Id,name:d?.student1,deskIndex:di},
-            {slot:2,id:d?.student2Id,name:d?.student2,deskIndex:di}
-        ]).find(x=>x.name===studentName);
-        if(foundStudent?.id && window.ProfessionalModules?.recordAttendance){
-            window.ProfessionalModules.recordAttendance(foundStudent.id,statusVal,dateStr,'تعديل من زر الحضور والغياب');
+        // لا نعتمد على اسم الطالب وحده؛ زر الحضور قد يرسل studentId أو مفتاح المقعد القديم.
+        // نحل الطالب بالمعرّف أولاً ثم بالمفتاح/الاسم حتى يبقى نفس السجل محفوظاً بعد إعادة فتح النظام.
+        const parts=rawStudentKey.split('_');
+        const parsedStudentName=parts.length>=3 ? parts.slice(2).join('_') : '';
+        const studentRows=(cls.desks||[]).flatMap((d,di)=>[
+            {slot:1,id:canonicalStudentId(cls,currentClassIndex,d,di,1),name:String(d?.student1||'').trim(),deskIndex:di,deskNumber:d?.deskNumber||di+1},
+            {slot:2,id:canonicalStudentId(cls,currentClassIndex,d,di,2),name:String(d?.student2||'').trim(),deskIndex:di,deskNumber:d?.deskNumber||di+1}
+        ]).filter(x=>x.name);
+        const foundStudent=studentRows.find(x=>x.id===rawStudentKey)
+            || studentRows.find(x=>`${x.deskNumber}_${x.slot===1?'يمين':'يسار'}_${x.name}`===rawStudentKey)
+            || studentRows.find(x=>x.name===parsedStudentName)
+            || studentRows.find(x=>x.name===rawStudentKey);
+
+        // احفظ الحالة أيضاً بالمفتاح القياسي للطالب. هذا يعالج السجلات القديمة التي كانت تستخدم
+        // مفتاح المقعد/الاسم بينما شاشة أخرى تستخدم studentId.
+        const canonicalKey = String(foundStudent?.id || '').trim();
+        if (canonicalKey && canonicalKey !== rawStudentKey) {
+            if (statusVal === 'present') delete cls.absenceRecords[dateStr][canonicalKey];
+            else cls.absenceRecords[dateStr][canonicalKey] = statusVal;
         }
 
-        // مزامنة جرد الصفوف مع أي تغيير يجريه المدير/مرشد الصف من شاشة الحضور والغياب.
-        (monitorInventoryReportsData||[]).forEach(report=>{
-            if(String(report.date)!==String(dateStr)) return;
-            const sameClass=!report.classId || String(report.classId)===String(cls.id||'') || String(report.className||'')===String(cls.name||'');
-            if(!sameClass) return;
-            const lists=[];
-            if(Array.isArray(report.students)) lists.push(report.students);
-            if(Array.isArray(report.absentStudents)) lists.push(report.absentStudents);
-            if(!lists.length){report.students=[];report.absentStudents=[];lists.push(report.students,report.absentStudents);}
-            lists.forEach(list=>{
-                const match=x=>String(x?.studentId||'')===String(foundStudent?.id||'') || String(x?.name||'')===String(studentName);
-                for(let i=list.length-1;i>=0;i--){ if(statusVal==='present' && match(list[i])) list.splice(i,1); }
-                if(statusVal!=='present'){
-                    let item=list.find(match);
-                    if(!item){item={studentId:foundStudent?.id||'',name:studentName};list.push(item);}
-                    item.studentId=foundStudent?.id||item.studentId||''; item.name=studentName; item.status=statusVal; item.date=dateStr;
-                    item.changedBy=currentUser?.role==='admin'?'المدير':'مرشد الصف'; item.changedByName=actorName(); item.changedAt=new Date().toISOString();
-                }
-            });
+        const legacyStudentKey = foundStudent?.name
+            ? `${foundStudent.deskNumber}_${foundStudent.slot===1?'يمين':'يسار'}_${foundStudent.name}`
+            : rawStudentKey;
+        if (legacyStudentKey && legacyStudentKey !== rawStudentKey) {
+            if (statusVal === 'present') delete cls.absenceRecords[dateStr][legacyStudentKey];
+            else cls.absenceRecords[dateStr][legacyStudentKey] = statusVal;
+        }
+
+        const studentName=String(foundStudent?.name||parsedStudentName||rawStudentKey).trim();
+        const actorRoleLabel = currentUser?.isAssistant ? 'المعاون' : (currentUser?.role === 'teacher' ? 'مرشد الصف' : 'المدير');
+        const actorChangedAt = new Date().toISOString();
+        if(foundStudent?.id && window.ProfessionalModules?.recordAttendance){
+            const attendanceOk=window.ProfessionalModules.recordAttendance(foundStudent.id,statusVal,dateStr,`تعديل من زر الحضور والغياب بواسطة ${actorRoleLabel}`);
+            if(attendanceOk===false){
+                alert('تعذر حفظ حالة الحضور في السجل الأساسي للطالب.');
+                renderAbsenceTable();
+                return;
+            }
+        }
+
+        // مزامنة جرد الصفوف مع أي تغيير يجريه المدير/المعاون/مرشد الصف من شاشة الحضور والغياب.
+        // إذا لم يوجد تقرير للمراقب في ذلك اليوم، ننشئ سجل جرد تلقائياً حتى يظهر التغيير في «جرد الصفوف».
+        const sameReportClass = report => !report?.classId || String(report.classId)===String(cls.id||'') || String(report.className||'')===String(cls.name||'');
+        let matchingInventoryReports = (monitorInventoryReportsData||[]).filter(report => String(report.date)===String(dateStr) && sameReportClass(report));
+
+        // عند الغياب/التأخر/المجاز، يجب أن يظهر الطالب في جرد الصفوف حتى لو لم يرسل المراقب جرداً بعد.
+        if(statusVal !== 'present' && !matchingInventoryReports.length){
+            const syntheticReport={
+                id:createStableId('minv-attendance'),
+                monitorId:'',
+                monitorName:actorName(),
+                classId:cls.id||'',
+                className:cls.name||'',
+                date:dateStr,
+                absentStudents:[],
+                students:[],
+                sentAt:actorChangedAt,
+                completedAt:actorChangedAt,
+                changedBy:actorRoleLabel,
+                changedByName:actorName(),
+                changedAt:actorChangedAt
+            };
+            monitorInventoryReportsData.unshift(syntheticReport);
+            matchingInventoryReports=[syntheticReport];
+            if(monitorInventoryReportsData.length>500) monitorInventoryReportsData.length=500;
+        }
+
+        matchingInventoryReports.forEach(report=>{
+            if(!Array.isArray(report.students)) report.students=[];
+            if(!Array.isArray(report.absentStudents)) report.absentStudents=[];
+            const match=x=>String(x?.studentId||'')===String(foundStudent?.id||'') || String(x?.name||'')===String(studentName);
+
+            // تحديث قائمة students (المصدر الأساسي لجرد الصفوف).
+            for(let i=report.students.length-1;i>=0;i--){
+                if(statusVal==='present' && match(report.students[i])) report.students.splice(i,1);
+            }
+            if(statusVal!=='present'){
+                let item=report.students.find(match);
+                if(!item){ item={studentId:foundStudent?.id||'',name:studentName}; report.students.push(item); }
+                item.studentId=foundStudent?.id||item.studentId||'';
+                item.name=studentName;
+                item.status=statusVal;
+                item.date=dateStr;
+                item.changedBy=actorRoleLabel;
+                item.changedByName=actorName();
+                item.changedAt=actorChangedAt;
+                if(statusVal==='late'){
+                    item.lateTime=String((window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(foundStudent?.id||'')&&String(r.date)===String(dateStr))?.lateTime||'').trim();
+                    item.lateReason=String((window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(foundStudent?.id||'')&&String(r.date)===String(dateStr))?.lateReason||'').trim();
+                }else{ delete item.lateTime; delete item.lateReason; }
+            }
+
+            // تحديث absentStudents للتوافق مع تقارير المراقب القديمة.
+            for(let i=report.absentStudents.length-1;i>=0;i--){
+                if(statusVal==='present' && match(report.absentStudents[i])) report.absentStudents.splice(i,1);
+            }
+            if(statusVal==='absent'){
+                let absentItem=report.absentStudents.find(match);
+                if(!absentItem){ absentItem={studentId:foundStudent?.id||'',name:studentName}; report.absentStudents.push(absentItem); }
+                absentItem.studentId=foundStudent?.id||absentItem.studentId||'';
+                absentItem.name=studentName;
+                absentItem.status='absent';
+                absentItem.date=dateStr;
+                absentItem.changedBy=actorRoleLabel;
+                absentItem.changedByName=actorName();
+                absentItem.changedAt=actorChangedAt;
+            } else {
+                for(let i=report.absentStudents.length-1;i>=0;i--){ if(match(report.absentStudents[i])) report.absentStudents.splice(i,1); }
+            }
+
+            report.changedBy=actorRoleLabel;
+            report.changedByName=actorName();
+            report.changedAt=actorChangedAt;
         });
 
         if(!cls.attendanceChangeLog) cls.attendanceChangeLog={};
         if(!cls.attendanceChangeLog[dateStr]) cls.attendanceChangeLog[dateStr]={};
-        cls.attendanceChangeLog[dateStr][studentKey]={byName:actorName(),byRole:currentUser?.isAssistant?'معاون':(currentUser?.role||''),at:nowText(),isoAt:new Date().toISOString(),status:statusVal};
+        const changeMeta={byName:actorName(),byRole:currentUser?.isAssistant?'معاون':(currentUser?.role||''),at:nowText(),isoAt:new Date().toISOString(),status:statusVal};
+        cls.attendanceChangeLog[dateStr][studentKey]=changeMeta;
+        if(canonicalKey) cls.attendanceChangeLog[dateStr][canonicalKey]=changeMeta;
+        if(legacyStudentKey) cls.attendanceChangeLog[dateStr][legacyStudentKey]=changeMeta;
         if(typeof addAudit==='function') addAudit('تغيير حالة الحضور والغياب',`${studentKey} — ${statusVal} — تمت العملية بواسطة ${actorName()}`);
 
+        // الحفظ العادي يبقى موجوداً، لكن تغيير الحضور والغياب يحتاج حفظاً فورياً
+        // حتى لا تضيع الحالة إذا أُغلق النظام مباشرة بعد الضغط على الزر.
         saveData();
+        try {
+            if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
+                // اعتبر الحفظ الفوري نسخة معلّقة أيضاً، حتى لا تعيد المزامنة اللحظية نسخة أقدم فوق التعديل.
+                cloudSavePending=true;
+                clearTimeout(cloudSaveConfirmTimer);
+                const immediatePayload=repairCloudPayloadForStartup(getCloudPayload());
+                immediatePayload.updatedAt=new Date().toISOString();
+                immediatePayload.resetGeneration=String(factoryResetGeneration||'0');
+                cloudSaveExpectedRevision=String(immediatePayload.updatedAt);
+                saveCurrentCloudPayloadWithPayload(immediatePayload).then(()=>{
+                    lastAppliedCloudUpdatedAt=String(immediatePayload.updatedAt);
+                    APP_SECURITY.lastGoodCloudUpdatedAt=String(immediatePayload.updatedAt);
+                    APP_SECURITY.lastGoodCloudSnapshot=immediatePayload;
+                    cloudSavePending=false;
+                    updateCloudStatus('تم حفظ حالة الحضور والغياب فوراً ✓', '#16803c');
+                }).catch(e=>{
+                    console.error('Immediate attendance cloud save failed:', e);
+                    cloudSavePending=false;
+                    cloudSaveExpectedRevision='';
+                    queueCloudSave(0);
+                });
+            }
+        } catch(e) {
+            console.error('Immediate attendance save setup failed:', e);
+            cloudSavePending=false;
+            cloudSaveExpectedRevision='';
+            try { queueCloudSave(0); } catch(_) {}
+        }
         renderAbsenceTable();
     }
 
@@ -9146,9 +9278,11 @@ function updateCloudStatus(text, color) {
 
         const legacyMap=liveClass?.absenceRecords||{};
         const legacyKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
+        const deskForParent=liveClass?.desks?.[Number(f.deskIndex)||0];
+        const canonicalKeyForParent=canonicalStudentId(liveClass,f.classIndex,deskForParent,Number(f.deskIndex)||0,Number(f.student.slot)||1);
         Object.keys(legacyMap).forEach(date=>{
-            const raw=legacyMap[date]?.[legacyKey];
-            const legacyAudit=liveClass?.attendanceChangeLog?.[date]?.[legacyKey];
+            const raw=legacyMap[date]?.[legacyKey] ?? legacyMap[date]?.[canonicalKeyForParent];
+            const legacyAudit=liveClass?.attendanceChangeLog?.[date]?.[legacyKey] || liveClass?.attendanceChangeLog?.[date]?.[canonicalKeyForParent];
             const legacyStatus=raw===true?'absent':raw;
             if(raw && typeof raw==='object') put(date,raw.status,raw.changedByRole,raw.changedByName,'سجل الصف');
             else put(date,legacyStatus,legacyAudit?.byRole,legacyAudit?.byName,'سجل الصف');
@@ -9193,7 +9327,7 @@ function updateCloudStatus(text, color) {
         const f=currentStudentForDashboard();
         if(!f){alert('لم يتم العثور على بيانات الطالب.');return;}
         const liveClass=schoolData[f.classIndex]||f.classObj||{};
-        const studentId=String(f.student.id||'');
+        const studentId=String(f.student.id || canonicalStudentId(liveClass,f.classIndex,liveClass?.desks?.[Number(f.deskIndex)||0],Number(f.deskIndex)||0,Number(f.student.slot)||1) || '');
         const studentName=String(f.student.name||'');
         const resetAt=ensureParentAbsencePageReset(studentId);
         const records=getParentAttendanceHistory(f,liveClass,studentId,studentName,resetAt);
@@ -10244,6 +10378,28 @@ function updateCloudStatus(text, color) {
         const q=document.getElementById('dailyInventoryStudentSearch')?.value.trim()||'';
         const month=document.getElementById('dailyInventoryMonth')?.value||String(date).slice(0,7);
         const reports=monitorInventoryReportsData.filter(r=>String(r.date)===String(date));
+        // حتى إذا لم يرسل المراقب جرداً، فإن سجل الحضور المحفوظ من المدير/المعاون/مرشد الصف
+        // يجب أن يكون مرئياً في «جرد الصفوف». ننشئ عرضاً افتراضياً للصفوف التي لا يوجد لها تقرير.
+        const coveredClassIds=new Set(reports.map(r=>String(r.classId||'')).filter(Boolean));
+        const virtualByClass=new Map();
+        (window.ProfessionalModules?.attendanceData||[]).forEach(a=>{
+            if(String(a.date)!==String(date) || !['absent','leave','late'].includes(a.status)) return;
+            const found=getStudentById(a.studentId);
+            if(!found) return;
+            const classId=String(found.classObj?.id||found.classIndex||'');
+            if(coveredClassIds.has(classId)) return;
+            if(!virtualByClass.has(classId)) virtualByClass.set(classId,[]);
+            virtualByClass.get(classId).push({
+                studentId:String(a.studentId),name:String(found.student?.name||'طالب'),status:a.status,date:String(a.date),
+                changedBy:a.changedByRole||'',changedByName:a.changedByName||'',changedAt:a.updatedAt||a.createdAt||''
+            });
+        });
+        const virtualReports=Array.from(virtualByClass.entries()).map(([classId,students])=>({
+            id:`virtual-attendance-${classId}-${date}`,monitorName:'سجل الحضور',classId,
+            className:(schoolData.find(c=>String(c?.id||'')===String(classId))||{}).name||'الصف',date,
+            students,absentStudents:students.filter(x=>x.status==='absent'),sentAt:students.map(x=>x.changedAt).sort().pop()||''
+        }));
+        const displayReports=reports.concat(virtualReports);
         const rb=document.getElementById('dailyInventoryReports');
         const hist=document.getElementById('dailyInventoryStudentHistory');
 
@@ -10269,7 +10425,7 @@ function updateCloudStatus(text, color) {
             </div>`;
         } else hist.innerHTML='';
 
-        const rows=reports.map(r=>{
+        const rows=displayReports.map(r=>{
             const reportList=Array.isArray(r.students)&&r.students.length ? r.students : (Array.isArray(r.absentStudents)?r.absentStudents:[]);
             const studentRows=reportList.length
               ? reportList.map(x=>{
@@ -10285,7 +10441,7 @@ const currentStatus = adminChangedStatus || professionalStatus?.status || x.stat
               : '<span style="color:var(--success);font-weight:700">لا يوجد غائبون — الجميع حاضر</span>';
             return `<tr><td>${escapeGlobalSearchHTML(r.monitorName)}</td><td>${escapeGlobalSearchHTML(r.className)}</td><td style="min-width:360px;text-align:right">${studentRows}</td><td>${escapeGlobalSearchHTML(r.sentAt?new Date(r.sentAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):'-')}</td></tr>`;
         }).join('');
-        if(rb) rb.innerHTML=`<div class="pro-panel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📋 جرد ${escapeGlobalSearchHTML(date)}</h3><span style="font-size:12px;color:#667">عدد تقارير الصفوف: ${reports.length}</span></div><div style="font-size:12px;color:#667;margin-bottom:8px">يظهر أمام كل طالب وصف الحالة الحالية. يحدد المدير أو المعاون الحالة بعلامة ✓ (غائب / متأخر / مجاز)، وتنتقل الحالة مباشرة إلى جميع أجزاء النظام مع تسجيل اسم منفذ العملية وتاريخها.</div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المراقب</th><th>الصف</th><th>حالة الطلاب</th><th>وقت الإرسال</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات جرد لهذا التاريخ.</td></tr>'}</tbody></table></div></div>`;
+        if(rb) rb.innerHTML=`<div class="pro-panel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📋 جرد ${escapeGlobalSearchHTML(date)}</h3><span style="font-size:12px;color:#667">عدد تقارير الصفوف: ${displayReports.length}</span></div><div style="font-size:12px;color:#667;margin-bottom:8px">يظهر أمام كل طالب وصف الحالة الحالية. يحدد المدير أو المعاون الحالة بعلامة ✓ (غائب / متأخر / مجاز)، وتنتقل الحالة مباشرة إلى جميع أجزاء النظام مع تسجيل اسم منفذ العملية وتاريخها.</div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المراقب</th><th>الصف</th><th>حالة الطلاب</th><th>وقت الإرسال</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات جرد لهذا التاريخ.</td></tr>'}</tbody></table></div></div>`;
     }
 
     function renderMonitorAbsenceRangeReport(){
@@ -10488,7 +10644,7 @@ window.addEventListener('unhandledrejection', function (event) {
       (cls.desks||[]).forEach((d,di)=>{
         [1,2].forEach(slot=>{
           const name=String(d?.['student'+slot]||'').trim();
-          if(name) out.push({student:{id:d['student'+slot+'Id']||d.id,name,code:d['code'+slot]||'',phone:d['phone'+slot]||'',address:d['address'+slot]||'',gender:d['gender'+slot]||'',deskNumber:d.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di});
+          if(name) out.push({student:{id:canonicalStudentId(cls,ci,d,di,slot),name,code:d['code'+slot]||'',phone:d['phone'+slot]||'',address:d['address'+slot]||'',gender:d['gender'+slot]||'',deskNumber:d.deskNumber,slot},classObj:cls,classIndex:ci,deskIndex:di});
         });
       });
     });
@@ -10496,7 +10652,7 @@ window.addEventListener('unhandledrejection', function (event) {
   }
 
   function studentAttendance(studentId){
-    return attendanceData.filter(x=>x.studentId===studentId);
+    return attendanceData.filter(x=>String(x.studentId||'')===String(studentId||''));
   }
 
   function recordAttendance(studentId,status,date,note='',lateTime='',lateReason=''){
@@ -10505,10 +10661,11 @@ window.addEventListener('unhandledrejection', function (event) {
     const found=findStudent(studentId);
     if(!found) return false;
     const day=String(date||todayISO());
-    const existing=attendanceData.find(x=>x.studentId===studentId && x.date===day);
+    const normalizedStudentId=String(studentId||'').trim();
+    const existing=attendanceData.find(x=>String(x.studentId||'').trim()===normalizedStudentId && String(x.date||'')===day);
     const record={
       id:existing?.id||createStableId('attendance'),
-      studentId,
+      studentId:normalizedStudentId,
       classId:found.classObj.id||null,
       date:day,
       status:status==='late'?'late':status==='absent'?'absent':status==='leave'?'leave':'present',
