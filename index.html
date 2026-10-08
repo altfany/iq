@@ -10897,48 +10897,6 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         }
     };
     function refreshMonitorCenter(){ renderMonitorSelectedClass(); }
-    // حفظ جرد المراقب بشكل موثوق: ننتظر تأكيد Firebase ونكرر المحاولة عند خطأ عابر.
-    // هذا يمنع ظهور رسالة فشل الحفظ بسبب سباق بين الحفظ الفوري للحضور وحفظ تقرير الجرد.
-    async function saveMonitorAttendanceCloudReliably(){
-        if(!window.FirebaseCloud?.enabled || !cloudReady || !navigator.onLine || typeof saveCurrentCloudPayload!=='function'){
-            throw new Error('FIREBASE_NOT_READY');
-        }
-        let lastError=null;
-        for(let attempt=1; attempt<=3; attempt++){
-            try{
-                clearTimeout(cloudSaveTimer);
-                const payload=repairCloudPayloadForStartup(getCloudPayload());
-                payload.updatedAt=new Date().toISOString();
-                payload.resetGeneration=String(factoryResetGeneration||'0');
-                cloudSavePending=true;
-                cloudSaveExpectedRevision=String(payload.updatedAt);
-                await saveCurrentCloudPayloadWithPayload(payload);
-                lastAppliedCloudUpdatedAt=String(payload.updatedAt);
-                APP_SECURITY.lastGoodCloudUpdatedAt=String(payload.updatedAt);
-                APP_SECURITY.lastGoodCloudSnapshot=payload;
-                cloudSavePending=false;
-                cloudSaveExpectedRevision='';
-                updateCloudStatus('تم حفظ جرد المراقب في Firebase ✓','#16803c');
-                return true;
-            }catch(e){
-                lastError=e;
-                console.error('Monitor cloud save attempt '+attempt+' failed:',e);
-                // إذا تغير جيل قاعدة البيانات، حدّث الجيل ثم أعد المحاولة.
-                if(e?.code==='FACTORY_RESET_GENERATION_CHANGED' && typeof window.FirebaseCloud.getFactoryResetControl==='function'){
-                    try{
-                        const control=await window.FirebaseCloud.getFactoryResetControl();
-                        factoryResetGeneration=String(control?.generation||factoryResetGeneration||'0');
-                        factoryResetControlReady=true;
-                    }catch(_e){}
-                }
-                if(attempt<3) await new Promise(resolve=>setTimeout(resolve,350*attempt));
-            }
-        }
-        cloudSavePending=false;
-        cloudSaveExpectedRevision='';
-        throw lastError || new Error('CLOUD_SAVE_FAILED');
-    }
-
     async function saveMonitorAttendance(){
         if(!currentUser||currentUser.role!=='monitor')return;
         try{
@@ -11002,16 +10960,21 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const same=monitorInventoryReportsData.findIndex(r=>String(r.monitorId)===String(report.monitorId)&&String(r.classId)===String(report.classId)&&String(r.date)===String(report.date));
             if(same>=0) monitorInventoryReportsData[same]=report; else monitorInventoryReportsData.unshift(report);
             if(monitorInventoryReportsData.length>500)monitorInventoryReportsData.length=500;
-            // الحفظ الأساسي يكون في Firebase مباشرة، مع انتظار التأكيد وإعادة المحاولة.
-            // لذلك تبقى الحالة محفوظة بعد خروج المراقب ودخوله من جديد.
+            // الحفظ الأساسي يكون في Firebase مباشرة، ولا نعتمد على مهلة الحفظ المؤجلة.
+            // هذا يضمن بقاء غياب الطالب عند تسجيل الخروج ثم الدخول من جديد.
             saveData();
-            try {
-                await saveMonitorAttendanceCloudReliably();
-            } catch (cloudError) {
-                console.error('Monitor attendance Firebase save failed:', cloudError);
-                queueCloudSave(0);
-                alert('⚠️ تعذر تأكيد حفظ جرد المراقب في السحابة بعد عدة محاولات. تحقق من اتصال الإنترنت ثم أعد الضغط على «حفظ جرد الصف».');
-                return;
+            if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
+                try {
+                    await saveCurrentCloudPayload();
+                    lastAppliedCloudUpdatedAt = String(new Date().toISOString());
+                    cloudSavePending = false;
+                    cloudSaveExpectedRevision = '';
+                    updateCloudStatus('تم حفظ جرد المراقب في Firebase ✓', '#16803c');
+                } catch (cloudError) {
+                    console.error('Monitor attendance Firebase save failed:', cloudError);
+                    alert('⚠️ تم تحديث الحضور على الشاشة، لكن تعذر تأكيد الحفظ في Firebase. تحقق من الإنترنت ثم حاول مرة أخرى.');
+                    return;
+                }
             }
             alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
