@@ -12795,8 +12795,34 @@ function openDev5Performance(){
 }
 window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
 window.openComprehensiveSchoolSystem=function(){try{if(!window.Dev5||typeof window.Dev5.performance!=='function'){alert('جاري تحميل نظام المدرسة الشامل، حاول الضغط مرة أخرى بعد لحظات.');return false;} window.Dev5.performance();return true;}catch(e){console.error('Comprehensive school system error:',e);alert('تعذر فتح نظام المدرسة الشامل حالياً. حاول مرة أخرى.');return false;}};
-function ensureComprehensiveSchoolButton(){const pq=document.querySelector('#professionalQuickMenu .pq-items');if(!pq)return;let wrap=document.getElementById('dev5QuickButtons');if(!wrap){wrap=document.createElement('div');wrap.id='dev5QuickButtons';wrap.innerHTML='<button type="button" onclick="window.openComprehensiveSchoolSystem()"><span class="dev5-btn-icon">🏫</span><span class="dev5-btn-title">نظام المدرسة الشامل</span><span class="dev5-btn-arrow">←</span></button>';pq.insertBefore(wrap,pq.firstChild);}}
-ensureComprehensiveSchoolButton();setTimeout(ensureComprehensiveSchoolButton,300);setTimeout(ensureComprehensiveSchoolButton,1000);
+function ensureComprehensiveSchoolButton(){
+  const pq=document.querySelector('#professionalQuickMenu .pq-items');
+  if(!pq)return;
+  let wrap=document.getElementById('dev5QuickButtons');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='dev5QuickButtons';
+    wrap.innerHTML='<button type="button" id="dev5ComprehensiveButton"><span class="dev5-btn-icon">🏫</span><span class="dev5-btn-title">نظام المدرسة الشامل</span><span class="dev5-btn-arrow">←</span></button>';
+    pq.insertBefore(wrap,pq.firstChild);
+  }
+  const btn=document.getElementById('dev5ComprehensiveButton');
+  if(btn && !btn.dataset.bound){
+    btn.dataset.bound='1';
+    btn.addEventListener('click',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof window.openComprehensiveSchoolSystem==='function'){
+        window.openComprehensiveSchoolSystem();
+      }else{
+        alert('تعذر تحميل نظام المدرسة الشامل حالياً. حاول مرة أخرى.');
+      }
+    });
+  }
+}
+ensureComprehensiveSchoolButton();
+setTimeout(ensureComprehensiveSchoolButton,300);
+setTimeout(ensureComprehensiveSchoolButton,1000);
+setTimeout(ensureComprehensiveSchoolButton,2000);
 window.addEventListener('load',()=>{rebuildD5Index();setTimeout(()=>{try{console.info('Development 5 modules ready:',dev5StudentIndex.length,'students')}catch(e){}},300);});
 })();
 </script>
