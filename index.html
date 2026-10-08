@@ -10809,6 +10809,20 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 String(x?.name||'').trim()===String(f.student.name).trim()
             );
             if(report && ['late','absent','present','leave'].includes(report.status)) return report;
+
+            // ربط مباشر مع سجل الصف القديم أيضاً. هذا مهم عندما يسجل المدير
+            // الحالة من زر «الحضور» داخل الصف، حتى لو لم يكن هناك تقرير مراقب مرسل.
+            const legacyMap=f.classObj?.absenceRecords?.[date] || {};
+            const legacyKeys=[
+                String(f.student.id||''),
+                `${Number(f.deskIndex)+1}_${Number(f.slot)===1?'يمين':'يسار'}_${String(f.student.name||'').trim()}`,
+                String(f.student.name||'').trim()
+            ].filter(Boolean);
+            for(const key of legacyKeys){
+                const legacyStatus=String(legacyMap[key]||'').trim();
+                if(['late','absent','present','leave'].includes(legacyStatus)) return {status:legacyStatus};
+            }
+
             return {status:'present'};
         };
         const rows=students.map((f,i)=>{
