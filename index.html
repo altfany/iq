@@ -12927,14 +12927,24 @@ body.parent-only-mode header { display:none !important; }
 <script id="remove-requested-tools-ui-final">
 (function(){
   function clean(){
-    document.querySelectorAll('#professionalQuickMenu button, #dev5QuickButtons button').forEach(function(btn){
+    /* إزالة زر «نظام المدرسة الشامل» من القائمة السفلية فقط،
+       مع الإبقاء على الزر الموجود بجانب «صلاحية: مدير النظام 👑». */
+    document.querySelectorAll('#professionalQuickMenu button').forEach(function(btn){
       const t=(btn.textContent||'').trim();
-      if(/نظام الدرجات السريع|تحسين الأداء وحفظ البيانات|نسخة احتياطية|استعادة|النسخ التلقائية|بحث موحد وسريع للطلاب|التقارير والطباعة الشاملة/.test(t)){
-        if(!/نظام المدرسة الشامل/.test(t)) btn.remove();
-      }
+      if(/نظام المدرسة الشامل/.test(t)) btn.remove();
+      else if(/نظام الدرجات السريع|تحسين الأداء وحفظ البيانات|نسخة احتياطية|استعادة|النسخ التلقائية|بحث موحد وسريع للطلاب|التقارير والطباعة الشاملة/.test(t)) btn.remove();
     });
-    const wrap=document.getElementById('dev5QuickButtons');
-    if(wrap && !wrap.querySelector('button')) wrap.remove();
+
+    /* تنظيف أي نسخة سفلية مرتبطة بالقائمة السريعة دون حذف الزر العلوي. */
+    const bottomQuickButtons = document.querySelector('#professionalQuickMenu #dev5QuickButtons');
+    if(bottomQuickButtons) bottomQuickButtons.remove();
+
+    /* الزر الأساسي يبقى بجانب شارة صلاحية مدير النظام. */
+    const badge=document.getElementById('userRoleBadge');
+    const topWrap=document.getElementById('dev5QuickButtons');
+    if(badge && badge.parentElement && topWrap && topWrap.parentElement!==badge.parentElement){
+      badge.parentElement.appendChild(topWrap);
+    }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean); else clean();
   setTimeout(clean,300);
