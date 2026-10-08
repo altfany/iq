@@ -11010,7 +11010,35 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const info=row?.querySelector('[data-late-info]'); if(info) info.textContent='';
         }
         if(group) group.dataset.currentStatus=box.dataset.monitorStatus||'present';
-        // لا نطلب حفظاً منفصلاً هنا؛ الزر «حفظ جرد الصف» يحفظ الحالات دفعة واحدة.
+
+        // الحفظ فوري عند اختيار الحالة: لا تعتمد حالة المراقب على زر منفصل أو على بقاء الشاشة مفتوحة.
+        // بذلك إذا خرج المراقب مباشرة بعد تسجيل الحالة، تبقى محفوظة وتعود كما هي عند الدخول مرة أخرى.
+        const normalizedStatus=['present','absent','late'].includes(String(box.dataset.monitorStatus||''))
+            ? String(box.dataset.monitorStatus) : 'present';
+        const day=String(date||getFormattedDate());
+        const lateTime=String(box.dataset.lateTime||'').trim();
+        const lateReason=String(box.dataset.lateReason||'').trim();
+        const note=normalizedStatus==='late'
+            ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
+        try{
+            const saved=window.ProfessionalModules?.recordAttendance
+                ? window.ProfessionalModules.recordAttendance(studentId,normalizedStatus,day,note,lateTime,lateReason)
+                : false;
+            if(saved===false) throw new Error('تعذر تسجيل حالة الطالب');
+            // حفظ مباشر في Firebase، وليس انتظار مؤقت queueCloudSave.
+            if(window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload==='function'){
+                clearTimeout(cloudSaveTimer);
+                await saveCurrentCloudPayload();
+                lastAppliedCloudUpdatedAt=String(new Date().toISOString());
+                cloudSavePending=false;
+                cloudSaveExpectedRevision='';
+                updateCloudStatus('تم حفظ حالة الطالب في Firebase ✓','#16803c');
+            }
+        }catch(err){
+            console.error('Immediate monitor attendance save failed:',err);
+            alert('⚠️ تعذر حفظ حالة الطالب في السحابة. تحقق من الاتصال ثم حاول مرة أخرى.');
+            renderMonitorSelectedClass();
+        }
     };
     window.monitorAttendanceStatusChanged=function(select){
         // دعم أي نسخة قديمة من الواجهة كانت تستخدم select.
