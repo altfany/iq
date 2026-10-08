@@ -1043,7 +1043,7 @@ button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, in
     }
 }
 
-/* ===== حالة الطالب داخل الرحلة: غائب / مجاز ===== */
+/* ===== حالة الطالب داخل الرحلة: حاضر / غائب / متأخر / مجاز ===== */
 .seat.student-status-seat{position:relative;overflow:visible;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;}
 .seat.student-status-seat .trip-student-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-top:9px;}
 .seat.student-status-seat .trip-status-label{position:absolute;top:-11px;left:50%;transform:translateX(-50%);z-index:5;padding:2px 9px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap;box-shadow:0 3px 9px rgba(0,0,0,.18);}
@@ -1053,6 +1053,8 @@ button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, in
 .seat.student-status-leave .trip-status-label{background:#fff;color:#b36b00;border:1px solid #f39c12;}
 .seat.student-status-late{background:linear-gradient(135deg,#f6c667,#d68910)!important;color:#4a3200!important;box-shadow:0 0 0 2px rgba(214,137,16,.25),0 0 18px rgba(214,137,16,.65),inset 0 1px 2px rgba(255,255,255,.4)!important;}
 .seat.student-status-late .trip-status-label{background:#fff;color:#9a5b00;border:1px solid #d68910;}
+.seat.student-status-present .trip-status-label{background:#fff;color:#16803a;border:1px solid #27ae60;}
+.seat.student-status-present{background:linear-gradient(135deg,#dff8e8,#8ee0ae)!important;color:#145a32!important;box-shadow:0 0 0 2px rgba(39,174,96,.18),0 0 12px rgba(39,174,96,.30),inset 0 1px 2px rgba(255,255,255,.45)!important;}
 
 @keyframes tripAbsentGlow{0%,100%{filter:brightness(1);box-shadow:0 0 0 2px rgba(231,76,60,.22),0 0 12px rgba(231,76,60,.55)!important}50%{filter:brightness(1.12);box-shadow:0 0 0 3px rgba(231,76,60,.3),0 0 25px rgba(231,76,60,.9)!important}}
 @keyframes tripLeaveGlow{0%,100%{filter:brightness(1);box-shadow:0 0 0 2px rgba(243,156,18,.22),0 0 12px rgba(243,156,18,.55)!important}50%{filter:brightness(1.1);box-shadow:0 0 0 3px rgba(243,156,18,.3),0 0 25px rgba(243,156,18,.9)!important}}
@@ -7463,14 +7465,24 @@ function updateCloudStatus(text, color) {
         const name = String(desk?.['student' + slot] || '').trim();
         if (!name) return 'present';
         const date = (typeof getFormattedDate === 'function') ? getFormattedDate() : new Date().toISOString().slice(0,10);
+        const deskIndex = Array.isArray(cls?.desks) ? cls.desks.indexOf(desk) : -1;
+        const studentId = (deskIndex >= 0 && typeof canonicalStudentId === 'function')
+            ? canonicalStudentId(cls, currentClassIndex, desk, deskIndex, slot)
+            : '';
+        const professionalRow = (window.ProfessionalModules?.attendanceData || []).find(r =>
+            studentId && String(r?.studentId || '').trim() === String(studentId).trim() && String(r?.date || '') === String(date)
+        );
+        // الرحلة تعتمد على نفس المصدر الموحد للحضور والغياب.
+        if (professionalRow?.status) return professionalRow.status;
         const key = `${desk.deskNumber}_${slot === 1 ? 'يمين' : 'يسار'}_${name}`;
         return getStoredAttendanceStatus(cls, date, key);
     }
 
     function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
         if (!hasStudent) return `<div class="seat seat-empty ${extraClass}">فارغ</div>`;
-        const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : (status === 'late' ? 'student-status-late' : ''));
-        const label = status === 'absent' ? '<span class="trip-status-label">غائب</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز</span>' : (status === 'late' ? '<span class="trip-status-label">متأخر</span>' : ''));
+        status = ['present','absent','late','leave'].includes(String(status)) ? String(status) : 'present';
+        const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : (status === 'late' ? 'student-status-late' : 'student-status-present'));
+        const label = status === 'absent' ? '<span class="trip-status-label">غائب ❌</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز 🏖️</span>' : (status === 'late' ? '<span class="trip-status-label">متأخر ⏰</span>' : '<span class="trip-status-label">حاضر ✔️</span>'));
         const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
         return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
@@ -9304,7 +9316,7 @@ function updateCloudStatus(text, color) {
         const deskForRow = (Array.isArray(cls?.desks) ? cls.desks : []).find(x => x && String(x.deskNumber)===String(deskNum));
         const slotForRow = seatPos==='يمين' ? 1 : 2;
         const studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,(cls.desks||[]).indexOf(deskForRow),slotForRow) : '';
-        const professionalRow = window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(studentIdForRow,dateStr) : (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
+        const professionalRow = getUnifiedAttendanceRecord ? getUnifiedAttendanceRecord(studentIdForRow,dateStr) : (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
         if (professionalRow?.status) status = professionalRow.status;
         const canEdit = canManageStudentAttendance(cls);
         const meta = cls?.attendanceChangeLog?.[dateStr]?.[studentKey];
@@ -10443,8 +10455,10 @@ function updateCloudStatus(text, color) {
         (Array.isArray(cls.desks)?cls.desks:[]).forEach((desk,di)=>[1,2].forEach(slot=>{
             const name=String(desk?.[`student${slot}`]||'').trim();
             if(!name || desk?.[`separated${slot}`])return;
+            // نفس المعرّف القياسي الذي تستخدمه شاشة الصف و«فتح الكشف» حتى تكون الحالة واحدة.
+            const unifiedId=canonicalStudentId(cls,Number(classIndex),desk,di,slot);
             out.push({
-                student:{id:String(desk?.[`student${slot}Id`]||desk?.id||`${classIndex}-${di}-${slot}`),name},
+                student:{id:String(unifiedId),name},
                 classObj:cls,classIndex:Number(classIndex),deskIndex:di,slot
             });
         }));
@@ -10468,29 +10482,30 @@ function updateCloudStatus(text, color) {
             .flatMap(r=>Array.isArray(r?.students)?r.students:(Array.isArray(r?.absentStudents)?r.absentStudents:[]));
         const getMonitorStatus=(f)=>{
             const rec=attendance.find(r=>String(r?.studentId)===String(f.student.id)&&String(r?.date)===String(date));
-            if(rec && ['late','absent','present'].includes(rec.status)) return rec;
+            if(rec && ['late','absent','present','leave'].includes(rec.status)) return rec;
             const report=todayReportItems.find(x=>
                 String(x?.studentId||'')===String(f.student.id) ||
                 String(x?.name||'').trim()===String(f.student.name).trim()
             );
-            if(report && ['late','absent','present'].includes(report.status)) return report;
+            if(report && ['late','absent','present','leave'].includes(report.status)) return report;
             return {status:'present'};
         };
         const rows=students.map((f,i)=>{
             const rec=getMonitorStatus(f);
-            const status=['late','absent','present'].includes(rec?.status) ? rec.status : 'present';
+            const status=['late','absent','present','leave'].includes(rec?.status) ? rec.status : 'present';
             const lateTime=String(rec?.lateTime||'').trim();
             const lateReason=String(rec?.lateReason||rec?.note||'').trim();
             const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const safeId=escAttr(f.student.id);
-            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰']];
+            // «مجاز» حالة مقروءة من السجل الموحد؛ صلاحية تغييرها تبقى للمدير.
+            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
             return `<tr>
                 <td>${i+1}</td>
                 <td>${escapeGlobalSearchHTML(f.student.name)}</td>
                 <td>
                   <div class="monitor-status-checks" data-current-status="${status}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                     ${checks.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;cursor:pointer;font-weight:800;font-size:12px">
-                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
+                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='leave'?'disabled title="حالة المجاز تسجل من المدير"':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
                         onchange="monitorAttendanceCheckboxChanged(this,'${safeId}','${escapeGlobalSearchHTML(date)}')"
                         style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer">
                       <span>${icon} ${label}</span>
@@ -11681,6 +11696,8 @@ window.addEventListener('unhandledrejection', function (event) {
       // 3) إذا كانت واجهة «فتح الكشف» أو «جرد الصفوف» أو «الحضور والغياب»
       // مفتوحة حالياً، نعيد رسمها فوراً من المصدر الموحد.
       try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]===cls) renderAbsenceTable(); }catch(_e){}
+      // تحديث شكل الرحلات فوراً من الحالة الموحدة، بما فيها حاضر/غائب/متأخر/مجاز.
+      try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]===cls) renderDesks(); }catch(_e){}
       try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('monitorDailyInventoryModal')) renderMonitorDailyInventory(); }catch(_e){}
       try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
     }catch(e){
