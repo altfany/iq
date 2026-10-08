@@ -1952,6 +1952,23 @@ header h2{font-size:20px !important;font-weight:900;letter-spacing:-.3px}
 .section-box h3{font-size:22px !important;color:#17324d !important}
 .class-actions{gap:8px !important}
 .class-actions button{border-radius:12px !important}
+/* تنظيم أزرار الصف بدون تغيير وظائفها */
+.class-management-group{display:flex;flex-direction:column;gap:7px;min-width:170px}
+.class-management-toggle,.class-action-group-toggle{border:0;cursor:pointer;color:#fff;font-weight:900;padding:11px 14px;border-radius:14px;min-height:46px;box-shadow:0 6px 16px rgba(30,55,80,.12);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.class-management-toggle{background:linear-gradient(135deg,#34495e,#526a80)}
+.students-group-toggle{background:linear-gradient(135deg,#2471a3,#3498db)}
+.class-management-items{display:flex;flex-wrap:wrap;gap:6px;padding:7px;border:1px solid #dce7ef;border-radius:14px;background:rgba(245,249,252,.92)}
+.class-management-items button{flex:1 1 140px}
+.class-action-group{display:flex;flex-direction:column;gap:7px;min-width:210px}
+.class-action-group-items{display:flex;flex-wrap:wrap;gap:6px;padding:7px;border:1px solid #dce7ef;border-radius:14px;background:rgba(245,249,252,.92)}
+.class-action-group-items button{flex:1 1 150px}
+.class-action-single{min-height:46px !important}
+.class-organized-actions{align-items:stretch}
+@media (max-width:768px){
+  .class-management-group,.class-action-group{width:100%;min-width:0}
+  .class-management-items,.class-action-group-items{display:grid;grid-template-columns:1fr}
+  .class-management-items button,.class-action-group-items button{width:100%;flex:none}
+}
 .classroom-layout{gap:14px !important}
 .column-section{border-radius:19px !important;border:1px solid #e1e9ef !important;background:linear-gradient(180deg,#fbfdff,#f5f8fb) !important;box-shadow:0 7px 20px rgba(32,57,80,.06)}
 .column-title{border-radius:15px 15px 0 0 !important;background:linear-gradient(135deg,#edf6fc,#e4f0f8) !important;color:#245b80 !important;font-weight:900 !important}
@@ -2293,9 +2310,14 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
                 </div>
                 <div class="class-actions">
                     <button class="btn-supervisor" id="currentClassSupervisorBtn" onclick="openClassSupervisorModal()">👨‍🏫 مرشد الصف: غير محدد</button>
-                    <button class="btn-edit" id="btnEditClass" onclick="openEditModal()">تعديل الصف</button>
-                    <button type="button" id="btnMoveStudentTrip" onclick="openTripTransferModal()" style="background:#2980b9;">🔄 نقل طالب بين الرحلات</button>
-                    <button class="btn-delete" id="btnDeleteClass" onclick="deleteCurrentClass()">حذف الصف</button>
+                    <div class="class-management-group" id="classManagementGroup">
+                        <button type="button" class="class-management-toggle" onclick="toggleClassActionGroup('classManagementActions',this)">⚙️ إدارة الصف <span>⌄</span></button>
+                        <div class="class-management-items" id="classManagementActions" style="display:none">
+                            <button class="btn-edit" id="btnEditClass" onclick="openEditModal()">تعديل الصف</button>
+                            <button type="button" id="btnMoveStudentTrip" onclick="openTripTransferModal()" style="background:#2980b9;">🔄 نقل طالب بين الرحلات</button>
+                            <button class="btn-delete" id="btnDeleteClass" onclick="deleteCurrentClass()">حذف الصف</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -2315,13 +2337,18 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
             </div>
         </div>
 
-        <div class="bottom-actions-container">
-            <button class="btn-toggle-log" id="btnLogNavTab" onclick="openModal('studentsLogModal')">📋 سجل الطلاب</button>
-            <button class="btn-toggle-behavior" onclick="openModal('behaviorModalBox')">⭐ السلوك والمستوى</button>
-            <button class="btn-toggle-parent" onclick="openModal('parentModalBox')" id="btnParentNavTab">📞 هاتف ولي الأمر</button>
-            <button class="btn-toggle-level" id="btnLevelNavTab" onclick="openModal('studentLevelModalBox')" style="display:none">📈 مستوى الطالب</button>
-            <button class="btn-toggle-schedule" onclick="openModal('scheduleModalBox')">📅 الجدول</button>
-            <button class="btn-toggle-grade" onclick="openGradesModal()" id="btnGradesNavTab">📝 درجات الطلاب</button>
+        <div class="bottom-actions-container class-organized-actions">
+            <div class="class-action-group">
+                <button type="button" class="class-action-group-toggle students-group-toggle" onclick="toggleClassActionGroup('studentsInfoActions',this)">👤 بيانات الطلاب <span>⌄</span></button>
+                <div class="class-action-group-items" id="studentsInfoActions" style="display:none">
+                    <button class="btn-toggle-log" id="btnLogNavTab" onclick="openModal('studentsLogModal')">📋 سجل الطلاب</button>
+                    <button class="btn-toggle-behavior" onclick="openModal('behaviorModalBox')">⭐ السلوك والمستوى</button>
+                    <button class="btn-toggle-parent" onclick="openModal('parentModalBox')" id="btnParentNavTab">📞 هاتف ولي الأمر</button>
+                    <button class="btn-toggle-level" id="btnLevelNavTab" onclick="openModal('studentLevelModalBox')" style="display:none">📈 مستوى الطالب</button>
+                </div>
+            </div>
+            <button class="btn-toggle-schedule class-action-single" onclick="openModal('scheduleModalBox')">📅 الجدول</button>
+            <button class="btn-toggle-grade class-action-single" onclick="openGradesModal()" id="btnGradesNavTab">📝 درجات الطلاب</button>
         </div>
     </div>
 </div>
@@ -7145,6 +7172,15 @@ function updateCloudStatus(text, color) {
         classModal.style.display='flex';
     }
 
+    function toggleClassActionGroup(groupId, button) {
+        const group = document.getElementById(groupId);
+        if (!group) return;
+        const isOpen = group.style.display !== 'none';
+        group.style.display = isOpen ? 'none' : 'flex';
+        const arrow = button?.querySelector('span');
+        if (arrow) arrow.textContent = isOpen ? '⌄' : '⌃';
+    }
+
     function openModal(modalId) {
         if (modalId === 'absenceModalBox' && currentUser.role === 'parent') {
             openParentAbsencePage();
@@ -7192,8 +7228,10 @@ function updateCloudStatus(text, color) {
     function updateTeacherClassActionsVisibility(){
         const logBtn=document.getElementById('btnLogNavTab');
         const levelBtn=document.getElementById('btnLevelNavTab');
+        const managementGroup=document.getElementById('classManagementGroup');
         if(logBtn) logBtn.style.display=(currentUser && currentUser.role==='teacher')?'none':'';
         if(levelBtn) levelBtn.style.display='none';
+        if(managementGroup) managementGroup.style.display=(currentUser && currentUser.role==='admin')?'flex':'none';
     }
 
     function saveClass() {
@@ -7264,7 +7302,7 @@ function updateCloudStatus(text, color) {
         }
     }
 
-    function enforceRoleButtons(){ const isAdmin=!!(currentUser&&currentUser.role==='admin'); const b=document.getElementById('btnTransferNav'); if(b) b.style.display=isAdmin?'':'none'; const trip=document.getElementById('btnMoveStudentTrip'); if(trip){ trip.style.display=isAdmin?'inline-flex':'none'; trip.style.visibility=isAdmin?'visible':'hidden'; } const l=document.getElementById('btnLogNavTab'); if(l) l.style.display=(currentUser&&currentUser.role==='teacher')?'none':''; }
+    function enforceRoleButtons(){ const isAdmin=!!(currentUser&&currentUser.role==='admin'); const b=document.getElementById('btnTransferNav'); if(b) b.style.display=isAdmin?'':'none'; const trip=document.getElementById('btnMoveStudentTrip'); if(trip){ trip.style.display=isAdmin?'inline-flex':'none'; trip.style.visibility=isAdmin?'visible':'hidden'; } const mg=document.getElementById('classManagementGroup'); if(mg) mg.style.display=isAdmin?'flex':'none'; const l=document.getElementById('btnLogNavTab'); if(l) l.style.display=(currentUser&&currentUser.role==='teacher')?'none':''; }
 
     function renderClassesNav() {
         enforceRoleButtons();
