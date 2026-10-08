@@ -2200,6 +2200,45 @@ input,select,textarea{border-radius:11px !important;border-color:#d8e3eb !import
   #staffAdminBar>div>div:last-child{grid-template-columns:1fr;}
 }
 </style>
+<style id="comprehensive-button-next-to-role-css">
+/* نقل الزر بجانب الصلاحية فقط — لا يغيّر وظيفة الزر */
+header > div:first-child{
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+#dev5QuickButtons{
+  display:inline-flex !important;
+  align-items:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  width:auto !important;
+  direction:rtl !important;
+}
+#dev5QuickButtons button{
+  min-height:42px !important;
+  width:auto !important;
+  min-width:0 !important;
+  padding:7px 12px !important;
+  border-radius:12px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:7px !important;
+  white-space:nowrap !important;
+  background:linear-gradient(135deg,#172b4d,#287eaf) !important;
+  color:#fff !important;
+  box-shadow:0 5px 14px rgba(0,0,0,.12) !important;
+}
+#dev5QuickButtons .dev5-btn-icon{font-size:18px !important;line-height:1 !important;}
+#dev5QuickButtons .dev5-btn-title{font-size:12px !important;font-weight:900 !important;}
+#dev5QuickButtons .dev5-btn-arrow{font-size:14px !important;}
+@media(max-width:600px){
+  #dev5QuickButtons button{min-height:42px !important;padding:7px 10px !important;}
+  #dev5QuickButtons .dev5-btn-title{font-size:11px !important;}
+}
+</style>
 </head>
 <body>
 
@@ -12798,14 +12837,16 @@ function openDev5Performance(){
 window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
 window.openComprehensiveSchoolSystem=function(){try{if(!window.Dev5||typeof window.Dev5.performance!=='function'){alert('جاري تحميل نظام المدرسة الشامل، حاول الضغط مرة أخرى بعد لحظات.');return false;} window.Dev5.performance();return true;}catch(e){console.error('Comprehensive school system error:',e);alert('تعذر فتح نظام المدرسة الشامل حالياً. حاول مرة أخرى.');return false;}};
 function ensureComprehensiveSchoolButton(){
-  const pq=document.querySelector('#professionalQuickMenu .pq-items');
-  if(!pq)return;
+  const badge=document.getElementById('userRoleBadge');
+  if(!badge || !badge.parentElement)return;
   let wrap=document.getElementById('dev5QuickButtons');
   if(!wrap){
     wrap=document.createElement('div');
     wrap.id='dev5QuickButtons';
     wrap.innerHTML='<button type="button" id="dev5ComprehensiveButton"><span class="dev5-btn-icon">🏫</span><span class="dev5-btn-title">نظام المدرسة الشامل</span><span class="dev5-btn-arrow">←</span></button>';
-    pq.insertBefore(wrap,pq.firstChild);
+    badge.parentElement.appendChild(wrap);
+  }else if(wrap.parentElement!==badge.parentElement){
+    badge.parentElement.appendChild(wrap);
   }
   const btn=document.getElementById('dev5ComprehensiveButton');
   if(btn && !btn.dataset.bound){
