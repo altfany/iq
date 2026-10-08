@@ -4182,6 +4182,8 @@ function updateCloudStatus(text, color) {
         if (cloud.monitorInventoryReportsData !== undefined) monitorInventoryReportsData = Array.isArray(cloud.monitorInventoryReportsData) ? cloud.monitorInventoryReportsData : [];
         if (cloud.monitorMessagesData !== undefined) monitorMessagesData = Array.isArray(cloud.monitorMessagesData) ? cloud.monitorMessagesData : [];
         repairLegacySchoolData(); ensureStableIds(); ensureTeacherClassIds();
+        // استرجاع آخر تغييرات اليوم من الحفظ الفوري المحلي بعد تحميل نسخة Firebase.
+        applyLocalTodayAttendanceOverrides();
         try {
             cloudOnlyStorage.setItem('schoolData', JSON.stringify(schoolData));
             cloudOnlyStorage.setItem('teachersData', JSON.stringify(teachersData));
@@ -9209,6 +9211,52 @@ function updateCloudStatus(text, color) {
         const schedule=document.getElementById('scheduleModalBox'); if(schedule){schedule.style.zIndex='1000000';schedule.style.position='fixed';}
     }
 
+    // حفظ فوري محلي لحالة حضور اليوم: يمنع ضياع آخر تعديل إذا أُغلق النظام قبل اكتمال مزامنة Firebase.
+    const LOCAL_TODAY_ATTENDANCE_KEY = 'schoolTodayAttendanceOverrides_v1';
+    function getLocalTodayAttendanceOverrides(){
+        try {
+            const raw=localStorage.getItem(LOCAL_TODAY_ATTENDANCE_KEY);
+            const obj=raw?JSON.parse(raw):{};
+            return obj && typeof obj==='object' ? obj : {};
+        } catch(e){ return {}; }
+    }
+    function saveLocalTodayAttendanceOverride(classId,studentId,date,status){
+        try{
+            const today=getFormattedDate();
+            if(String(date)!==String(today)) return;
+            const data=getLocalTodayAttendanceOverrides();
+            // احتفظ بتعديلات اليوم فقط حتى لا تتحول الذاكرة المحلية إلى سجل دائم منفصل.
+            Object.keys(data).forEach(k=>{ if(k.split('|')[0]!==String(today)) delete data[k]; });
+            const key=`${today}|${String(classId||'')}|${String(studentId||'')}`;
+            data[key]={date:today,classId:String(classId||''),studentId:String(studentId||''),status:String(status||'present'),updatedAt:new Date().toISOString()};
+            localStorage.setItem(LOCAL_TODAY_ATTENDANCE_KEY,JSON.stringify(data));
+        }catch(e){ console.warn('Local attendance persistence failed:',e); }
+    }
+    function applyLocalTodayAttendanceOverrides(){
+        try{
+            const today=getFormattedDate(), data=getLocalTodayAttendanceOverrides();
+            Object.keys(data).forEach(k=>{
+                const r=data[k];
+                if(!r || String(r.date)!==String(today)) return;
+                const cls=(schoolData||[]).find(c=>String(c?.id||'')===String(r.classId||''));
+                if(!cls) return;
+                const found=(cls.desks||[]).flatMap((d,di)=>[
+                    {id:canonicalStudentId(cls,(schoolData||[]).indexOf(cls),d,di,1),name:String(d?.student1||'').trim(),desk:d,slot:1},
+                    {id:canonicalStudentId(cls,(schoolData||[]).indexOf(cls),d,di,2),name:String(d?.student2||'').trim(),desk:d,slot:2}
+                ]).find(x=>String(x.id)===String(r.studentId));
+                if(!found) return;
+                if(!cls.absenceRecords) cls.absenceRecords={};
+                if(!cls.absenceRecords[today]) cls.absenceRecords[today]={};
+                const seat=found.slot===1?'يمين':'يسار';
+                const legacy=`${found.desk?.deskNumber??((cls.desks||[]).indexOf(found.desk)+1)}_${seat}_${found.name}`;
+                if(r.status==='present') delete cls.absenceRecords[today][String(r.studentId)];
+                else cls.absenceRecords[today][String(r.studentId)]=r.status;
+                if(r.status==='present') delete cls.absenceRecords[today][legacy];
+                else cls.absenceRecords[today][legacy]=r.status;
+            });
+        }catch(e){ console.warn('Applying local attendance overrides failed:',e); }
+    }
+
     function getStoredAttendanceStatus(cls, dateStr, studentKey) {
         const value = cls && cls.absenceRecords && cls.absenceRecords[dateStr]
             ? cls.absenceRecords[dateStr][studentKey]
@@ -9346,6 +9394,10 @@ function updateCloudStatus(text, color) {
         }
 
         const studentName=String(foundStudent?.name||parsedStudentName||rawStudentKey).trim();
+        // حفظ الحالة فوراً على الجهاز لنفس اليوم قبل أي مزامنة سحابية.
+        if(foundStudent?.id){
+            saveLocalTodayAttendanceOverride(cls?.id,foundStudent.id,dateStr,statusVal);
+        }
         const actorRoleLabel = currentUser?.isAssistant ? 'المعاون' : (currentUser?.role === 'teacher' ? 'مرشد الصف' : 'المدير');
         const actorChangedAt = new Date().toISOString();
         if(foundStudent?.id && window.ProfessionalModules?.recordAttendance){
