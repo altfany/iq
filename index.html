@@ -1044,7 +1044,7 @@ button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, in
 }
 
 /* ===== حالة الطالب داخل الرحلة: حاضر / غائب / متأخر / مجاز ===== */
-.seat.student-status-seat{position:relative;overflow:visible;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;transition:transform .15s ease,filter .15s ease;}.seat.student-status-seat:hover{transform:translateY(-2px);filter:brightness(1.05);}.seat.student-status-seat[title]{cursor:pointer;}
+.seat.student-status-seat{position:relative;overflow:visible;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;}
 .seat.student-status-seat .trip-student-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-top:9px;}
 .seat.student-status-seat .trip-status-label{position:absolute;top:-11px;left:50%;transform:translateX(-50%);z-index:5;padding:2px 9px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap;box-shadow:0 3px 9px rgba(0,0,0,.18);}
 .seat.student-status-absent{background:linear-gradient(135deg,#ff6b6b,#c0392b)!important;box-shadow:0 0 0 2px rgba(231,76,60,.25),0 0 18px rgba(231,76,60,.75),inset 0 1px 2px rgba(255,255,255,.35)!important;animation:tripAbsentGlow 1.5s ease-in-out infinite;}
@@ -7563,151 +7563,6 @@ function updateCloudStatus(text, color) {
         return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
 
-    // ===== تسجيل حالة الطالب مباشرة من داخل الصف =====
-    function openClassStudentAttendance(studentId){
-        if(!currentUser || currentUser.role !== 'admin'){
-            alert('تسجيل حالة الطالب من داخل الصف متاح للمدير فقط.');
-            return;
-        }
-        const found = (typeof findStudent === 'function') ? findStudent(studentId) : null;
-        if(!found || !found.student){
-            alert('تعذر العثور على الطالب.');
-            return;
-        }
-
-        const old = document.getElementById('classStudentAttendanceModal');
-        if(old) old.remove();
-
-        const date = (typeof todayISO === 'function') ? todayISO() : new Date().toISOString().slice(0,10);
-        const existing = (window.ProfessionalModules?.attendanceData || []).find(r =>
-            String(r?.studentId || '').trim() === String(studentId || '').trim() &&
-            String(r?.date || '') === String(date)
-        );
-
-        const status = existing?.status || 'present';
-        const statusText = {
-            present:'حاضر',
-            absent:'غائب',
-            late:'متأخر',
-            leave:'مجاز'
-        };
-
-        const modal = document.createElement('div');
-        modal.id = 'classStudentAttendanceModal';
-        modal.className = 'modal';
-        modal.style.cssText = 'display:flex;position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,.62);padding:12px;align-items:center;justify-content:center;';
-
-        modal.innerHTML = `
-          <div class="modal-content" style="width:min(560px,96vw);max-height:94vh;overflow:auto;padding:18px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;">
-              <div>
-                <div style="font-size:11px;color:#718294;font-weight:800;">📚 تسجيل من داخل الصف</div>
-                <h3 style="margin:4px 0 0;color:#17324d;">${escapeGlobalSearchHTML(found.student.name || 'الطالب')}</h3>
-                <div style="font-size:11px;color:#7b8b99;margin-top:4px;">${escapeGlobalSearchHTML(found.classObj?.name || '')} — ${date}</div>
-              </div>
-              <button type="button" onclick="document.getElementById('classStudentAttendanceModal')?.remove()" style="background:#7f8c8d;">✕</button>
-            </div>
-
-            <div style="padding:12px;border-radius:14px;background:#f7fafc;border:1px solid #e1e8ee;margin-bottom:12px;">
-              <div style="font-size:12px;font-weight:900;color:#34495e;margin-bottom:9px;">الحالة الحالية: <span id="classAttendanceCurrentLabel">${statusText[status] || 'حاضر'}</span></div>
-              <div id="classAttendanceStatusButtons" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-                <button type="button" data-status="present" style="background:#27ae60;">✔️ حاضر</button>
-                <button type="button" data-status="absent" style="background:#e74c3c;">❌ غائب</button>
-                <button type="button" data-status="late" style="background:#d68910;">⏰ متأخر</button>
-                <button type="button" data-status="leave" style="background:#f39c12;">🏖️ مجاز</button>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>التاريخ</label>
-              <input type="date" id="classAttendanceDate" value="${date}">
-            </div>
-
-            <div id="classAttendanceLateBox" style="display:${status === 'late' ? 'grid' : 'none'};grid-template-columns:1fr 1fr;gap:8px;">
-              <div class="form-group">
-                <label>وقت التأخر</label>
-                <input type="time" id="classAttendanceLateTime" value="${escapeGlobalSearchHTML(existing?.lateTime || '')}">
-              </div>
-              <div class="form-group">
-                <label>سبب التأخر</label>
-                <input type="text" id="classAttendanceLateReason" value="${escapeGlobalSearchHTML(existing?.lateReason || '')}" placeholder="سبب التأخر">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>ملاحظة</label>
-              <textarea id="classAttendanceNote" rows="3" placeholder="ملاحظة اختيارية">${escapeGlobalSearchHTML(existing?.note || '')}</textarea>
-            </div>
-
-            <div style="display:flex;gap:8px;justify-content:flex-start;margin-top:12px;flex-wrap:wrap;">
-              <button type="button" id="classAttendanceSaveBtn" style="background:var(--success);">💾 حفظ الحالة</button>
-              <button type="button" onclick="document.getElementById('classStudentAttendanceModal')?.remove()" style="background:#7f8c8d;">إلغاء</button>
-            </div>
-          </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        let selectedStatus = status;
-        const labelEl = document.getElementById('classAttendanceCurrentLabel');
-        const lateBox = document.getElementById('classAttendanceLateBox');
-        const lateTimeEl = document.getElementById('classAttendanceLateTime');
-        const lateReasonEl = document.getElementById('classAttendanceLateReason');
-
-        const refreshButtons = () => {
-            modal.querySelectorAll('[data-status]').forEach(btn => {
-                const active = btn.dataset.status === selectedStatus;
-                btn.style.opacity = active ? '1' : '.58';
-                btn.style.transform = active ? 'translateY(-1px)' : 'none';
-                btn.style.boxShadow = active ? '0 0 0 3px rgba(41,128,185,.18)' : 'none';
-            });
-            if(labelEl) labelEl.textContent = statusText[selectedStatus] || 'حاضر';
-            if(lateBox) lateBox.style.display = selectedStatus === 'late' ? 'grid' : 'none';
-        };
-
-        modal.querySelectorAll('[data-status]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                selectedStatus = btn.dataset.status;
-                refreshButtons();
-            });
-        });
-
-        document.getElementById('classAttendanceSaveBtn')?.addEventListener('click', () => {
-            const selectedDate = document.getElementById('classAttendanceDate')?.value;
-            const note = document.getElementById('classAttendanceNote')?.value || '';
-            const lateTime = lateTimeEl?.value || '';
-            const lateReason = lateReasonEl?.value || '';
-
-            if(!selectedDate){
-                alert('اختر التاريخ أولاً.');
-                return;
-            }
-
-            if(typeof recordAttendance !== 'function'){
-                alert('تعذر الوصول إلى سجل الحضور الموحد.');
-                return;
-            }
-
-            const ok = recordAttendance(
-                studentId,
-                selectedStatus,
-                selectedDate,
-                note,
-                lateTime,
-                lateReason
-            );
-
-            if(ok){
-                modal.remove();
-                try{ renderDesks(); }catch(_e){}
-                try{ if(typeof renderClassesNav === 'function') renderClassesNav(); }catch(_e){}
-                alert(`تم تسجيل الطالب "${found.student.name}" كـ ${statusText[selectedStatus] || 'حاضر'} بنجاح.`);
-            }
-        });
-
-        refreshButtons();
-    }
-
     function renderDesks() {
         enforceRoleButtons();
         let cls = schoolData[currentClassIndex];
@@ -7769,26 +7624,6 @@ function updateCloudStatus(text, color) {
 
                 if(currentUser.role === 'admin') {
                     deskEl.onclick = () => openDeskModal(index);
-
-                    // الضغط على اسم الطالب/مقعده يفتح تسجيل الحالة مباشرة.
-                    const studentSeats = deskEl.querySelectorAll('.student-status-seat');
-                    studentSeats.forEach((seatEl, seatNo) => {
-                        const studentName = seatNo === 0
-                            ? String(deskData.student1 || '').trim()
-                            : String(deskData.student2 || '').trim();
-                        const studentId = seatNo === 0
-                            ? (deskData.student1Id || canonicalStudentId(cls, currentClassIndex, deskData, index, 1))
-                            : (deskData.student2Id || canonicalStudentId(cls, currentClassIndex, deskData, index, 2));
-
-                        if(studentName && studentId){
-                            seatEl.style.cursor = 'pointer';
-                            seatEl.title = 'اضغط لتسجيل حالة الطالب: حاضر / غائب / متأخر / مجاز';
-                            seatEl.addEventListener('click', (event) => {
-                                event.stopPropagation();
-                                openClassStudentAttendance(studentId);
-                            });
-                        }
-                    });
                 }
             }
 
@@ -12743,6 +12578,63 @@ function d5studentAttendanceRecords(st, cls){
   Object.entries(cls?.absenceRecords||{}).forEach(([date,map])=>{const k=Object.keys(map||{}).find(x=>legacyKeys.has(String(x)));if(k){const v=map[k];add({studentId:sid,date,status:v===true?'absent':(v||'present')});}});
   return out;
 }
+
+function openDev5GenderDetails(gender){
+  if(!currentUser || currentUser.role!=='admin'){
+    alert('هذه التفاصيل متاحة للمدير فقط.');
+    return;
+  }
+
+  const classes=Array.isArray(schoolData)?schoolData:[];
+  const isMale=String(gender)==='male';
+  const title=isMale?'👦 أعداد الذكور حسب الصف':'👧 أعداد الإناث حسب الصف';
+  const label=isMale?'الذكور':'الإناث';
+
+  const rows=classes.map((cls,ci)=>{
+    const studentsInClass=[];
+    (Array.isArray(cls?.desks)?cls.desks:[]).forEach((desk,di)=>{
+      [1,2].forEach(slot=>{
+        const name=String(desk?.['student'+slot]||'').trim();
+        if(!name)return;
+        const raw=String(desk?.['gender'+slot]||'').trim().toLowerCase();
+        const normalized=raw==='male'||raw==='m'||raw==='ذكر'||raw==='ذكور'?'male':
+                         raw==='female'||raw==='f'||raw==='أنثى'||raw==='انثى'||raw==='إناث'||raw==='اناث'?'female':raw;
+        if(normalized===gender){
+          studentsInClass.push({name,ci,di,slot});
+        }
+      });
+    });
+    return {name:String(cls?.name||`الصف ${ci+1}`),count:studentsInClass.length,students:studentsInClass};
+  });
+
+  const total=rows.reduce((sum,row)=>sum+row.count,0);
+  const html=`
+    <div class="school-command-gender-summary">
+      <div class="school-command-gender-head">
+        <div>
+          <div class="school-command-kicker">تفصيل الطلاب</div>
+          <h3>${title}</h3>
+          <p>إجمالي ${label}: <b>${total}</b> طالباً/طالبة.</p>
+        </div>
+        <div class="school-command-gender-total"><strong>${total}</strong><span>${label}</span></div>
+      </div>
+      <div class="school-command-gender-list">
+        ${rows.map((row,index)=>`
+          <div class="school-command-gender-row">
+            <div class="school-command-gender-class">
+              <span>📚</span>
+              <div><b>${d5esc(row.name)}</b><small>الصف ${index+1}</small></div>
+            </div>
+            <strong>${row.count}</strong>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  d5open(title,html,'dev5GenderDetailsModal');
+}
+
 function openDev5StudentCategoryDetails(type){
   if(!currentUser || currentUser.role!=='admin'){ alert('هذه التفاصيل متاحة للمدير فقط.'); return; }
   rebuildD5Index();
@@ -12921,8 +12813,12 @@ function openDev5Performance(){
     <div class="school-command-grid">
       <div class="school-command-card primary"><span>🏫</span><b>عدد الصفوف</b><strong>${classes.length}</strong><small>صف دراسي داخل النظام</small></div>
       <div class="school-command-card blue"><span>👨‍🎓</span><b>الطلاب الكلي</b><strong>${students}</strong><small>طالب مسجل في جميع الصفوف</small></div>
-      <div class="school-command-card teal"><span>👦</span><b>الذكور</b><strong>${maleStudents}</strong><small>عدد الطلاب الذكور</small></div>
-      <div class="school-command-card purple"><span>👧</span><b>الإناث</b><strong>${femaleStudents}</strong><small>عدد الطالبات الإناث</small></div>
+      <button type="button" class="school-command-card teal dev5-gender-card" onclick="window.Dev5.openGenderDetails('male')">
+        <span>👦</span><b>الذكور</b><strong>${maleStudents}</strong><small>اضغط لعرض عدد الذكور حسب كل صف</small>
+      </button>
+      <button type="button" class="school-command-card purple dev5-gender-card" onclick="window.Dev5.openGenderDetails('female')">
+        <span>👧</span><b>الإناث</b><strong>${femaleStudents}</strong><small>اضغط لعرض عدد الإناث حسب كل صف</small>
+      </button>
       <div class="school-command-card teal"><span>👨‍🏫</span><b>المعلمون</b><strong>${teachers.length}</strong><small>معلم مسجل بالنظام</small></div>
       <div class="school-command-card orange"><span>🚌</span><b>الرحلات</b><strong>${trips}</strong><small>رحلة / مقعد مزدوج</small></div>
       <div class="school-command-card green"><span>💺</span><b>المقاعد المشغولة</b><strong>${occupiedSeats}</strong><small>من أصل ${totalSeats} مقعد</small></div>
@@ -12998,7 +12894,7 @@ function openDev5Performance(){
   `;
   d5open('🏫 نظام المدرسة الشامل',html,'dev5PerformanceModal');
 }
-window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
+window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openGenderDetails:openDev5GenderDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
 window.openComprehensiveSchoolSystem=function(){try{if(!window.Dev5||typeof window.Dev5.performance!=='function'){alert('جاري تحميل نظام المدرسة الشامل، حاول الضغط مرة أخرى بعد لحظات.');return false;} window.Dev5.performance();return true;}catch(e){console.error('Comprehensive school system error:',e);alert('تعذر فتح نظام المدرسة الشامل حالياً. حاول مرة أخرى.');return false;}};
 function ensureComprehensiveSchoolButton(){
   const badge=document.getElementById('userRoleBadge');
@@ -13084,6 +12980,8 @@ body.parent-only-mode header { display:none !important; }
 .school-command-hero{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:18px;border-radius:18px;background:linear-gradient(135deg,#162a46,#2c78a9);color:#fff;margin-bottom:15px;box-shadow:0 10px 28px rgba(25,58,91,.2)}
 .school-command-hero h2{margin:4px 0 5px;font-size:25px}.school-command-hero p{margin:0;opacity:.9;line-height:1.7}.school-command-kicker{font-size:12px;opacity:.8;font-weight:800}.school-command-date{background:rgba(255,255,255,.13);padding:9px 12px;border-radius:12px;white-space:nowrap;font-weight:800}
 .school-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.school-command-month-picker{display:grid;grid-template-columns:minmax(180px,1fr) 220px;gap:12px;align-items:center}.school-command-month-picker select{width:100%;padding:12px;border:1px solid #d9e2ea;border-radius:10px;background:#fff;font-weight:800}.dev5-month-count{padding:12px;border:1px solid #d9e2ea;border-radius:10px;background:#f8fbfd;text-align:center}.dev5-month-count b{display:block;font-size:28px;color:#c0392b}.dev5-month-count span{color:#657786;font-size:12px}.dev5-month-list{display:grid;gap:8px}.dev5-month-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px;border:1px solid #e1e7ed;border-radius:10px;background:#fff}.dev5-month-row strong{font-size:22px;color:#c0392b}.dev5-month-row span{font-size:11px;color:#71808d}.school-command-card{padding:15px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 6px 18px rgba(30,50,70,.07);position:relative;overflow:hidden}.school-command-card:after{content:'';position:absolute;left:-25px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:currentColor;opacity:.06}.school-command-card span{font-size:23px;display:block}.school-command-card b{display:block;margin-top:6px;color:#445}.school-command-card strong{display:block;font-size:30px;margin-top:3px;color:#1e2e3d}.school-command-card small{display:block;margin-top:3px;color:#71808d}.school-command-card.primary{color:#34495e}.school-command-card.blue{color:#2980b9}.school-command-card.teal{color:#16a085}.school-command-card.purple{color:#8e44ad}.school-command-card.orange{color:#d35400}.school-command-card.green{color:#27ae60}.school-command-card.red{color:#c0392b}.school-command-card.gold{color:#b87900}
+.school-command-card.dev5-gender-card{width:100%;font:inherit;text-align:right;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.school-command-card.dev5-gender-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(30,50,70,.14);border-color:currentColor}.school-command-card.dev5-gender-card:focus-visible{outline:3px solid rgba(41,128,185,.25);outline-offset:2px}.school-command-gender-summary{padding:2px}.school-command-gender-head{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:16px;border-radius:15px;background:linear-gradient(135deg,#f5f9fc,#fff);border:1px solid #e1e8ee;margin-bottom:12px}.school-command-gender-head h3{margin:3px 0;font-size:20px;color:#243447}.school-command-gender-head p{margin:0;color:#71808d;font-size:12px}.school-command-gender-total{min-width:90px;padding:12px;border-radius:14px;background:#eef6fb;text-align:center}.school-command-gender-total strong{display:block;font-size:28px;color:#2980b9}.school-command-gender-total span{font-size:11px;color:#607d8b;font-weight:800}.school-command-gender-list{display:grid;gap:8px}.school-command-gender-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid #e1e7ed;border-radius:12px;background:#fff}.school-command-gender-class{display:flex;align-items:center;gap:10px}.school-command-gender-class>span{font-size:20px}.school-command-gender-class b{display:block;color:#26384a;font-size:14px}.school-command-gender-class small{display:block;color:#8a98a5;font-size:10px;margin-top:2px}.school-command-gender-row>strong{min-width:52px;padding:7px 10px;border-radius:10px;background:#f1f6fa;color:#1e4059;text-align:center;font-size:18px}@media(max-width:560px){.school-command-gender-head{align-items:flex-start}.school-command-gender-head h3{font-size:17px}.school-command-gender-total{min-width:72px}.school-command-gender-total strong{font-size:24px}.school-command-gender-row{padding:11px}.school-command-gender-row>strong{font-size:16px}}
+
 .school-command-section{margin-top:15px;padding:16px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 5px 16px rgba(30,50,70,.06)}.school-command-section-title{display:flex;align-items:center;gap:10px;margin-bottom:13px}.school-command-section-title>span{font-size:23px}.school-command-section-title b{display:block;font-size:16px}.school-command-section-title small{display:block;color:#788692;margin-top:2px}.school-command-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.school-command-status-grid>div{padding:13px;border-radius:13px;background:#f7f9fb;border:1px solid #e7edf2}.school-command-status-grid b{display:block;color:#536270}.school-command-status-grid strong{font-size:25px;display:inline-block;margin-top:4px}.school-command-status-grid em{font-style:normal;float:left;margin-top:8px;font-weight:800;color:#607d8b}.school-command-details{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.school-command-details div{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:#f7f9fb;border-radius:10px}.school-command-details span{color:#65737e}.school-command-details b{color:#1f3345}.school-command-features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.school-command-features div{padding:12px;border-radius:12px;background:#f7fafc;line-height:1.7}.school-command-features small{display:block;color:#71808d;padding-right:20px}.school-command-footer{text-align:center;margin-top:15px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#eef6fb,#f7fbff);color:#31556d;font-weight:900}
 @media(max-width:900px){.school-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.school-command-details{grid-template-columns:repeat(2,minmax(0,1fr))}.school-command-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.school-command-hero{display:block;padding:14px}.school-command-hero h2{font-size:21px}.school-command-date{display:inline-block;margin-top:10px}.school-command-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.school-command-card{padding:11px}.school-command-card strong{font-size:24px}.school-command-card small{font-size:11px}.school-command-section{padding:12px}.school-command-details,.school-command-features{grid-template-columns:1fr}.school-command-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
