@@ -9281,30 +9281,68 @@ function updateCloudStatus(text, color) {
     }
 
     function renderAbsenceTable() {
-        const cls = schoolData[currentClassIndex];
-        if (!cls) return;
-
-        // المدير أو مرشد الصف فقط يستطيعان فتح شاشة التسجيل.
-        if (currentUser.role !== 'parent' && !canManageStudentAttendance(cls)) return;
-
-        let tbody = document.getElementById('absenceTableBody');
+        // شاشة الحضور والغياب تعتمد دائماً على الصف المفتوح حالياً، ثم تستخرج
+        // الطلاب من مقاعد الصف مباشرة. لا نعتمد على absenceRecords لعرض الأسماء.
+        const cls = schoolData?.[currentClassIndex];
+        const tbody = document.getElementById('absenceTableBody');
+        if (!tbody) return;
         tbody.innerHTML = '';
 
-        let dateInput = document.getElementById('absenceDateInput');
-        if (!dateInput.value) dateInput.value = getFormattedDate();
-        let selectedDate = dateInput.value;
+        if (!cls) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:15px">افتح الصف أولاً لعرض أسماء الطلاب.</td></tr>';
+            return;
+        }
+        if (currentUser?.role !== 'parent' && !canManageStudentAttendance(cls)) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:15px">لا تملك صلاحية تسجيل الحضور والغياب لهذا الصف.</td></tr>';
+            return;
+        }
 
-        if (!cls.absenceRecords) cls.absenceRecords = {};
-        if (!cls.absenceRecords[selectedDate]) cls.absenceRecords[selectedDate] = {};
+        const dateInput = document.getElementById('absenceDateInput');
+        if (dateInput && !dateInput.value) dateInput.value = getFormattedDate();
+        const selectedDate = String(dateInput?.value || getFormattedDate());
 
+        if (!cls.absenceRecords || typeof cls.absenceRecords !== 'object') cls.absenceRecords = {};
+        if (!cls.absenceRecords[selectedDate] || typeof cls.absenceRecords[selectedDate] !== 'object') cls.absenceRecords[selectedDate] = {};
+
+        const sub = document.getElementById('absenceSubText');
         const canEdit = canManageStudentAttendance(cls);
-        document.getElementById('absenceSubText').innerText = canEdit
-            ? `تسجيل حضور وغياب ومتأخر الطلاب — ${cls.name} — الصلاحية: ${currentUser.role === 'admin' ? 'مدير النظام (كاملة)' : 'مرشد الصف (بدون مجاز)'}`
-            : `سجل الحضور والغياب للطالب: ${currentUser.name}`;
+        if (sub) sub.innerText = canEdit
+            ? `تسجيل حضور وغياب ومتأخر الطلاب — ${cls.name} — الصلاحية: ${currentUser?.role === 'admin' ? 'مدير النظام (كاملة)' : currentUser?.role === 'monitor' ? 'المراقب' : 'مرشد الصف'}`
+            : `سجل الحضور والغياب للطالب: ${currentUser?.name || ''}`;
 
-        cls.desks.forEach(desk => {
-            if (desk.student1) appendAbsenceRow(tbody, desk.student1, desk.deskNumber, 'يمين', `${desk.deskNumber}_يمين_${desk.student1}`, selectedDate, cls);
-            if (desk.student2) appendAbsenceRow(tbody, desk.student2, desk.deskNumber, 'يسار', `${desk.deskNumber}_يسار_${desk.student2}`, selectedDate, cls);
+        const desks = Array.isArray(cls.desks) ? cls.desks : [];
+        const rows = [];
+        desks.forEach((desk, di) => {
+            if (!desk) return;
+            const deskNumber = desk.deskNumber ?? (di + 1);
+            const name1 = String(desk.student1 || '').trim();
+            const name2 = String(desk.student2 || '').trim();
+            if (name1) rows.push({name:name1, deskNumber, seat:'يمين', slot:1, desk, deskIndex:di});
+            if (name2) rows.push({name:name2, deskNumber, seat:'يسار', slot:2, desk, deskIndex:di});
+        });
+
+        // توافق مع أي بيانات طلاب قديمة/مختلفة في بنية الصف: إذا كانت المقاعد
+        // موجودة لكن حقول الاسم غير متاحة، نستخدم allStudents() كمصدر احتياطي.
+        if (!rows.length && typeof allStudents === 'function') {
+            allStudents().filter(x => x.classObj === cls || String(x.classObj?.id||'') === String(cls.id||''))
+                .forEach(x => rows.push({
+                    name:String(x.student?.name||'').trim(),
+                    deskNumber:x.student?.deskNumber || (Number(x.deskIndex)+1),
+                    seat:Number(x.student?.slot)===1?'يمين':'يسار',
+                    slot:Number(x.student?.slot)||1,
+                    desk:cls.desks?.[Number(x.deskIndex)||0],
+                    deskIndex:Number(x.deskIndex)||0
+                }));
+        }
+
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:18px;color:#777">لا توجد أسماء طلاب في هذا الصف.</td></tr>';
+            return;
+        }
+
+        rows.forEach(r => {
+            const studentKey = canonicalStudentId(cls, currentClassIndex, r.desk, r.deskIndex, r.slot);
+            appendAbsenceRow(tbody, r.name, r.deskNumber, r.seat, studentKey, selectedDate, cls);
         });
     }
 
