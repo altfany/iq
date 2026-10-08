@@ -9304,7 +9304,7 @@ function updateCloudStatus(text, color) {
         const deskForRow = (Array.isArray(cls?.desks) ? cls.desks : []).find(x => x && String(x.deskNumber)===String(deskNum));
         const slotForRow = seatPos==='يمين' ? 1 : 2;
         const studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,(cls.desks||[]).indexOf(deskForRow),slotForRow) : '';
-        const professionalRow = (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
+        const professionalRow = window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(studentIdForRow,dateStr) : (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
         if (professionalRow?.status) status = professionalRow.status;
         const canEdit = canManageStudentAttendance(cls);
         const meta = cls?.attendanceChangeLog?.[dateStr]?.[studentKey];
@@ -10584,7 +10584,7 @@ function updateCloudStatus(text, color) {
                 const student=item.student;
                 const status=['late','absent','present'].includes(item.status) ? item.status : 'present';
                 const lateInfo=student.classObj?.absenceRecords?.[date] || {};
-                const oldRec=(window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
+                const oldRec=window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(student.student.id,date) : (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
                 const checkedControl=item.row.querySelector('input[data-monitor-status]:checked');
                 const lateTime=String(checkedControl?.dataset?.lateTime||oldRec?.lateTime||'').trim();
                 const lateReason=String(checkedControl?.dataset?.lateReason||oldRec?.lateReason||oldRec?.note||'').trim();
@@ -11363,8 +11363,8 @@ function updateCloudStatus(text, color) {
               ? reportList.map(x=>{
 const adminChangedStatus = (x.changedBy === 'المدير' || x.changedBy === 'المعاون') && ['leave','absent','present','late'].includes(x.status) ? x.status : null;
 const professionalStatus = (window.ProfessionalModules?.attendanceData||[])
-    .find(a=>String(a.studentId)===String(x.studentId)&&String(a.date)===String(date));
-const currentStatus = adminChangedStatus || professionalStatus?.status || x.status || 'absent';
+    .find(a=>String(a.studentId||'').trim()===String(x.studentId||'').trim()&&String(a.date||'')===String(date||''));
+const currentStatus = professionalStatus?.status || (['leave','absent','present','late'].includes(x.status) ? x.status : 'absent');
                   const lt=professionalStatus?.lateTime || x.lateTime || '';
                   const lr=professionalStatus?.lateReason || x.lateReason || professionalStatus?.note || x.note || '';
                   const detail=currentStatus==='late' ? `<small style="color:#8a5a00;font-weight:700"> — وقت الدخول: ${escapeGlobalSearchHTML(lt||'-')} — السبب: ${escapeGlobalSearchHTML(lr||'-')}</small>` : '';
@@ -11584,7 +11584,18 @@ window.addEventListener('unhandledrejection', function (event) {
   }
 
   function studentAttendance(studentId){
-    return attendanceData.filter(x=>String(x.studentId||'')===String(studentId||''));
+    return attendanceData.filter(x=>String(x.studentId||'').trim()===String(studentId||'').trim());
+  }
+
+  // المصدر الموحد للحالة: طالب واحد + تاريخ واحد = سجل واحد.
+  function getUnifiedAttendanceRecord(studentId,date){
+    const sid=String(studentId||'').trim(), day=String(date||'').trim();
+    if(!sid || !day) return null;
+    return attendanceData.find(x=>String(x?.studentId||'').trim()===sid && String(x?.date||'').trim()===day) || null;
+  }
+
+  function getUnifiedAttendanceStatus(studentId,date,fallbackStatus='present'){
+    return getUnifiedAttendanceRecord(studentId,date)?.status || fallbackStatus;
   }
 
   function syncUnifiedAttendanceEverywhere(found, record){
@@ -11685,7 +11696,7 @@ window.addEventListener('unhandledrejection', function (event) {
     const day=String(date||todayISO());
     const normalizedStudentId=String(studentId||'').trim();
     const normalizedStatus=status==='late'?'late':status==='absent'?'absent':status==='leave'?'leave':'present';
-    const existing=attendanceData.find(x=>String(x.studentId||'').trim()===normalizedStudentId && String(x.date||'')===day);
+    const existing=getUnifiedAttendanceRecord(normalizedStudentId,day);
     const now=new Date().toISOString();
     const record={
       id:existing?.id||createStableId('attendance'),
@@ -12083,7 +12094,7 @@ window.addEventListener('unhandledrejection', function (event) {
   };
 
 window.ProfessionalModules={
-    openStudentProfile,openAttendance,saveAttendance,openAttendanceReport,deleteAttendance,recordAttendance,
+    openStudentProfile,openAttendance,saveAttendance,openAttendanceReport,deleteAttendance,recordAttendance,getUnifiedAttendanceRecord,getUnifiedAttendanceStatus,
     openDashboard,openAttendanceCenter,openAudit,resetAuditLog,exportBackup,openRestore,restoreBackup,
     addAudit,
     get attendanceData(){return attendanceData;},
