@@ -12578,6 +12578,63 @@ function d5studentAttendanceRecords(st, cls){
   Object.entries(cls?.absenceRecords||{}).forEach(([date,map])=>{const k=Object.keys(map||{}).find(x=>legacyKeys.has(String(x)));if(k){const v=map[k];add({studentId:sid,date,status:v===true?'absent':(v||'present')});}});
   return out;
 }
+
+function openDev5GenderDetails(gender){
+  if(!currentUser || currentUser.role!=='admin'){
+    alert('هذه التفاصيل متاحة للمدير فقط.');
+    return;
+  }
+
+  const classes=Array.isArray(schoolData)?schoolData:[];
+  const isMale=String(gender)==='male';
+  const title=isMale?'👦 أعداد الذكور حسب الصف':'👧 أعداد الإناث حسب الصف';
+  const label=isMale?'الذكور':'الإناث';
+
+  const rows=classes.map((cls,ci)=>{
+    const studentsInClass=[];
+    (Array.isArray(cls?.desks)?cls.desks:[]).forEach((desk,di)=>{
+      [1,2].forEach(slot=>{
+        const name=String(desk?.['student'+slot]||'').trim();
+        if(!name)return;
+        const raw=String(desk?.['gender'+slot]||'').trim().toLowerCase();
+        const normalized=raw==='male'||raw==='m'||raw==='ذكر'||raw==='ذكور'?'male':
+                         raw==='female'||raw==='f'||raw==='أنثى'||raw==='انثى'||raw==='إناث'||raw==='اناث'?'female':raw;
+        if(normalized===gender){
+          studentsInClass.push({name,ci,di,slot});
+        }
+      });
+    });
+    return {name:String(cls?.name||`الصف ${ci+1}`),count:studentsInClass.length,students:studentsInClass};
+  });
+
+  const total=rows.reduce((sum,row)=>sum+row.count,0);
+  const html=`
+    <div class="school-command-gender-summary">
+      <div class="school-command-gender-head">
+        <div>
+          <div class="school-command-kicker">تفصيل الطلاب</div>
+          <h3>${title}</h3>
+          <p>إجمالي ${label}: <b>${total}</b> طالباً/طالبة.</p>
+        </div>
+        <div class="school-command-gender-total"><strong>${total}</strong><span>${label}</span></div>
+      </div>
+      <div class="school-command-gender-list">
+        ${rows.map((row,index)=>`
+          <div class="school-command-gender-row">
+            <div class="school-command-gender-class">
+              <span>📚</span>
+              <div><b>${d5esc(row.name)}</b><small>الصف ${index+1}</small></div>
+            </div>
+            <strong>${row.count}</strong>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  d5open(title,html,'dev5GenderDetailsModal');
+}
+
 function openDev5StudentCategoryDetails(type){
   if(!currentUser || currentUser.role!=='admin'){ alert('هذه التفاصيل متاحة للمدير فقط.'); return; }
   rebuildD5Index();
@@ -12756,8 +12813,12 @@ function openDev5Performance(){
     <div class="school-command-grid">
       <div class="school-command-card primary"><span>🏫</span><b>عدد الصفوف</b><strong>${classes.length}</strong><small>صف دراسي داخل النظام</small></div>
       <div class="school-command-card blue"><span>👨‍🎓</span><b>الطلاب الكلي</b><strong>${students}</strong><small>طالب مسجل في جميع الصفوف</small></div>
-      <div class="school-command-card teal"><span>👦</span><b>الذكور</b><strong>${maleStudents}</strong><small>عدد الطلاب الذكور</small></div>
-      <div class="school-command-card purple"><span>👧</span><b>الإناث</b><strong>${femaleStudents}</strong><small>عدد الطالبات الإناث</small></div>
+      <button type="button" class="school-command-card teal dev5-gender-card" onclick="window.Dev5.openGenderDetails('male')">
+        <span>👦</span><b>الذكور</b><strong>${maleStudents}</strong><small>اضغط لعرض عدد الذكور حسب كل صف</small>
+      </button>
+      <button type="button" class="school-command-card purple dev5-gender-card" onclick="window.Dev5.openGenderDetails('female')">
+        <span>👧</span><b>الإناث</b><strong>${femaleStudents}</strong><small>اضغط لعرض عدد الإناث حسب كل صف</small>
+      </button>
       <div class="school-command-card teal"><span>👨‍🏫</span><b>المعلمون</b><strong>${teachers.length}</strong><small>معلم مسجل بالنظام</small></div>
       <div class="school-command-card orange"><span>🚌</span><b>الرحلات</b><strong>${trips}</strong><small>رحلة / مقعد مزدوج</small></div>
       <div class="school-command-card green"><span>💺</span><b>المقاعد المشغولة</b><strong>${occupiedSeats}</strong><small>من أصل ${totalSeats} مقعد</small></div>
@@ -12833,7 +12894,7 @@ function openDev5Performance(){
   `;
   d5open('🏫 نظام المدرسة الشامل',html,'dev5PerformanceModal');
 }
-window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
+window.Dev5={studentSearch:openDev5StudentSearch,gradeCenter:openDev5GradeCenter,reports:openDev5Reports,openStudentGrades:openDev5StudentGrades,openStudentReport:openDev5StudentReport,dashboard:openDev5AdminDashboard,performance:openDev5Performance,openStudentCategoryDetails:openDev5StudentCategoryDetails,openGenderDetails:openDev5GenderDetails,openMonthlyAbsenceDetails:openDev5MonthlyAbsenceDetails,updateMonthlyAbsenceCount:updateDev5MonthlyAbsenceCount,rebuildIndex:rebuildD5Index,close:d5closeAll,back:d5closeCurrent};
 window.openComprehensiveSchoolSystem=function(){try{if(!window.Dev5||typeof window.Dev5.performance!=='function'){alert('جاري تحميل نظام المدرسة الشامل، حاول الضغط مرة أخرى بعد لحظات.');return false;} window.Dev5.performance();return true;}catch(e){console.error('Comprehensive school system error:',e);alert('تعذر فتح نظام المدرسة الشامل حالياً. حاول مرة أخرى.');return false;}};
 function ensureComprehensiveSchoolButton(){
   const badge=document.getElementById('userRoleBadge');
@@ -12919,6 +12980,8 @@ body.parent-only-mode header { display:none !important; }
 .school-command-hero{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:18px;border-radius:18px;background:linear-gradient(135deg,#162a46,#2c78a9);color:#fff;margin-bottom:15px;box-shadow:0 10px 28px rgba(25,58,91,.2)}
 .school-command-hero h2{margin:4px 0 5px;font-size:25px}.school-command-hero p{margin:0;opacity:.9;line-height:1.7}.school-command-kicker{font-size:12px;opacity:.8;font-weight:800}.school-command-date{background:rgba(255,255,255,.13);padding:9px 12px;border-radius:12px;white-space:nowrap;font-weight:800}
 .school-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.school-command-month-picker{display:grid;grid-template-columns:minmax(180px,1fr) 220px;gap:12px;align-items:center}.school-command-month-picker select{width:100%;padding:12px;border:1px solid #d9e2ea;border-radius:10px;background:#fff;font-weight:800}.dev5-month-count{padding:12px;border:1px solid #d9e2ea;border-radius:10px;background:#f8fbfd;text-align:center}.dev5-month-count b{display:block;font-size:28px;color:#c0392b}.dev5-month-count span{color:#657786;font-size:12px}.dev5-month-list{display:grid;gap:8px}.dev5-month-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px;border:1px solid #e1e7ed;border-radius:10px;background:#fff}.dev5-month-row strong{font-size:22px;color:#c0392b}.dev5-month-row span{font-size:11px;color:#71808d}.school-command-card{padding:15px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 6px 18px rgba(30,50,70,.07);position:relative;overflow:hidden}.school-command-card:after{content:'';position:absolute;left:-25px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:currentColor;opacity:.06}.school-command-card span{font-size:23px;display:block}.school-command-card b{display:block;margin-top:6px;color:#445}.school-command-card strong{display:block;font-size:30px;margin-top:3px;color:#1e2e3d}.school-command-card small{display:block;margin-top:3px;color:#71808d}.school-command-card.primary{color:#34495e}.school-command-card.blue{color:#2980b9}.school-command-card.teal{color:#16a085}.school-command-card.purple{color:#8e44ad}.school-command-card.orange{color:#d35400}.school-command-card.green{color:#27ae60}.school-command-card.red{color:#c0392b}.school-command-card.gold{color:#b87900}
+.school-command-card.dev5-gender-card{width:100%;font:inherit;text-align:right;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.school-command-card.dev5-gender-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(30,50,70,.14);border-color:currentColor}.school-command-card.dev5-gender-card:focus-visible{outline:3px solid rgba(41,128,185,.25);outline-offset:2px}.school-command-gender-summary{padding:2px}.school-command-gender-head{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:16px;border-radius:15px;background:linear-gradient(135deg,#f5f9fc,#fff);border:1px solid #e1e8ee;margin-bottom:12px}.school-command-gender-head h3{margin:3px 0;font-size:20px;color:#243447}.school-command-gender-head p{margin:0;color:#71808d;font-size:12px}.school-command-gender-total{min-width:90px;padding:12px;border-radius:14px;background:#eef6fb;text-align:center}.school-command-gender-total strong{display:block;font-size:28px;color:#2980b9}.school-command-gender-total span{font-size:11px;color:#607d8b;font-weight:800}.school-command-gender-list{display:grid;gap:8px}.school-command-gender-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid #e1e7ed;border-radius:12px;background:#fff}.school-command-gender-class{display:flex;align-items:center;gap:10px}.school-command-gender-class>span{font-size:20px}.school-command-gender-class b{display:block;color:#26384a;font-size:14px}.school-command-gender-class small{display:block;color:#8a98a5;font-size:10px;margin-top:2px}.school-command-gender-row>strong{min-width:52px;padding:7px 10px;border-radius:10px;background:#f1f6fa;color:#1e4059;text-align:center;font-size:18px}@media(max-width:560px){.school-command-gender-head{align-items:flex-start}.school-command-gender-head h3{font-size:17px}.school-command-gender-total{min-width:72px}.school-command-gender-total strong{font-size:24px}.school-command-gender-row{padding:11px}.school-command-gender-row>strong{font-size:16px}}
+
 .school-command-section{margin-top:15px;padding:16px;border-radius:16px;background:#fff;border:1px solid #e3e9ee;box-shadow:0 5px 16px rgba(30,50,70,.06)}.school-command-section-title{display:flex;align-items:center;gap:10px;margin-bottom:13px}.school-command-section-title>span{font-size:23px}.school-command-section-title b{display:block;font-size:16px}.school-command-section-title small{display:block;color:#788692;margin-top:2px}.school-command-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.school-command-status-grid>div{padding:13px;border-radius:13px;background:#f7f9fb;border:1px solid #e7edf2}.school-command-status-grid b{display:block;color:#536270}.school-command-status-grid strong{font-size:25px;display:inline-block;margin-top:4px}.school-command-status-grid em{font-style:normal;float:left;margin-top:8px;font-weight:800;color:#607d8b}.school-command-details{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.school-command-details div{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:#f7f9fb;border-radius:10px}.school-command-details span{color:#65737e}.school-command-details b{color:#1f3345}.school-command-features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.school-command-features div{padding:12px;border-radius:12px;background:#f7fafc;line-height:1.7}.school-command-features small{display:block;color:#71808d;padding-right:20px}.school-command-footer{text-align:center;margin-top:15px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#eef6fb,#f7fbff);color:#31556d;font-weight:900}
 @media(max-width:900px){.school-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.school-command-details{grid-template-columns:repeat(2,minmax(0,1fr))}.school-command-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.school-command-hero{display:block;padding:14px}.school-command-hero h2{font-size:21px}.school-command-date{display:inline-block;margin-top:10px}.school-command-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.school-command-card{padding:11px}.school-command-card strong{font-size:24px}.school-command-card small{font-size:11px}.school-command-section{padding:12px}.school-command-details,.school-command-features{grid-template-columns:1fr}.school-command-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
