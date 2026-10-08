@@ -4482,6 +4482,13 @@ function updateCloudStatus(text, color) {
                 return;
             }
             if (typeof window.__loadProfessionalAttendanceFromCloud === 'function' && cloud.attendanceData !== undefined) window.__loadProfessionalAttendanceFromCloud(cloud.attendanceData);
+            try{
+                if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks();
+                if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderAbsenceTable();
+                if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorCenterModal')) renderMonitorSelectedClass();
+                if(typeof renderMonitorDailyInventory==='function' && document.getElementById('monitorDailyInventoryModal')) renderMonitorDailyInventory();
+                if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolStudentReportModal')) renderDailySchoolStudentReport();
+            }catch(e){ console.warn('Unified attendance UI refresh failed:',e); }
             if (typeof window.__loadProfessionalAuditFromCloud === 'function' && cloud.auditLog !== undefined) window.__loadProfessionalAuditFromCloud(cloud.auditLog);
             updateCloudStatus('مزامنة مباشرة ✓', '#16803c');
             try{updateParentTeacherMessageIndicators();}catch(e){}
@@ -9504,11 +9511,37 @@ function updateCloudStatus(text, color) {
     }
 
     function getStoredAttendanceStatus(cls, dateStr, studentKey) {
-        const value = cls && cls.absenceRecords && cls.absenceRecords[dateStr]
-            ? cls.absenceRecords[dateStr][studentKey]
-            : undefined;
+        // المصدر الوحيد للحالة هو attendanceData الموحد.
+        // نحاول أولاً استخدام studentKey كمعرّف قياسي، ثم نحلّ المعرّف من مقعد الصف
+        // حتى لا تعود أي شاشة إلى حالة قديمة مختلفة عن حالة المدير/المراقب.
+        const day=String(dateStr||'').trim();
+        const key=String(studentKey||'').trim();
+        try{
+            const pro=window.ProfessionalModules?.attendanceData||[];
+            let rec=pro.find(r=>String(r?.studentId||'').trim()===key && String(r?.date||'').trim()===day);
+            if(!rec && cls && Array.isArray(cls.desks)){
+                const ci=(schoolData||[]).indexOf(cls);
+                for(let di=0;di<cls.desks.length && !rec;di++){
+                    const desk=cls.desks[di];
+                    for(const slot of [1,2]){
+                        const name=String(desk?.['student'+slot]||'').trim();
+                        if(!name) continue;
+                        const legacy=`${desk?.deskNumber??(di+1)}_${slot===1?'يمين':'يسار'}_${name}`;
+                        if(key===legacy){
+                            const sid=canonicalStudentId(cls,ci,desk,di,slot);
+                            rec=pro.find(r=>String(r?.studentId||'').trim()===String(sid).trim() && String(r?.date||'').trim()===day);
+                            if(rec) break;
+                        }
+                    }
+                }
+            }
+            if(rec?.status && ['present','absent','late','leave'].includes(String(rec.status))) return String(rec.status);
+        }catch(e){ console.warn('Unified attendance read failed:',e); }
 
-        // توافق مع السجلات القديمة: true = غائب.
+        // توافق مع السجلات القديمة فقط إذا لم يوجد سجل موحد.
+        const value = cls && cls.absenceRecords && cls.absenceRecords[day]
+            ? cls.absenceRecords[day][key]
+            : undefined;
         if (value === true) return 'absent';
         if (value === 'absent' || value === 'leave' || value === 'late' || value === 'present') return value;
         return 'present';
@@ -10898,16 +10931,9 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const students=getMonitorClassStudents(classIndex);
         if(!students.length){ box.innerHTML='<div class="pro-empty" style="padding:25px;text-align:center">لا يوجد طلاب مسجلون في هذا الصف.</div>'; return; }
         const attendance=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
-        const todayReportItems=monitorInventoryReportsData.filter(r=>String(r?.date||'')===String(date))
-            .flatMap(r=>Array.isArray(r?.students)?r.students:(Array.isArray(r?.absentStudents)?r.absentStudents:[]));
         const getMonitorStatus=(f)=>{
-            const rec=attendance.find(r=>String(r?.studentId)===String(f.student.id)&&String(r?.date)===String(date));
-            if(rec && ['late','absent','present','leave'].includes(rec.status)) return rec;
-            const report=todayReportItems.find(x=>
-                String(x?.studentId||'')===String(f.student.id) ||
-                String(x?.name||'').trim()===String(f.student.name).trim()
-            );
-            if(report && ['late','absent','present','leave'].includes(report.status)) return report;
+            const rec=attendance.find(r=>String(r?.studentId||'').trim()===String(f.student.id||'').trim() && String(r?.date||'').trim()===String(date));
+            if(rec && ['late','absent','present','leave'].includes(String(rec.status))) return rec;
             return {status:'present'};
         };
         const rows=students.map((f,i)=>{
