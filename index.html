@@ -10449,17 +10449,22 @@ function updateCloudStatus(text, color) {
         return Array.isArray(schoolData) ? schoolData.filter(Boolean) : [];
     }
     function getMonitorClassStudents(classIndex){
-        const cls=getMonitorClasses()[Number(classIndex)];
+        const monitorClasses=getMonitorClasses();
+        const cls=monitorClasses[Number(classIndex)];
         if(!cls) return [];
+        // مهم جداً: getMonitorClasses قد يعيد قائمة مفلترة؛ لذلك لا نستخدم رقمها
+        // كرقم الصف داخل schoolData. نبحث عن الفهرس الحقيقي للصف قبل توليد المعرّف.
+        const realClassIndex=schoolData.findIndex(c=>c===cls || (c?.id && String(c.id)===String(cls.id)));
+        const canonicalClassIndex=realClassIndex>=0 ? realClassIndex : Number(classIndex);
         const out=[];
         (Array.isArray(cls.desks)?cls.desks:[]).forEach((desk,di)=>[1,2].forEach(slot=>{
             const name=String(desk?.[`student${slot}`]||'').trim();
             if(!name || desk?.[`separated${slot}`])return;
-            // نفس المعرّف القياسي الذي تستخدمه شاشة الصف و«فتح الكشف» حتى تكون الحالة واحدة.
-            const unifiedId=canonicalStudentId(cls,Number(classIndex),desk,di,slot);
+            // نفس المعرّف القياسي الذي تستخدمه شاشة الصف و«فتح الكشف».
+            const unifiedId=canonicalStudentId(cls,canonicalClassIndex,desk,di,slot);
             out.push({
                 student:{id:String(unifiedId),name},
-                classObj:cls,classIndex:Number(classIndex),deskIndex:di,slot
+                classObj:cls,classIndex:canonicalClassIndex,deskIndex:di,slot
             });
         }));
         return out;
@@ -11140,7 +11145,12 @@ function updateCloudStatus(text, color) {
                     const idMatch=sid && storedId===sid;
                     const nameMatch=wantedName && name===wantedName;
                     if(name && (idMatch || nameMatch)){
-                        found={studentId:storedId||sid||desk?.id||'',name,classObj:cls,desk,deskIndex:(cls.desks||[]).indexOf(desk),slot};
+                        const deskIndex=(cls.desks||[]).indexOf(desk);
+                        const classIndex=schoolData.indexOf(cls);
+                        // لا تحفظ أي حالة بمعرّف مؤقت أو معرّف جرد قديم؛
+                        // الحالة الموحدة يجب أن تستخدم canonicalStudentId دائماً.
+                        const canonicalId=canonicalStudentId(cls,classIndex,desk,deskIndex,slot);
+                        found={studentId:String(canonicalId),name,classObj:cls,desk,deskIndex,slot};
                         break;
                     }
                 }
@@ -11509,9 +11519,21 @@ window.addEventListener('unhandledrejection', function (event) {
     }catch(e){ console.error('تعذر حفظ بيانات الوحدات الاحترافية',e); }
   }
 
+  function normalizeUnifiedAttendanceRecords(){
+    const byKey=new Map();
+    (Array.isArray(attendanceData)?attendanceData:[]).forEach((r)=>{
+      if(!r || !String(r.studentId||'').trim() || !String(r.date||'').trim()) return;
+      const key=String(r.studentId).trim()+'|'+String(r.date).trim();
+      const prev=byKey.get(key);
+      // عند وجود سجلات قديمة مكررة لنفس الطالب والتاريخ، نحتفظ بالأحدث.
+      if(!prev || String(r.updatedAt||r.createdAt||'') >= String(prev.updatedAt||prev.createdAt||'')) byKey.set(key,r);
+    });
+    attendanceData=Array.from(byKey.values());
+  }
+  normalizeUnifiedAttendanceRecords();
   window.__professionalAttendanceDataForCloud = () => attendanceData;
   window.__professionalAuditLogForCloud = () => auditLog;
-  window.__loadProfessionalAttendanceFromCloud = (data) => { attendanceData = Array.isArray(data) ? data : []; persistModulesLocalOnly(); };
+  window.__loadProfessionalAttendanceFromCloud = (data) => { attendanceData = Array.isArray(data) ? data : []; normalizeUnifiedAttendanceRecords(); persistModulesLocalOnly(); };
   window.__loadProfessionalAuditFromCloud = (data) => { auditLog = Array.isArray(data) ? data : []; pruneAuditToCurrentMonth(); persistModulesLocalOnly(); };
   function persistModulesLocalOnly(){
     try{
@@ -11713,6 +11735,7 @@ window.addEventListener('unhandledrejection', function (event) {
     const day=String(date||todayISO());
     const normalizedStudentId=String(studentId||'').trim();
     const normalizedStatus=status==='late'?'late':status==='absent'?'absent':status==='leave'?'leave':'present';
+    normalizeUnifiedAttendanceRecords();
     const existing=getUnifiedAttendanceRecord(normalizedStudentId,day);
     const now=new Date().toISOString();
     const record={
