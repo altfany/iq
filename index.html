@@ -11587,6 +11587,96 @@ window.addEventListener('unhandledrejection', function (event) {
     return attendanceData.filter(x=>String(x.studentId||'')===String(studentId||''));
   }
 
+  function syncUnifiedAttendanceEverywhere(found, record){
+    // هذا هو المصدر الموحد: أي تغيير في سجل الحضور الاحترافي ينعكس
+    // على سجل الصف القديم، وجرد المراقب، وجميع الشاشات التي تقرأ هذه البيانات.
+    try{
+      const cls=found?.classObj;
+      if(!cls) return;
+      const day=String(record.date||'');
+      const status=String(record.status||'present');
+      const studentId=String(record.studentId||found.student?.id||'').trim();
+      const studentName=String(found.student?.name||'').trim();
+      if(!studentName || !day) return;
+
+      // 1) مزامنة سجل الحضور والغياب داخل الصف (الهيكل القديم).
+      if(!cls.absenceRecords) cls.absenceRecords={};
+      if(!cls.absenceRecords[day]) cls.absenceRecords[day]={};
+      const seatPos=Number(found.student?.slot)===1?'يمين':'يسار';
+      const deskNo=Number(found.student?.deskNumber ?? (Number(found.deskIndex)+1));
+      const legacyKeys=[
+        `${deskNo}_${seatPos}_${studentName}`,
+        studentId
+      ].filter(Boolean);
+      legacyKeys.forEach(key=>{
+        if(status==='present') delete cls.absenceRecords[day][key];
+        else cls.absenceRecords[day][key]=status;
+      });
+
+      // 2) مزامنة جرد الصفوف/تقارير المراقب الموجودة في نفس الصف واليوم.
+      // لا ننشئ تقرير مراقب وهمياً هنا؛ شاشة «جرد الصفوف» تنشئ عرضاً افتراضياً
+      // مباشرة من attendanceData إذا لم يوجد تقرير مراقب.
+      (monitorInventoryReportsData||[]).forEach(report=>{
+        if(String(report?.date||'')!==day) return;
+        const sameClass=!report?.classId ||
+          String(report.classId)===String(cls.id||'') ||
+          String(report.className||'')===String(cls.name||'');
+        if(!sameClass) return;
+
+        if(!Array.isArray(report.students)) report.students=[];
+        if(!Array.isArray(report.absentStudents)) report.absentStudents=[];
+
+        const matches=item =>
+          String(item?.studentId||'').trim()===studentId ||
+          String(item?.name||'').trim()===studentName;
+
+        // الطلاب = المصدر الكامل للحالة داخل تقرير الجرد.
+        for(let i=report.students.length-1;i>=0;i--){
+          if(matches(report.students[i])) report.students.splice(i,1);
+        }
+        for(let i=report.absentStudents.length-1;i>=0;i--){
+          if(matches(report.absentStudents[i])) report.absentStudents.splice(i,1);
+        }
+
+        if(status!=='present'){
+          const item={
+            studentId,
+            name:studentName,
+            status,
+            date:day,
+            changedBy:currentUser?.isAssistant?'المعاون':(currentUser?.role==='monitor'?'المراقب':'المدير'),
+            changedByName:record.changedByName||actorName(),
+            changedAt:record.updatedAt||new Date().toISOString()
+          };
+          if(status==='late'){
+            item.lateTime=String(record.lateTime||'').trim();
+            item.lateReason=String(record.lateReason||record.note||'').trim();
+          }
+          report.students.push(item);
+          if(status==='absent'){
+            report.absentStudents.push({
+              studentId,
+              name:studentName,
+              status:'absent',
+              changedBy:item.changedBy,
+              changedByName:item.changedByName,
+              changedAt:item.changedAt
+            });
+          }
+        }
+        report.changedAt=record.updatedAt||new Date().toISOString();
+      });
+
+      // 3) إذا كانت واجهة «فتح الكشف» أو «جرد الصفوف» أو «الحضور والغياب»
+      // مفتوحة حالياً، نعيد رسمها فوراً من المصدر الموحد.
+      try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]===cls) renderAbsenceTable(); }catch(_e){}
+      try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('monitorDailyInventoryModal')) renderMonitorDailyInventory(); }catch(_e){}
+      try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
+    }catch(e){
+      console.error('Unified attendance sync failed:',e);
+    }
+  }
+
   function recordAttendance(studentId,status,date,note='',lateTime='',lateReason=''){
     // المراقب مسموح له فقط بحاضر/غائب/متأخر؛ خيار مجاز يبقى للمدير فقط.
     if(currentUser?.role==='monitor' && !['present','absent','late'].includes(status)) return false;
@@ -11594,24 +11684,30 @@ window.addEventListener('unhandledrejection', function (event) {
     if(!found) return false;
     const day=String(date||todayISO());
     const normalizedStudentId=String(studentId||'').trim();
+    const normalizedStatus=status==='late'?'late':status==='absent'?'absent':status==='leave'?'leave':'present';
     const existing=attendanceData.find(x=>String(x.studentId||'').trim()===normalizedStudentId && String(x.date||'')===day);
+    const now=new Date().toISOString();
     const record={
       id:existing?.id||createStableId('attendance'),
       studentId:normalizedStudentId,
       classId:found.classObj.id||null,
       date:day,
-      status:status==='late'?'late':status==='absent'?'absent':status==='leave'?'leave':'present',
+      status:normalizedStatus,
       note:String(note||'').trim(),
-      lateTime:status==='late' ? String(lateTime||existing?.lateTime||'').trim() : '',
-      lateReason:status==='late' ? String(lateReason||existing?.lateReason||'').trim() : '',
-      createdAt:existing?.createdAt||new Date().toISOString(),
-      updatedAt:new Date().toISOString(),
+      lateTime:normalizedStatus==='late' ? String(lateTime||existing?.lateTime||'').trim() : '',
+      lateReason:normalizedStatus==='late' ? String(lateReason||existing?.lateReason||'').trim() : '',
+      createdAt:existing?.createdAt||now,
+      updatedAt:now,
       changedByName:(currentUser&&currentUser.name)||existing?.changedByName||'مستخدم النظام',
       changedByRole:(currentUser?.isAssistant?'معاون':(currentUser?.role||existing?.changedByRole||''))
     };
     if(existing) Object.assign(existing,record);
     else attendanceData.unshift(record);
+
+    // الحفظ الموحد قبل تحديث الواجهات: أي مصدر يسجل الحالة يكتب في نفس السجل.
+    syncUnifiedAttendanceEverywhere(found,record);
     persistModules();
+    try{ if(typeof saveData==='function') saveData(); }catch(_e){}
     addAudit('تسجيل حضور/غياب',`${found.student.name} - ${record.status} - ${day}`);
     return true;
   }
