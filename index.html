@@ -1637,7 +1637,7 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
       teachersData: [], announcementsData: [], complaintsData: [], homeworkData: [],
       subjectsData: [], assistantsData: [], managerNotesData: [],
       assistantActionNotificationsData: [], guestSupervisorsData: [], monitorsData: [],
-      monitorNotesData: [], monitorInventoryReportsData: [], monitorMessagesData: [], parentTeacherMessagesData: [],
+      monitorNotesData: [], monitorInventoryReportsData: [], monitorMessagesData: [], monitorWeekendAccessRequestsData: [], parentTeacherMessagesData: [],
       attendanceData: [], auditLog: [], teachersAbsenceData: {}
     };
     Object.keys(defaults).forEach(k => {
@@ -3464,10 +3464,13 @@ header > div:first-child{
     let parentAbsencePageResetData = {};
     let showTeacherCodes = false;
     let monitorsData = [];
+    // طلبات دخول المراقبين يومي الجمعة والسبت
+    let monitorWeekendAccessRequestsData = [];
+    let weekendRequestPromptShown = {};
     let monitorNotesData = [];
     let monitorInventoryReportsData = [];
     let monitorMessagesData = [];
-    try { monitorsData = JSON.parse(cloudOnlyStorage.getItem('monitorsData') || '[]') || []; monitorNotesData = JSON.parse(cloudOnlyStorage.getItem('monitorNotesData') || '[]') || []; monitorInventoryReportsData = JSON.parse(cloudOnlyStorage.getItem('monitorInventoryReportsData') || '[]') || []; monitorMessagesData = JSON.parse(cloudOnlyStorage.getItem('monitorMessagesData') || '[]') || []; } catch(e) { monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[]; }
+    try { monitorsData = JSON.parse(cloudOnlyStorage.getItem('monitorsData') || '[]') || []; monitorNotesData = JSON.parse(cloudOnlyStorage.getItem('monitorNotesData') || '[]') || []; monitorInventoryReportsData = JSON.parse(cloudOnlyStorage.getItem('monitorInventoryReportsData') || '[]') || []; monitorMessagesData = JSON.parse(cloudOnlyStorage.getItem('monitorMessagesData') || '[]') || []; } catch(e) { monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[]; monitorWeekendAccessRequestsData=[]; }
     let cloudReady = false;
     let firebaseOnline = false;
     let firebaseRetryTimer = null;
@@ -4070,6 +4073,7 @@ function acknowledgeAnnouncement(id) {
             monitorNotesData,
             monitorInventoryReportsData,
             monitorMessagesData,
+            monitorWeekendAccessRequestsData,
             schoolData,
             teachersData,
             teachersAbsenceData,
@@ -4303,6 +4307,7 @@ function updateCloudStatus(text, color) {
         if (cloud.monitorNotesData !== undefined) monitorNotesData = Array.isArray(cloud.monitorNotesData) ? cloud.monitorNotesData : [];
         if (cloud.monitorInventoryReportsData !== undefined) monitorInventoryReportsData = Array.isArray(cloud.monitorInventoryReportsData) ? cloud.monitorInventoryReportsData : [];
         if (cloud.monitorMessagesData !== undefined) monitorMessagesData = Array.isArray(cloud.monitorMessagesData) ? cloud.monitorMessagesData : [];
+        if (cloud.monitorWeekendAccessRequestsData !== undefined) monitorWeekendAccessRequestsData = Array.isArray(cloud.monitorWeekendAccessRequestsData) ? cloud.monitorWeekendAccessRequestsData : [];
         repairLegacySchoolData(); ensureStableIds(); ensureTeacherClassIds();
         // استرجاع آخر تغييرات اليوم من الحفظ الفوري المحلي بعد تحميل نسخة Firebase.
         applyLocalTodayAttendanceOverrides();
@@ -4333,6 +4338,7 @@ function updateCloudStatus(text, color) {
                 try { showLiveAnnouncements(); } catch (e) { console.error('Announcement display error:', e); }
             }, 120);
         }
+        monitorWeekendAccessSyncCheck();
         if (currentUser && typeof renderClassesNav === 'function') {
             renderClassesNav();
             if (currentClassId) {
@@ -4368,7 +4374,7 @@ function updateCloudStatus(text, color) {
         if (realtimeUnsubscribe) { try{realtimeUnsubscribe();}catch(_){} realtimeUnsubscribe=null; }
         try { if (typeof window.__loadProfessionalAttendanceFromCloud === 'function') window.__loadProfessionalAttendanceFromCloud([]); } catch(_) {}
         try { if (typeof window.__loadProfessionalAuditFromCloud === 'function') window.__loadProfessionalAuditFromCloud([]); } catch(_) {}
-        schoolData=[]; teachersData=[]; teachersAbsenceData={}; announcementsData=[]; complaintsData=[]; parentTeacherMessagesData=[]; homeworkData=[]; subjectsData=[]; assistantsData=[]; guestSupervisorsData=[]; monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[];
+        schoolData=[]; teachersData=[]; teachersAbsenceData={}; announcementsData=[]; complaintsData=[]; parentTeacherMessagesData=[]; homeworkData=[]; subjectsData=[]; assistantsData=[]; guestSupervisorsData=[]; monitorsData=[]; monitorNotesData=[]; monitorInventoryReportsData=[]; monitorMessagesData=[]; monitorWeekendAccessRequestsData=[];
         alert('⚠️ تم تنفيذ ترسيت عام من جهاز آخر. تم تجاهل ومسح أي نسخة قديمة من هذا الجهاز لمنع رجوع البيانات.');
         window.location.reload();
     }
@@ -4941,6 +4947,91 @@ function updateCloudStatus(text, color) {
         return Math.max(0,currentUser.parentSessionExpiresAt-Date.now());
     }
 
+    function getMonitorWeekendDayInfo(date = new Date()){
+        const day=date.getDay(); // 5 = الجمعة، 6 = السبت
+        return { isWeekend: day===5 || day===6, dayName: day===5 ? 'الجمعة' : day===6 ? 'السبت' : '', date:getFormattedDate(date) };
+    }
+
+    function getMonitorWeekendAccessRequest(monitorId, date=getFormattedDate()){
+        return (monitorWeekendAccessRequestsData||[]).find(r=>String(r.monitorId||'')===String(monitorId||'') && String(r.date||'')===String(date||''));
+    }
+
+    async function saveMonitorWeekendAccessRequest(request){
+        const idx=(monitorWeekendAccessRequestsData||[]).findIndex(r=>String(r.id||'')===String(request.id||''));
+        if(idx>=0) monitorWeekendAccessRequestsData[idx]=request; else monitorWeekendAccessRequestsData.unshift(request);
+        if(monitorWeekendAccessRequestsData.length>500) monitorWeekendAccessRequestsData.length=500;
+        saveData();
+        if(window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload==='function'){
+            await saveCurrentCloudPayload();
+        }
+    }
+
+    async function requestMonitorWeekendAccess(monitor){
+        const info=getMonitorWeekendDayInfo();
+        if(!info.isWeekend) return {allowed:true};
+        const existing=getMonitorWeekendAccessRequest(monitor.id||monitor.monitorId,info.date);
+        if(existing?.status==='approved') return {allowed:true};
+        if(existing?.status==='denied') return {allowed:false,reason:'denied'};
+        if(!existing){
+            const request={
+                id:createStableId('mweek'), monitorId:String(monitor.id||monitor.monitorId||''),
+                monitorName:String(monitor.name||'المراقب'), date:info.date, dayName:info.dayName,
+                status:'pending', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()
+            };
+            try{ await saveMonitorWeekendAccessRequest(request); }
+            catch(e){ console.error('Weekend monitor access request save failed:',e); alert('تعذر إرسال طلب الدخول للمدير. تحقق من الإنترنت ثم حاول مرة أخرى.'); }
+        }
+        return {allowed:false,reason:'pending'};
+    }
+
+    async function approveMonitorWeekendAccess(requestId,approved){
+        if(!currentUser || currentUser.role!=='admin') return;
+        const req=(monitorWeekendAccessRequestsData||[]).find(r=>String(r.id||'')===String(requestId||''));
+        if(!req) return;
+        req.status=approved?'approved':'denied';
+        req.respondedBy=currentUser.name||'المدير';
+        req.respondedAt=new Date().toISOString();
+        req.updatedAt=req.respondedAt;
+        try{
+            await saveMonitorWeekendAccessRequest(req);
+            closeMonitorWeekendAccessPanel();
+            if(approved) alert(`تمت الموافقة على دخول ${req.monitorName} اليوم ${req.dayName}.`);
+            else alert(`تم رفض دخول ${req.monitorName} اليوم ${req.dayName}.`);
+            if(approved) weekendRequestPromptShown[req.id]=true;
+        }catch(e){ console.error(e); alert('تعذر حفظ قرار المدير. حاول مرة أخرى.'); }
+    }
+
+    function closeMonitorWeekendAccessPanel(){
+        const el=document.getElementById('monitorWeekendAccessPanel'); if(el) el.remove();
+    }
+
+    function openMonitorWeekendAccessPanel(){
+        if(!currentUser || currentUser.role!=='admin') return;
+        const pending=(monitorWeekendAccessRequestsData||[]).filter(r=>String(r.status||'pending')==='pending');
+        const req=pending.find(r=>!weekendRequestPromptShown[r.id]);
+        if(!req) return;
+        weekendRequestPromptShown[req.id]=true;
+        closeMonitorWeekendAccessPanel();
+        const panel=document.createElement('div');
+        panel.id='monitorWeekendAccessPanel';
+        panel.dir='rtl';
+        panel.style.cssText='position:fixed;inset:0;z-index:100300;background:rgba(10,25,40,.58);display:flex;align-items:center;justify-content:center;padding:14px;';
+        panel.innerHTML=`<div style="width:min(470px,96vw);background:#fff;border-radius:20px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:right">
+          <div style="text-align:center;font-size:42px;margin-bottom:8px">🔐</div>
+          <h2 style="margin:0 0 10px;text-align:center;color:#243447;font-size:20px">طلب دخول مراقب</h2>
+          <p style="line-height:1.9;margin:0 0 16px;color:#536273;text-align:center">المراقب <b style="color:#243447">${escapeGlobalSearchHTML(req.monitorName||'المراقب')}</b> يطلب الدخول إلى النظام يوم <b>${escapeGlobalSearchHTML(req.dayName||'الجمعة/السبت')}</b> بتاريخ <b>${escapeGlobalSearchHTML(req.date||'')}</b>.<br>هل توافق على دخوله؟</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <button type="button" onclick="approveMonitorWeekendAccess('${String(req.id).replace(/'/g,"\\'")}',true)" style="background:#27ae60">✓ نعم، السماح</button>
+            <button type="button" onclick="approveMonitorWeekendAccess('${String(req.id).replace(/'/g,"\\'")}',false)" style="background:#c0392b">✕ لا، منع الدخول</button>
+          </div>
+        </div>`;
+        document.body.appendChild(panel);
+    }
+
+    function monitorWeekendAccessSyncCheck(){
+        if(currentUser?.role==='admin') setTimeout(openMonitorWeekendAccessPanel,80);
+    }
+
     async function performLogin() {
         const enteredCode = String(document.getElementById('loginCodeInput')?.value || '').trim();
         if (!enteredCode) { alert('الرجاء إدخال كود الدخول.'); return; }
@@ -4970,6 +5061,14 @@ function updateCloudStatus(text, color) {
                 } else {
                     const monitor = monitorsData.find(m => String(m.code || '').trim() === enteredCode);
                     if (monitor) {
+                        const weekendAccess=await requestMonitorWeekendAccess(monitor);
+                        if(!weekendAccess.allowed){
+                            currentUser=null;
+                            document.getElementById('loginOverlay').style.display='flex';
+                            if(weekendAccess.reason==='denied') alert(`🚫 تم رفض دخولك إلى النظام اليوم (${getMonitorWeekendDayInfo().dayName}). لا يمكنك الدخول إلا بعد موافقة المدير.`);
+                            else alert(`⏳ تم إرسال طلب دخولك إلى المدير لأن اليوم ${getMonitorWeekendDayInfo().dayName}. لا يمكن دخول النظام حتى يوافق المدير.`);
+                            return;
+                        }
                         currentUser = { role:'monitor', name:monitor.name || 'المراقب', monitorId:monitor.id || '' };
                     } else {
                         const guestSupervisor = guestSupervisorsData.find(g => String(g.code || '').trim() === enteredCode && g.active !== false);
@@ -5030,7 +5129,7 @@ function updateCloudStatus(text, color) {
     setTimeout(function(){ showComplaintResponses(); }, 650);
         }
         if(currentUser?.role==='monitor') setTimeout(openMonitorCenter,300);
-        if(currentUser?.role==='admin') setTimeout(openAdminMonitorMessagesPanel,350);
+        if(currentUser?.role==='admin') { setTimeout(openAdminMonitorMessagesPanel,350); setTimeout(openMonitorWeekendAccessPanel,450); }
         if(currentUser?.role==='admin' && currentUser?.isAssistant){
             setTimeout(()=>refreshAssistantManagerAccess(),250);
         }
@@ -10788,7 +10887,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
     function renderMonitorSelectedClass(){
         const box=document.getElementById('monitorClassStudents');
         const select=document.getElementById('monitorClassSelect');
-        const date=document.getElementById('monitorAttendanceDate')?.value||getFormattedDate();
+        const date=getFormattedDate();
         if(!box||!select)return;
         const classIndex=select.value;
         if(classIndex===''){
@@ -10859,7 +10958,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const modal=document.createElement('div');
         modal.id='monitorCenterModal';modal.className='modal';
         modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100008;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:18px"><div style="text-align:center;margin-bottom:14px"><h2 style="margin:0;color:#16a085">👁️ مركز المراقب</h2><div style="font-size:12px;color:#6b7b88;margin-top:4px">اختر الصف ثم سجل حضور وغياب الطلاب</div><button type="button" onclick="logoutSystem()" style="margin-top:10px;background:var(--danger)">🚪 تسجيل الخروج</button></div><div class="pro-panel"><label style="font-weight:700">الصف</label><select id="monitorClassSelect" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"><option value="">-- اختر الصف --</option>${options}</select><label style="font-weight:700;display:block;margin-top:12px">تاريخ الجرد</label><input type="date" id="monitorAttendanceDate" value="${today}" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"></div><div class="pro-panel" style="margin-top:12px"><h3 style="margin-top:0">📝 ملاحظة إلى المدرسة</h3><textarea id="monitorGeneralNote" rows="3" placeholder="اكتب ملاحظة أو رسالة للمدرسة، ولا علاقة لها بالحضور والغياب..." style="width:100%;resize:vertical"></textarea><div class="pro-toolbar" style="justify-content:flex-end;margin-top:8px"><button type="button" onclick="sendMonitorGeneralMessage()" style="background:var(--primary)">📨 إرسال للمدير</button></div></div><div id="monitorClassStudents"><div class="pro-empty" style="padding:25px;text-align:center">اختر الصف لعرض أسماء الطلاب المسجلين فيه.</div></div></div>`;
+        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:18px"><div style="text-align:center;margin-bottom:14px"><h2 style="margin:0;color:#16a085">👁️ مركز المراقب</h2><div style="font-size:12px;color:#6b7b88;margin-top:4px">اختر الصف ثم سجل حضور وغياب الطلاب</div><button type="button" onclick="logoutSystem()" style="margin-top:10px;background:var(--danger)">🚪 تسجيل الخروج</button></div><div class="pro-panel"><label style="font-weight:700">الصف</label><select id="monitorClassSelect" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"><option value="">-- اختر الصف --</option>${options}</select><div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#eef7f4;color:#176b4b;font-weight:800;font-size:12px">📅 الجرد اليومي: ${today} — يتم التسجيل لليوم الحالي فقط</div></div><div class="pro-panel" style="margin-top:12px"><h3 style="margin-top:0">📝 ملاحظة إلى المدرسة</h3><textarea id="monitorGeneralNote" rows="3" placeholder="اكتب ملاحظة أو رسالة للمدرسة، ولا علاقة لها بالحضور والغياب..." style="width:100%;resize:vertical"></textarea><div class="pro-toolbar" style="justify-content:flex-end;margin-top:8px"><button type="button" onclick="sendMonitorGeneralMessage()" style="background:var(--primary)">📨 إرسال للمدير</button></div></div><div id="monitorClassStudents"><div class="pro-empty" style="padding:25px;text-align:center">اختر الصف لعرض أسماء الطلاب المسجلين فيه.</div></div></div>`;
         document.body.appendChild(modal);
     }
     window.monitorAttendanceCheckboxChanged=async function(box,studentId,date){
@@ -10901,7 +11000,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         if(!currentUser||currentUser.role!=='monitor')return;
         try{
             const select=document.getElementById('monitorClassSelect');
-            const date=document.getElementById('monitorAttendanceDate')?.value||getFormattedDate();
+            const date=getFormattedDate();
             if(!select||select.value===''){alert('اختر الصف أولاً.');return;}
             const classIndex=Number(select.value), cls=getMonitorClasses()[classIndex];
             const students=getMonitorClassStudents(classIndex);
@@ -10986,7 +11085,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const input=document.getElementById('monitorGeneralNote');
         const text=String(input?.value||'').trim();
         if(!text){alert('اكتب الملاحظة أولاً.');return;}
-        const date=document.getElementById('monitorAttendanceDate')?.value||getFormattedDate();
+        const date=getFormattedDate();
         monitorMessagesData.unshift({id:createStableId('mmsg'),monitorId:currentUser.monitorId,monitorName:currentUser.name,message:text,date,createdAt:new Date().toISOString(),read:false});
         if(monitorMessagesData.length>1000)monitorMessagesData.length=1000;
         saveData();
