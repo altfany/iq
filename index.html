@@ -2291,7 +2291,6 @@ header > div:first-child{
                 <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم / هاتف / كود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
-            <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 سجل الغيابات</button>
             <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
@@ -2303,24 +2302,13 @@ header > div:first-child{
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
             
-            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقب</button>
             <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none;">📊 ملخص الحضور الشهري</button>
             <button onclick="openAddModal()" id="btnAddClassNav">+ إضافة صف جديد</button>
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
         </div>
     </header>
 
-    <div id="adminDailySchoolReportBox" style="display:none;margin:12px auto;max-width:1400px;padding:0 12px;direction:rtl;">
-      <div style="background:linear-gradient(135deg,#0f7c8c,#126b78);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 7px 22px rgba(15,124,140,.22);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-        <div><div style="font-size:18px;font-weight:900;">📋 كشف طلاب المدرسة اليومي</div><div style="font-size:12px;opacity:.92;margin-top:4px;">الحضور والغياب والتأخر والطلاب الذين تجاوز غيابهم 5 أيام في الشهر الحالي</div></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <button type="button" onclick="openDailyAttendanceStats()" style="background:#fff;color:#0f7c8c;border:0;border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📊 الاحصاء اليومي</button>
-          <button type="button" id="btnDailyInventoryInsideReport" onclick="openMonitorDailyInventory()" style="background:#16a085;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📋 سجل الغيابات</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="staffAdminBar" style="display:none;margin:0 auto 12px;max-width:1400px;padding:0 12px;direction:rtl;">
+        <div id="staffAdminBar" style="display:none;margin:0 auto 12px;max-width:1400px;padding:0 12px;direction:rtl;">
       <div style="background:#fff;border:1px solid #d9e2e9;border-radius:16px;padding:10px 12px;box-shadow:0 4px 15px rgba(31,45,61,.08);">
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -2525,7 +2513,7 @@ header > div:first-child{
     <div class="modal-content large">
         <div class="pro-modal-head">
             <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين والمراقبين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openMonitorsModal()" style="background:#16a085;color:#fff;font-weight:900;">👁️ إدارة المراقبين</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -5191,13 +5179,11 @@ function updateCloudStatus(text, color) {
         let btnDailySchoolStudentReportNav = document.getElementById('btnDailySchoolStudentReportNav');
         let btnAdminManagementNav = document.getElementById('btnAdminManagementNav');
         let btnSystemGradesNav = document.getElementById('btnSystemGradesNav');
-        let btnMonitorsNav = document.getElementById('btnMonitorsNav');
         let btnGlobalSearchAbsence = document.getElementById('btnGlobalSearchAbsence');
         let globalSearchWrapper = document.getElementById('globalSearchWrapper');
 
         if (!currentUser) return;
         const staffAdminBarInit=document.getElementById('staffAdminBar'); if(staffAdminBarInit) staffAdminBarInit.style.display='none';
-        const insideInventoryInit=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryInit) insideInventoryInit.style.display='none';
 
         // صندوق الشكاوى: يظهر للمدير فقط، ويُعاد ضبطه صراحةً عند كل تسجيل دخول
         // حتى لا يبقى مخفياً بسبب صلاحيات الحساب السابق.
@@ -5234,7 +5220,6 @@ function updateCloudStatus(text, color) {
             if(btnDailySchoolStudentReportNav){ btnDailySchoolStudentReportNav.style.display='inline-block'; btnDailySchoolStudentReportNav.style.visibility='visible'; btnDailySchoolStudentReportNav.style.opacity='1'; }
             if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='block';
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='block';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='inline-block';
             const staffAdminManagementButton=document.getElementById('staffAdminManagementButton'); if(staffAdminManagementButton) staffAdminManagementButton.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             if(btnTeachers) btnTeachers.style.display='none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display='none';
@@ -5246,8 +5231,6 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNav=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav) btnSystemResetNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
-            if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'flex';
@@ -5255,7 +5238,6 @@ function updateCloudStatus(text, color) {
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'monitor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             // المراقب له واجهة مستقلة: الصفوف والطلاب + الحضور/الغياب + ملاحظات للمدير فقط.
             badge.innerText = `الصلاحية: مراقب 👁️ (${currentUser.name})`;
@@ -5279,10 +5261,8 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNav2=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav2) btnSystemResetNav2.style.display='none';
             const btnTeacherComplaintsNavMonitor=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavMonitor) btnTeacherComplaintsNavMonitor.style.display='none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display='none';
-            if(btnMonitorsNav) btnMonitorsNav.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display='none';
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav');
             if(announcementsBtn) announcementsBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
@@ -5296,14 +5276,12 @@ function updateCloudStatus(text, color) {
             if(classContent) classContent.style.display='none';
         } else if (currentUser.role === 'guestSupervisor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
-            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
+            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
             const professionalQuickMenu=document.getElementById('professionalQuickMenu'); if(professionalQuickMenu) professionalQuickMenu.style.display='none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav'); if(announcementsBtn) announcementsBtn.style.display='none';
             document.querySelectorAll('.header-actions > button').forEach(btn=>{ if(!btn.matches('[onclick*="logoutSystem"]')) btn.style.display='none'; });
             const classesNav=document.getElementById('classesNav'); if(classesNav) classesNav.style.display='none';
@@ -5333,7 +5311,6 @@ function updateCloudStatus(text, color) {
             const btnTeacherComplaintsNav=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNav) btnTeacherComplaintsNav.style.display='inline-block';
             const btnManagerNotesNavTeacher=document.getElementById('btnManagerNotesNav'); if(btnManagerNotesNavTeacher) btnManagerNotesNavTeacher.style.display='none';
             const btnSystemResetNavTeacher=document.getElementById('btnSystemResetNav'); if(btnSystemResetNavTeacher) btnSystemResetNavTeacher.style.display='none';
-            const btnMonitorsNavTeacher=document.getElementById('btnMonitorsNav'); if(btnMonitorsNavTeacher) btnMonitorsNavTeacher.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'inline-block';
             if(btnTeacherParentMessagesNav) btnTeacherParentMessagesNav.style.display = 'inline-block';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'inline-block';
@@ -5341,9 +5318,7 @@ function updateCloudStatus(text, color) {
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display='none';
-            if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'parent') {
@@ -10553,24 +10528,6 @@ function updateCloudStatus(text, color) {
         if(i<0)return; if(!confirm('حذف هذا الواجب من السجل؟'))return; homeworkData.splice(i,1); saveData(); openHomeworkModal();
     }
     function openRoleDashboard(){ if(!currentUser)return; if(currentUser.role==='admin')return ProfessionalModules.openDashboard(); if(currentUser.role==='teacher')return openTeacherDashboard(); if(currentUser.role==='parent')return openStudentDashboard(); if(currentUser.role==='guestSupervisor')return openGuestSupervisorView(); }
-
-    function generateMonitorCode(){
-        let c; do { c=String(Math.floor(100000+Math.random()*900000)); } while(monitorsData.some(m=>String(m.code)===c) || c===String(adminCredentials.password));
-        return c;
-    }
-    function openMonitorsModal(){
-        if(!isPrimaryAdminUser()) return;
-        const old=document.getElementById('monitorsModal'); if(old)old.remove();
-        const modal=document.createElement('div'); modal.id='monitorsModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100009;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
-        const rows=monitorsData.map((m,i)=>`<tr><td>${escapeGlobalSearchHTML(m.name)}</td><td><b>${escapeGlobalSearchHTML(m.code)}</b></td><td>${m.active===false?'موقوف':'فعال'}</td><td><button onclick="deleteMonitor(${i})" style="background:var(--danger)">حذف</button></td></tr>`).join('');
-        modal.innerHTML=`<div class="modal-content" style="width:min(900px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#16a085">👁️ إدارة المراقبين</h2><button onclick="document.getElementById('monitorsModal')?.remove()">✕</button></div><div class="pro-panel"><h3>➕ إضافة مراقب</h3><input id="monitorNameInput" placeholder="اسم المراقب"><div class="pro-toolbar" style="justify-content:flex-end;margin-top:10px"><button onclick="saveNewMonitor()" style="background:var(--success)">إضافة وتوليد الكود</button></div></div><div class="pro-panel"><h3>المراقبون</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الاسم</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا يوجد مراقبون.</td></tr>'}</tbody></table></div></div></div>`;
-        document.body.appendChild(modal);
-    }
-    function saveNewMonitor(){
-        if(!isPrimaryAdminUser())return; const name=String(document.getElementById('monitorNameInput')?.value||'').trim(); if(!name){alert('اكتب اسم المراقب.');return;}
-        const code=generateMonitorCode(); monitorsData.push({id:createStableId('monitor'),name,code,active:true,createdAt:new Date().toISOString()}); saveData(); openMonitorsModal(); alert(`تم إضافة المراقب ${name}.\nكود الدخول: ${code}`);
-    }
-    function deleteMonitor(index){ if(!isPrimaryAdminUser())return; if(!confirm('حذف هذا المراقب؟'))return; monitorsData.splice(index,1); saveData(); openMonitorsModal(); }
     function getMonitorClasses(){
         return Array.isArray(schoolData) ? schoolData.filter(Boolean) : [];
     }
@@ -10916,670 +10873,6 @@ function updateCloudStatus(text, color) {
             return false;
         }
         return true;
-    }
-
-    function openDailyInventoryReset(){
-        if(!isPrimaryAdminUser()) return alert('هذه الخاصية متاحة لمدير النظام فقط.');
-        const old=document.getElementById('dailyInventoryResetModal'); if(old) old.remove();
-        const modal=document.createElement('div');
-        modal.id='dailyInventoryResetModal'; modal.className='modal';
-        modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,.62);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(560px,96vw);padding:20px">
-          <div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0">♻️ ترسيت المحفوظات</h2><button type="button" onclick="document.getElementById('dailyInventoryResetModal')?.remove()">✕</button></div>
-          <div style="padding:12px;border-radius:12px;background:#fff7e6;border:1px solid #f3d08a;margin-bottom:14px;line-height:1.8">سيتم ترسيت <b>سجلات الحضور والغياب والمجاز وجرد الغياب</b> فقط، ولن يتم حذف بيانات الطلاب أو الصفوف أو الأكواد أو الحسابات.</div>
-          <div class="pro-toolbar" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <button type="button" onclick="resetAllDailyAttendance()" style="background:var(--danger);min-height:58px;font-weight:900">🗑️ ترسيت كل المحفوظات</button>
-            <button type="button" onclick="openStudentDailyReset()" style="background:var(--warning);min-height:58px;font-weight:900">👤 ترسيت لطالب معين</button>
-          </div>
-        </div>`;
-        document.body.appendChild(modal);
-    }
-
-    function openStudentDailyReset(){
-        if(!isPrimaryAdminUser()) return;
-        const parent=document.getElementById('dailyInventoryResetModal'); if(parent) parent.remove();
-        const old=document.getElementById('studentDailyResetModal'); if(old) old.remove();
-        const modal=document.createElement('div');
-        modal.id='studentDailyResetModal'; modal.className='modal';
-        modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100021;background:rgba(0,0,0,.62);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(650px,96vw);max-height:94vh;overflow:auto;padding:20px">
-          <div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0">👤 ترسيت محفوظات طالب</h2><button type="button" onclick="document.getElementById('studentDailyResetModal')?.remove()">✕</button></div>
-          <p style="color:#667;line-height:1.7">ابحث عن الطالب المحفوظ داخل النظام، ثم اختره لتنفيذ الترسيت على سجلات الحضور والغياب والمجاز الخاصة به فقط.</p>
-          <input id="studentResetSearchInput" type="text" placeholder="🔎 اكتب اسم الطالب للبحث..." oninput="renderStudentResetSearch()" style="width:100%;min-height:46px;padding:10px;border:1px solid #ccd6df;border-radius:10px;box-sizing:border-box">
-          <div id="studentResetSearchResults" style="margin-top:12px"></div>
-        </div>`;
-        document.body.appendChild(modal);
-        renderStudentResetSearch();
-    }
-
-    function renderStudentResetSearch(){
-        const box=document.getElementById('studentResetSearchResults'); if(!box) return;
-        const q=String(document.getElementById('studentResetSearchInput')?.value||'').trim().toLocaleLowerCase('ar');
-        const students=[];
-        (schoolData||[]).forEach((cls,ci)=>(cls.desks||[]).forEach((desk,di)=>[1,2].forEach(slot=>{
-            const name=String(desk?.['student'+slot]||'').trim(); if(!name) return;
-            const id=String(desk?.['student'+slot+'Id']||desk?.id||`${ci}_${di}_${slot}`);
-            if(!q || name.toLocaleLowerCase('ar').includes(q)) students.push({id,name,className:cls.name||'صف غير محدد',classIndex:ci,deskIndex:di,slot});
-        })));
-        const unique=[]; const seen=new Set();
-        students.forEach(s=>{if(!seen.has(s.id)){seen.add(s.id);unique.push(s);}});
-        const shown=unique.slice(0,50);
-        box.innerHTML=shown.length?shown.map(s=>{const safeId=String(s.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid #e3e9ef;border-radius:10px;margin-bottom:8px;background:#fff"><div><b>${escapeGlobalSearchHTML(s.name)}</b><div style="font-size:12px;color:#667">${escapeGlobalSearchHTML(s.className)}</div></div><button type="button" onclick="confirmStudentDailyReset('${safeId}')" style="background:var(--danger)">ترسيت</button></div>`;}).join(''):'<div class="pro-empty">لم يتم العثور على طالب بهذا الاسم.</div>';
-        if(unique.length>50) box.innerHTML+=`<div style="text-align:center;color:#667;font-size:12px">تظهر أول 50 نتيجة، اكتب اسمًا أكثر تحديدًا.</div>`;
-    }
-
-    async function confirmStudentDailyReset(studentId){
-        if(!verifyResetAdminPassword()) return;
-        const found=getStudentById(String(studentId));
-        if(!found){
-            alert('تعذر العثور على الطالب. افتح الترسيت من جديد ثم ابحث عن الطالب المحفوظ داخل النظام.');
-            return;
-        }
-        const sid=String(found.student.id||found.classObj?.desks?.[found.deskIndex]?.[`student${found.slot}Id`]||found.classObj?.desks?.[found.deskIndex]?.id||`${found.classIndex}_${found.deskIndex}_${found.slot}`).trim();
-        const name=String(found.student.name||'').trim();
-        if(!sid || !name){ alert('بيانات الطالب غير مكتملة، لم يتم تنفيذ الترسيت.'); return; }
-        if(!confirm(`⚠️ سيتم حذف محفوظات الحضور والغياب والمجاز وجرد الغياب والملاحظات الخاصة بالطالب:\n\n${name}\n\nلن يتم حذف اسم الطالب من قائمة الطلاب.\n\nهل تريد المتابعة؟`)) return;
-
-        const isTargetRecord=(r)=>{
-            if(!r || typeof r!=='object') return false;
-            const rid=String(r.studentId||r.id||'').trim();
-            const rn=String(r.name||r.studentName||'').trim();
-            return rid===sid || rn===name;
-        };
-        const isTargetKey=(key)=>{
-            const k=String(key||'');
-            return k===sid || k===name || k.includes(name);
-        };
-        const cleanAbsenceContainer=(container)=>{
-            if(!container || typeof container!=='object') return;
-            Object.keys(container).forEach(date=>{
-                const rec=container[date];
-                if(Array.isArray(rec)){
-                    container[date]=rec.filter(x=>!isTargetRecord(x) && !isTargetKey(x?.studentId) && !isTargetKey(x?.name));
-                    if(!container[date].length) delete container[date];
-                    return;
-                }
-                if(!rec || typeof rec!=='object') return;
-                Object.keys(rec).forEach(k=>{
-                    const value=rec[k];
-                    if(isTargetKey(k) || isTargetRecord(value)) delete rec[k];
-                });
-                if(!Object.keys(rec).length) delete container[date];
-            });
-        };
-        const cleanReportList=(list)=>Array.isArray(list)?list.map(r=>{
-            if(!r || typeof r!=='object') return r;
-            // التقارير الحديثة تحفظ جميع الطلاب داخل students، والقديمة تستخدم absentStudents.
-            // يجب تنظيف القائمتين حتى لا يعود سجل الطالب بعد إعادة فتح النظام.
-            const cleaned={...r};
-            if(Array.isArray(cleaned.students)){
-                cleaned.students=cleaned.students.filter(x=>!isTargetRecord(x));
-            }
-            if(Array.isArray(cleaned.absentStudents)){
-                cleaned.absentStudents=cleaned.absentStudents.filter(x=>!isTargetRecord(x));
-            }
-            return cleaned;
-        }).filter(Boolean):[];
-
-        try{
-            // 1) حذف سجل الطالب من وحدة الحضور المهنية، بالمعرّف والاسم لضمان تنظيف البيانات القديمة.
-            const currentAttendance=Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[];
-            const cleanedAttendance=currentAttendance.filter(r=>!isTargetRecord(r));
-            if(typeof window.__loadProfessionalAttendanceFromCloud==='function'){
-                window.__loadProfessionalAttendanceFromCloud(cleanedAttendance);
-            }
-
-            // 2) حذف سجلات الغياب القديمة من جميع الصفوف، بما فيها المفاتيح القديمة التي كانت تحتوي اسم الطالب.
-            (schoolData||[]).forEach(cls=>cleanAbsenceContainer(cls?.absenceRecords));
-
-            // 3) حذف ظهور الطالب من جرد الصفوف وملاحظات المراقبين.
-            monitorInventoryReportsData=cleanReportList(monitorInventoryReportsData);
-            monitorNotesData=Array.isArray(monitorNotesData)
-                ? monitorNotesData.filter(n=>!isTargetRecord(n))
-                : [];
-
-            // 4) حفظ الحالة المنظفة محلياً.
-            saveData();
-
-            // 5) تنظيف كل النسخ الاحتياطية السحابية، وليس فقط نسخة واحدة.
-            if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.loadBackups==='function' && typeof window.FirebaseCloud.saveBackup==='function'){
-                const backups=await window.FirebaseCloud.loadBackups();
-                for(const [key,b] of Object.entries(backups||{})){
-                    if(!b || typeof b!=='object') continue;
-                    if(Array.isArray(b.attendanceData)) b.attendanceData=b.attendanceData.filter(r=>!isTargetRecord(r));
-                    if(Array.isArray(b.monitorInventoryReportsData)) b.monitorInventoryReportsData=cleanReportList(b.monitorInventoryReportsData);
-                    if(Array.isArray(b.monitorNotesData)) b.monitorNotesData=b.monitorNotesData.filter(n=>!isTargetRecord(n));
-                    if(Array.isArray(b.schoolData)) b.schoolData.forEach(cls=>cleanAbsenceContainer(cls?.absenceRecords));
-                    await window.FirebaseCloud.saveBackup(key,b);
-                }
-            }
-
-            // 6) تحديث النسخة المحلية التلقائية بعد التنظيف.
-            try{ cloudOnlyStorage.setItem('schoolAutoBackupLatest',JSON.stringify(makeBackupPayload())); }catch(_e){}
-            cloudOnlyStorage.removeItem('schoolAutoBackupLastCloud');
-
-            // 7) حفظ الحالة المنظفة مباشرة في Firebase الرئيسية حتى لا تعود الأسماء القديمة عند المزامنة.
-            if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.save==='function'){
-                await saveCurrentCloudPayload();
-            }
-
-            document.getElementById('studentDailyResetModal')?.remove();
-            document.getElementById('dailyInventoryResetModal')?.remove();
-            saveData();
-            if(typeof renderMonitorDailyInventory==='function') renderMonitorDailyInventory();
-            alert(`✅ تم ترسيت محفوظات الطالب «${name}» بنجاح.\n\nتم حذف سجلات الحضور والغياب والمجاز والجرد والملاحظات والنسخ الاحتياطية الخاصة به، مع إبقاء اسم الطالب في قائمة الطلاب.`);
-        }catch(e){
-            console.error('Student daily reset failed:',e);
-            alert('حدث خطأ أثناء ترسيت محفوظات الطالب. لم تكتمل العملية بالكامل، تحقق من الاتصال بالسحابة ثم حاول مرة أخرى.');
-        }
-    }
-
-    async function resetAllDailyAttendance(){
-        if(!verifyResetAdminPassword()) return;
-        if(!confirm('⚠️ تحذير: سيتم حذف جميع سجلات الحضور والغياب والمجاز وجرد الغياب من النظام السحابي والمحلي. لن يتم حذف بيانات الطلاب أو الصفوف أو الحسابات.\n\nهل أنت متأكد؟')) return;
-        const second=prompt('🔐 للتأكيد النهائي، أدخل كود المدير مرة أخرى:');
-        if(second===null || String(second).trim()!==String(adminCredentials.password||'').trim()){
-            alert('❌ كود المدير غير صحيح. تم إلغاء الترسيت.'); return;
-        }
-        try{
-            (schoolData||[]).forEach(cls=>{ if(cls && cls.absenceRecords) cls.absenceRecords={}; });
-            monitorInventoryReportsData=[];
-            monitorNotesData=[];
-            if(typeof window.__loadProfessionalAttendanceFromCloud==='function') window.__loadProfessionalAttendanceFromCloud([]);
-            if(typeof window.__loadProfessionalAuditFromCloud==='function') window.__loadProfessionalAuditFromCloud([]);
-            saveData();
-            if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.deleteAllBackups==='function') await window.FirebaseCloud.deleteAllBackups();
-            cloudOnlyStorage.removeItem('schoolAutoBackupLatest');
-            cloudOnlyStorage.removeItem('schoolAutoBackupLastCloud');
-            document.getElementById('dailyInventoryResetModal')?.remove();
-            document.getElementById('studentDailyResetModal')?.remove();
-            alert('✅ تم ترسيت جميع محفوظات الحضور والغياب والمجاز وجرد الغياب بنجاح.');
-            renderMonitorDailyInventory();
-        }catch(e){console.error(e);alert('حدث خطأ أثناء الترسيت. يرجى المحاولة مرة أخرى.');}
-    }
-
-    function openMonitorDailyInventory(){
-        if(!isPrimaryAdminUser()) return;
-        const old=document.getElementById('monitorDailyInventoryModal'); if(old) old.remove();
-        const modal=document.createElement('div');
-        modal.id='monitorDailyInventoryModal'; modal.className='modal';
-        modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100011;background:rgba(0,0,0,.58);padding:12px;align-items:center;justify-content:center;';
-        const today=getFormattedDate();
-        const month=today.slice(0,7);
-        modal.innerHTML=`<div class="modal-content" style="width:min(1250px,98vw);max-height:94vh;overflow:auto;padding:18px">
-          <div class="pro-toolbar" style="justify-content:space-between;align-items:center">
-            <h2 style="margin:0">📋 سجل الغيابات اليومي وتقارير الغياب</h2>
-            <div>
-              <button type="button" onclick="printMonitorDailyInventory()" style="background:#34495e">🖨️ طباعة</button>
-              <button type="button" onclick="openDailyInventoryReset()" style="background:var(--danger);font-weight:900">♻️ ترسيت</button>
-              <button type="button" onclick="document.getElementById('monitorDailyInventoryModal')?.remove()">✕ إغلاق</button>
-            </div>
-          </div>
-
-          <div class="pro-panel">
-            <h3 style="margin-top:0">🔎 بحث غياب الطالب في شهر محدد</h3>
-            <div class="pro-toolbar" style="align-items:end;gap:10px">
-              <div style="flex:1;min-width:240px">
-                <label style="font-weight:700;display:block;margin-bottom:6px">اسم الطالب</label>
-                <input type="text" id="dailyInventoryStudentSearch" placeholder="اكتب اسم الطالب" oninput="renderMonitorDailyInventory()" style="width:100%">
-              </div>
-              <div style="min-width:190px">
-                <label style="font-weight:700;display:block;margin-bottom:6px">الشهر</label>
-                <input type="month" id="dailyInventoryMonth" value="${month}" onchange="renderMonitorDailyInventory()" style="width:100%">
-              </div>
-            </div>
-            <div id="dailyInventoryStudentHistory"></div>
-          </div>
-
-          <div class="pro-panel">
-            <h3 style="margin-top:0">🖨️ تقرير غياب طالب من تاريخ إلى تاريخ</h3>
-            <div class="pro-toolbar" style="align-items:end;gap:10px">
-              <div style="flex:1;min-width:240px">
-                <label style="font-weight:700;display:block;margin-bottom:6px">اسم الطالب</label>
-                <input type="text" id="absenceReportStudentSearch" placeholder="اكتب اسم الطالب" oninput="renderMonitorAbsenceRangeReport()" style="width:100%">
-              </div>
-              <div style="min-width:175px">
-                <label style="font-weight:700;display:block;margin-bottom:6px">من تاريخ</label>
-                <input type="date" id="absenceReportFromDate" value="${today}" onchange="renderMonitorAbsenceRangeReport()" style="width:100%">
-              </div>
-              <div style="min-width:175px">
-                <label style="font-weight:700;display:block;margin-bottom:6px">إلى تاريخ</label>
-                <input type="date" id="absenceReportToDate" value="${today}" onchange="renderMonitorAbsenceRangeReport()" style="width:100%">
-              </div>
-              <button type="button" onclick="printStudentAbsenceRangeReport()" style="background:#8e44ad">🖨️ طباعة تقرير الطالب</button>
-            </div>
-            <div id="absenceRangeReportContent"></div>
-          </div>
-
-          <div id="dailyInventoryReports"></div>
-        </div>`;
-        document.body.appendChild(modal);
-        renderMonitorDailyInventory();
-        renderMonitorAbsenceRangeReport();
-    }
-
-    function findStudentAttendanceByName(name){
-        const q=String(name||'').trim().toLocaleLowerCase('ar');
-        if(!q) return [];
-        const out=[];
-        (schoolData||[]).forEach((cls,classIndex)=>{
-            (cls.desks||[]).forEach((desk,deskIndex)=>{
-                [1,2].forEach(slot=>{
-                    const studentName=String(desk?.['student'+slot]||'').trim();
-                    if(studentName && studentName.toLocaleLowerCase('ar').includes(q)){
-                        out.push({studentId:String(desk?.['student'+slot+'Id']||desk?.id||`${classIndex}-${deskIndex}-${slot}`),name:studentName,classObj:cls,classIndex,deskIndex,slot});
-                    }
-                });
-            });
-        });
-        return out;
-    }
-
-    function getStudentAbsenceDatesInRange(found,fromDate,toDate){
-        const set=new Set();
-        if(!found) return [];
-        const from=String(fromDate||'0000-00-00'), to=String(toDate||'9999-99-99');
-
-        // السجل الاحترافي.
-        (window.ProfessionalModules?.attendanceData||[]).forEach(r=>{
-            if(String(r.studentId)!==String(found.studentId) || r.status!=='absent') return;
-            const d=String(r.date||'');
-            if(d>=from && d<=to) set.add(d);
-        });
-
-        // سجل شاشة «الحضور والغياب» القديم، لضمان شمول غياب المراقب والمرشد.
-        const records=found.classObj?.absenceRecords||{};
-        const keys=[
-            `${found.deskIndex+1}_${found.slot===1?'يمين':'يسار'}_${found.name}`,
-            String(found.studentId)
-        ];
-        Object.keys(records).forEach(date=>{
-            if(date<from || date>to) return;
-            const day=records[date]||{};
-            if(keys.some(k=>day[k]===true || day[k]==='absent')) set.add(date);
-        });
-        return Array.from(set).sort();
-    }
-
-    function getStudentMonthlyAbsenceHistoryByName(name, monthDate){
-        const month=String(monthDate||getFormattedDate()).slice(0,7);
-        const matches=findStudentAttendanceByName(name);
-        const rows=[];
-        matches.forEach(found=>{
-            const statusByDate={};
-
-            // السجل الاحترافي: نأخذ الحالة الحالية لكل يوم.
-            (window.ProfessionalModules?.attendanceData||[]).forEach(r=>{
-                if(String(r.studentId)!==String(found.studentId) || !String(r.date||'').startsWith(month)) return;
-                statusByDate[String(r.date)] = r.status==='leave' ? 'leave' : r.status==='absent' ? 'absent' : r.status==='late' ? 'late' : 'present';
-            });
-
-            // جرد المراقب: نستخدمه أيضاً كمصدر حتى تظهر «متأخر» ووقت الدخول وسبب التأخير
-            // حتى لو كان السجل الاحترافي القديم غير موجود في بيانات الطالب.
-            (monitorInventoryReportsData||[]).forEach(report=>{
-                if(String(report.date||'').slice(0,7)!==month) return;
-                const list=Array.isArray(report.students)?report.students:(Array.isArray(report.absentStudents)?report.absentStudents:[]);
-                list.forEach(item=>{
-                    const sameId=String(item?.studentId||'')===String(found.studentId);
-                    const sameName=String(item?.name||'').trim()===String(found.name).trim();
-                    if(!sameId && !sameName) return;
-                    const st=item?.status;
-                    if(['absent','leave','late'].includes(st)) statusByDate[String(report.date)] = st;
-                });
-            });
-
-            // سجل «الحضور والغياب» القديم، ويكون له أولوية إذا كان يحتوي على مجاز/غياب.
-            const records=found.classObj?.absenceRecords||{};
-            const deskNo=Number(found.deskIndex)+1;
-            const seatPos=Number(found.slot)===1?'يمين':'يسار';
-            const keys=[`${deskNo}_${seatPos}_${found.name}`,String(found.studentId)];
-            Object.entries(records).forEach(([date,day])=>{
-                if(!String(date).startsWith(month)) return;
-                const d=day||{};
-                let matchedStatus=null;
-                for(const k of keys){
-                    if(d[k]===true || d[k]==='absent') { matchedStatus='absent'; break; }
-                    if(d[k]==='leave' || d[k]==='مجاز') { matchedStatus='leave'; break; }
-                    if(d[k]==='late' || d[k]==='متأخر') { matchedStatus='late'; break; }
-                }
-                if(matchedStatus) statusByDate[String(date)]=matchedStatus;
-            });
-
-            Object.entries(statusByDate).forEach(([date,status])=>{
-                const pro= (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(found.studentId)&&String(r.date)===String(date));
-                rows.push({name:found.name,className:found.classObj?.name||'-',date,status,studentId:found.studentId,found,
-                    lateTime:pro?.lateTime||'', lateReason:pro?.lateReason||'', note:pro?.note||'',
-                    changedBy:pro?.changedBy||'', changedAt:pro?.changedAt||pro?.updatedAt||''});
-            });
-        });
-        return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    }
-
-    function updateDailyInventoryStudentStatus(studentId,date,status,studentName='',lateTime='',lateReason=''){
-        if(!isPrimaryAdminUser()) return false;
-        const sid=String(studentId||'').trim();
-        const wantedName=String(studentName||'').trim();
-        let found=null;
-
-        // البحث أولاً بالمعرّف، ثم بالاسم حتى تعمل التقارير القديمة التي أُرسلت
-        // قبل إضافة studentId إلى جرد المراقب.
-        for(const cls of (schoolData||[])){
-            for(const desk of (cls.desks||[])){
-                for(const slot of [1,2]){
-                    const name=String(desk?.['student'+slot]||'').trim();
-                    const storedId=String(desk?.['student'+slot+'Id']||'').trim();
-                    const idMatch=sid && storedId===sid;
-                    const nameMatch=wantedName && name===wantedName;
-                    if(name && (idMatch || nameMatch)){
-                        const deskIndex=(cls.desks||[]).indexOf(desk);
-                        const classIndex=schoolData.indexOf(cls);
-                        // لا تحفظ أي حالة بمعرّف مؤقت أو معرّف جرد قديم؛
-                        // الحالة الموحدة يجب أن تستخدم canonicalStudentId دائماً.
-                        const canonicalId=canonicalStudentId(cls,classIndex,desk,deskIndex,slot);
-                        found={studentId:String(canonicalId),name,classObj:cls,desk,deskIndex,slot};
-                        break;
-                    }
-                }
-                if(found) break;
-            }
-            if(found) break;
-        }
-        if(!found){ alert('تعذر العثور على الطالب.'); return false; }
-
-        const normalized=status==='leave'?'leave':status==='absent'?'absent':status==='late'?'late':'present';
-
-        // تغيير الحالة من لوحة المدير يتم مباشرة عند وضع علامة ✓، بدون تأكيد أو رقم سري.
-        const changedAt=new Date().toISOString();
-
-        // تحديث سجل الحضور الاحترافي فوراً، مع التأكد من نجاح العملية.
-        let attendanceSaved=true;
-        if(window.ProfessionalModules?.recordAttendance){
-            attendanceSaved=window.ProfessionalModules.recordAttendance(found.studentId,normalized,date,normalized==='late'?`وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}`:'تعديل من جرد الصفوف اليومي بواسطة المدير',lateTime,lateReason)!==false;
-        }
-        if(!attendanceSaved){ alert('تعذر تحديث سجل حضور الطالب.'); return false; }
-
-        // مزامنة سجل «الحضور والغياب» القديم.
-        if(!found.classObj.absenceRecords) found.classObj.absenceRecords={};
-        if(!found.classObj.absenceRecords[date]) found.classObj.absenceRecords[date]={};
-        const seatPos=Number(found.slot)===1?'يمين':'يسار';
-        const deskNo=Number(found.deskIndex)+1;
-        const keys=[`${deskNo}_${seatPos}_${found.name}`,String(found.studentId)];
-        keys.forEach(k=>{
-            if(normalized==='absent') found.classObj.absenceRecords[date][k]='absent';
-            else if(normalized==='leave') found.classObj.absenceRecords[date][k]='leave';
-            else if(normalized==='late') found.classObj.absenceRecords[date][k]='late';
-            else delete found.classObj.absenceRecords[date][k];
-        });
-
-        // تحديث جرد المراقب فوراً في الذاكرة حتى يظهر التغيير دون خروج/دخول.
-        // بعض التقارير القديمة تستخدم students وبعضها absentStudents، لذلك نحدّث القائمتين.
-        (monitorInventoryReportsData||[]).forEach(report=>{
-            if(String(report.date)!==String(date)) return;
-            const sameClass = !report.classId || String(report.classId)===String(found.classObj.id||'') || String(report.className||'')===String(found.classObj.name||'');
-            if(!sameClass) return;
-            const lists=[];
-            if(Array.isArray(report.students)) lists.push(report.students);
-            if(Array.isArray(report.absentStudents)) lists.push(report.absentStudents);
-            if(!lists.length){ report.students=[]; report.absentStudents=[]; lists.push(report.students,report.absentStudents); }
-            lists.forEach(list=>{
-                let item=list.find(x=>(sid && String(x.studentId||'')===sid) || String(x.studentId||'')===String(found.studentId) || String(x.name||'')===String(found.name));
-                if(normalized==='present'){
-                    for(let i=list.length-1;i>=0;i--){ const x=list[i]; if(String(x.studentId||'')===String(found.studentId) || String(x.name||'')===String(found.name)) list.splice(i,1); }
-                }else{
-                    if(!item){ item={studentId:found.studentId,name:found.name}; list.push(item); }
-                    item.studentId=found.studentId; item.name=found.name; item.status=normalized;
-                    item.changedBy=currentUser?.isAssistant ? 'المعاون' : 'المدير'; item.changedByName=actorName(); item.changedAt=changedAt;
-                    if(normalized==='leave') item.changeText=`تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`; else delete item.changeText;
-                }
-            });
-        });
-
-        // ضمان وجود سجل في تقرير اليوم حتى لو كان التقرير قديماً ولا يحتوي students.
-        const matchingReports=(monitorInventoryReportsData||[]).filter(r=>String(r.date)===String(date));
-        matchingReports.forEach(report=>{
-            if(String(report.classId||'')!==String(found.classObj.id||'') && String(report.className||'')!==String(found.classObj.name||'')) return;
-            if(!Array.isArray(report.students)) report.students=[];
-            let item=report.students.find(x=>String(x.studentId||'')===String(found.studentId)||String(x.name||'')===String(found.name));
-            if(!item){ item={studentId:found.studentId,name:found.name}; report.students.push(item); }
-            item.studentId=found.studentId; item.name=found.name; item.status=normalized; item.date=date; item.lateTime=normalized==='late'?String(lateTime||'').trim():''; item.lateReason=normalized==='late'?String(lateReason||'').trim():'';
-            item.changedBy=currentUser?.isAssistant ? 'المعاون' : 'المدير';
-            item.changedByName=actorName(); item.changedAt=changedAt;
-            if(normalized==='leave') item.changeText=`تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`;
-            else delete item.changeText;
-        });
-
-        if(normalized==='leave') addAudit('تغيير حالة الغياب إلى مجاز',`${found.name} - ${date} - تم التغير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'} بتاريخ ${new Date(changedAt).toLocaleString('ar-IQ')}`);
-        saveData();
-
-        // تحديث الواجهة فوراً داخل نفس الجلسة.
-        // نؤجل رسالة النجاح حتى يأخذ المتصفح فرصة لإظهار التغيير على الشاشة.
-        const refreshDailyInventoryNow=()=>{
-            try { renderMonitorDailyInventory(); } catch(e) { console.error('Daily inventory render failed:',e); }
-            try { renderMonitorAbsenceRangeReport(); } catch(e) { console.error('Absence report render failed:',e); }
-            // تحديث صفحة الصف المفتوحة فوراً حتى يظهر «مجاز/غائب/متأخر» بدون خروج ودخول.
-            try {
-                if (Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) {
-                    renderDesks();
-                    renderAbsenceTable();
-                    updateSupervisorButtonDisplay();
-                }
-            } catch(e) { console.error('Class page refresh failed:',e); }
-        };
-
-        refreshDailyInventoryNow();
-        if(typeof requestAnimationFrame==='function'){
-            requestAnimationFrame(()=>refreshDailyInventoryNow());
-        }
-        setTimeout(()=>{
-            refreshDailyInventoryNow();
-            alert(normalized==='absent'
-                ?'تم تثبيت الحالة: غائب.'
-                :normalized==='leave'
-                    ?`تم تغيير الحالة إلى: مجاز، وتم تسجيل التغيير بواسطة ${currentUser?.isAssistant ? 'المعاون' : 'المدير'}: ${actorName()}.`
-                    :'تم تغيير الحالة إلى: حضور.');
-        },120);
-
-        return true;
-    }
-
-    window.updateDailyInventoryStudentStatus=updateDailyInventoryStudentStatus;
-
-    function renderManagerAttendanceCheckboxes(studentId,date,currentStatus,studentName){
-        const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        const safeId=escAttr(studentId), safeDate=escAttr(date), safeName=escAttr(studentName);
-        const existingLate=(window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(studentId)&&String(r.date)===String(date)&&r.status==='late')||{};
-        const statuses=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
-        return `<div class="manager-status-checks" data-current-status="${currentStatus}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${statuses.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border:1px solid #d8e0e8;border-radius:8px;background:#fff;cursor:pointer;font-weight:800;font-size:12px"><input type="checkbox" ${currentStatus===value?'checked':''} ${value==='late' && existingLate.lateTime?`data-late-time="${escapeGlobalSearchHTML(existingLate.lateTime)}" data-late-reason="${escapeGlobalSearchHTML(existingLate.lateReason||existingLate.note||'')}"`:''} onchange="window.managerAttendanceCheckboxChanged(this,'${safeId}','${safeDate}','${value}','${safeName}')" style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer"><span>${icon} ${label}</span></label>`).join('')}<span style="font-size:10px;color:#667;font-weight:700">✓ اختر حالة واحدة</span></div>`;
-    }
-    window.managerAttendanceCheckboxChanged=async function(box,studentId,date,status,studentName=''){
-        if(!box || !box.checked) return;
-        const group=box.closest('.manager-status-checks');
-        const previous=group?.dataset?.currentStatus||'present';
-        if(group) group.querySelectorAll('input[type="checkbox"]').forEach(cb=>{if(cb!==box) cb.checked=false;});
-        let details=null;
-        if(status==='late'){
-            details=await openLateDetailsDialog(box.dataset.lateTime||'',box.dataset.lateReason||'');
-            if(!details){
-                box.checked=false;
-                const restore=group?.querySelector(`input[type="checkbox"][onchange*="'${previous}'"]`);
-                if(restore) restore.checked=true;
-                return;
-            }
-            box.dataset.lateTime=details.time; box.dataset.lateReason=details.reason;
-        }
-        const ok=window.updateDailyInventoryStudentStatus(studentId,date,status,studentName,details?.time||'',details?.reason||'');
-        if(ok && group) group.dataset.currentStatus=status;
-        if(!ok && group){
-            box.checked=false;
-            const restore=group.querySelector(`input[type="checkbox"][onchange*="'${previous}'"]`);
-            if(restore) restore.checked=true;
-        }
-    };
-
-    function openLateDetailsDialog(existingTime='', existingReason=''){
-        return new Promise(resolve=>{
-            const old=document.getElementById('lateDetailsDialog');
-            if(old) old.remove();
-            const modal=document.createElement('div');
-            modal.id='lateDetailsDialog';
-            modal.style.cssText='position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;';
-            const reasons=['ازدحام مروري','تأخر وسيلة النقل','ظرف عائلي','سبب صحي','استيقظ متأخراً','سبب آخر'];
-            const currentReason=String(existingReason||'').trim();
-            const selectedReason=reasons.includes(currentReason)?currentReason:'سبب آخر';
-            modal.innerHTML=`<div style="width:min(460px,96vw);background:#fff;border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);direction:rtl">
-                <h3 style="margin:0 0 14px;color:#243b53">⏰ تفاصيل التأخير</h3>
-                <label style="display:block;font-weight:800;margin-bottom:6px">وقت الحضور إلى المدرسة</label>
-                <input id="lateDetailsTime" type="time" value="${escapeGlobalSearchHTML(existingTime||'')}" style="width:100%;font-size:18px;padding:10px;border:1px solid #ccd6e0;border-radius:10px;box-sizing:border-box">
-                <label style="display:block;font-weight:800;margin:14px 0 6px">سبب التأخير</label>
-                <select id="lateDetailsReasonSelect" style="width:100%;padding:10px;border:1px solid #ccd6e0;border-radius:10px;box-sizing:border-box">
-                    ${reasons.map(r=>`<option value="${escapeGlobalSearchHTML(r)}" ${selectedReason===r?'selected':''}>${escapeGlobalSearchHTML(r)}</option>`).join('')}
-                </select>
-                <input id="lateDetailsReasonOther" type="text" value="${selectedReason==='سبب آخر' && currentReason!=='سبب آخر'?escapeGlobalSearchHTML(currentReason):''}" placeholder="اكتب سبب التأخير" style="display:${selectedReason==='سبب آخر'?'block':'none'};width:100%;margin-top:8px;padding:10px;border:1px solid #ccd6e0;border-radius:10px;box-sizing:border-box">
-                <div style="display:flex;gap:8px;justify-content:flex-start;margin-top:18px">
-                    <button type="button" id="lateDetailsSave" style="background:var(--primary);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer">حفظ</button>
-                    <button type="button" id="lateDetailsCancel" style="background:#eef2f6;color:#243b53;border:0;border-radius:10px;padding:10px 18px;font-weight:900;cursor:pointer">إلغاء</button>
-                </div>
-            </div>`;
-            document.body.appendChild(modal);
-            const sel=modal.querySelector('#lateDetailsReasonSelect');
-            const other=modal.querySelector('#lateDetailsReasonOther');
-            sel.onchange=()=>{ other.style.display=sel.value==='سبب آخر'?'block':'none'; if(sel.value!=='سبب آخر') other.value=''; };
-            modal.querySelector('#lateDetailsCancel').onclick=()=>{modal.remove();resolve(null);};
-            modal.querySelector('#lateDetailsSave').onclick=()=>{
-                const time=String(modal.querySelector('#lateDetailsTime')?.value||'').trim();
-                const reason=sel.value==='سبب آخر' ? String(other.value||'').trim() : String(sel.value||'').trim();
-                if(!time){alert('اختر وقت حضور الطالب إلى المدرسة.');return;}
-                if(!reason){alert('اكتب سبب التأخير.');return;}
-                modal.remove(); resolve({time,reason});
-            };
-        });
-    }
-
-    function renderMonitorDailyInventory(){
-        if(!isPrimaryAdminUser()) return;
-        const date=document.getElementById('dailyInventoryDate')?.value||getFormattedDate();
-        const q=document.getElementById('dailyInventoryStudentSearch')?.value.trim()||'';
-        const month=document.getElementById('dailyInventoryMonth')?.value||String(date).slice(0,7);
-        const reports=monitorInventoryReportsData.filter(r=>String(r.date)===String(date));
-        // حتى إذا لم يرسل المراقب جرداً، فإن سجل الحضور المحفوظ من المدير/المعاون/مرشد الصف
-        // يجب أن يكون مرئياً في «جرد الصفوف». ننشئ عرضاً افتراضياً للصفوف التي لا يوجد لها تقرير.
-        const coveredClassIds=new Set(reports.map(r=>String(r.classId||'')).filter(Boolean));
-        const virtualByClass=new Map();
-        (window.ProfessionalModules?.attendanceData||[]).forEach(a=>{
-            if(String(a.date)!==String(date) || !['absent','leave','late'].includes(a.status)) return;
-            const found=getStudentById(a.studentId);
-            if(!found) return;
-            const classId=String(found.classObj?.id||found.classIndex||'');
-            if(coveredClassIds.has(classId)) return;
-            if(!virtualByClass.has(classId)) virtualByClass.set(classId,[]);
-            virtualByClass.get(classId).push({
-                studentId:String(a.studentId),name:String(found.student?.name||'طالب'),status:a.status,date:String(a.date),
-                changedBy:a.changedByRole||'',changedByName:a.changedByName||'',changedAt:a.updatedAt||a.createdAt||''
-            });
-        });
-        const virtualReports=Array.from(virtualByClass.entries()).map(([classId,students])=>({
-            id:`virtual-attendance-${classId}-${date}`,monitorName:'سجل الحضور',classId,
-            className:(schoolData.find(c=>String(c?.id||'')===String(classId))||{}).name||'الصف',date,
-            students,absentStudents:students.filter(x=>x.status==='absent'),sentAt:students.map(x=>x.changedAt).sort().pop()||''
-        }));
-        const displayReports=reports.concat(virtualReports);
-        const rb=document.getElementById('dailyInventoryReports');
-        const hist=document.getElementById('dailyInventoryStudentHistory');
-
-        if(q){
-            const rows=getStudentMonthlyAbsenceHistoryByName(q,month);
-            const names=[...new Set(rows.map(x=>x.name))];
-            const absentCount=rows.filter(x=>x.status==='absent').length;
-            const statusText=s=>s==='leave'?'مجاز 🏖️':s==='absent'?'غائب ❌':s==='late'?'متأخر ⏰':'حضور ✔️';
-            const statusColor=s=>s==='leave'?'var(--warning)':s==='absent'?'var(--danger)':s==='late'?'#b26a00':'var(--success)';
-            hist.innerHTML=`<div style="margin-top:12px;padding:14px;border:1px solid #dfe7ef;border-radius:14px;background:#fbfdff">
-                <div style="font-weight:900;color:#243b53;margin-bottom:6px">📅 سجل الطالب في شهر ${escapeGlobalSearchHTML(month)}</div>
-                <div style="font-size:15px;font-weight:900;color:var(--danger);margin-bottom:8px">عدد أيام الغياب الفعلية: ${absentCount}</div>
-                ${rows.length
-                  ? `<div style="font-size:12px;color:#667;margin-bottom:8px">الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</div>
-                     <div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>وقت الدخول</th><th>سبب التأخير</th><th>تغيير الحالة</th></tr></thead><tbody>${rows.map(x=>`<tr>
-                        <td>${escapeGlobalSearchHTML(x.date)}</td>
-                        <td><strong style="color:${statusColor(x.status)}">${statusText(x.status)}</strong></td>
-                        <td>${x.status==='late'?escapeGlobalSearchHTML(x.lateTime||'-'):'-'}</td>
-                        <td>${x.status==='late'?escapeGlobalSearchHTML(x.lateReason||x.note||'-'):'-'}</td>
-                        <td>${renderManagerAttendanceCheckboxes(x.studentId,x.date,x.status,x.name)}</td>
-                    </tr>`).join('')}</tbody></table></div>`
-                  : '<div style="color:var(--success);font-weight:700">لا توجد سجلات حضور/غياب لهذا الطالب في الشهر المحدد.</div>'}
-            </div>`;
-        } else hist.innerHTML='';
-
-        const rows=displayReports.map(r=>{
-            const reportList=Array.isArray(r.students)&&r.students.length ? r.students : (Array.isArray(r.absentStudents)?r.absentStudents:[]);
-            const studentRows=reportList.length
-              ? reportList.map(x=>{
-const adminChangedStatus = (x.changedBy === 'المدير' || x.changedBy === 'المعاون') && ['leave','absent','present','late'].includes(x.status) ? x.status : null;
-const professionalStatus = (window.ProfessionalModules?.attendanceData||[])
-    .find(a=>String(a.studentId||'').trim()===String(x.studentId||'').trim()&&String(a.date||'')===String(date||''));
-const currentStatus = professionalStatus?.status || (['leave','absent','present','late'].includes(x.status) ? x.status : 'absent');
-                  const lt=professionalStatus?.lateTime || x.lateTime || '';
-                  const lr=professionalStatus?.lateReason || x.lateReason || professionalStatus?.note || x.note || '';
-                  const detail=currentStatus==='late' ? `<small style="color:#8a5a00;font-weight:700"> — وقت الدخول: ${escapeGlobalSearchHTML(lt||'-')} — السبب: ${escapeGlobalSearchHTML(lr||'-')}</small>` : '';
-                  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:3px 0;padding:6px 7px;border-radius:8px;background:${currentStatus==='leave'?'#fff8e8':currentStatus==='late'?'#fff7e6':'#fff0f0'}"><span><strong>${escapeGlobalSearchHTML(x.name)}</strong> ${detail}</span>${renderManagerAttendanceCheckboxes(x.studentId,date,currentStatus,x.name)}</div>`;
-              }).join('')
-              : '<span style="color:var(--success);font-weight:700">لا يوجد غائبون — الجميع حاضر</span>';
-            return `<tr><td>${escapeGlobalSearchHTML(r.monitorName)}</td><td>${escapeGlobalSearchHTML(r.className)}</td><td style="min-width:360px;text-align:right">${studentRows}</td><td>${escapeGlobalSearchHTML(r.sentAt?new Date(r.sentAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):'-')}</td></tr>`;
-        }).join('');
-        if(rb) rb.innerHTML=`<div class="pro-panel"><div class="pro-toolbar" style="justify-content:space-between"><h3 style="margin:0">📋 جرد ${escapeGlobalSearchHTML(date)}</h3><span style="font-size:12px;color:#667">عدد تقارير الصفوف: ${displayReports.length}</span></div><div style="font-size:12px;color:#667;margin-bottom:8px">يظهر أمام كل طالب وصف الحالة الحالية. يحدد المدير أو المعاون الحالة بعلامة ✓ (غائب / متأخر / مجاز)، وتنتقل الحالة مباشرة إلى جميع أجزاء النظام مع تسجيل اسم منفذ العملية وتاريخها.</div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>المراقب</th><th>الصف</th><th>حالة الطلاب</th><th>وقت الإرسال</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا توجد سجلات جرد لهذا التاريخ.</td></tr>'}</tbody></table></div></div>`;
-    }
-
-    function renderMonitorAbsenceRangeReport(){
-        if(!isPrimaryAdminUser()) return;
-        const q=document.getElementById('absenceReportStudentSearch')?.value.trim()||'';
-        const from=document.getElementById('absenceReportFromDate')?.value||getFormattedDate();
-        const to=document.getElementById('absenceReportToDate')?.value||getFormattedDate();
-        const box=document.getElementById('absenceRangeReportContent');
-        if(!box) return;
-        if(!q){box.innerHTML='<div class="pro-empty">اكتب اسم الطالب لتكوين التقرير.</div>';return;}
-        if(from>to){box.innerHTML='<div class="pro-empty" style="color:var(--danger)">تأكد أن «من تاريخ» أقدم من أو يساوي «إلى تاريخ».</div>';return;}
-        const matches=findStudentAttendanceByName(q);
-        if(!matches.length){box.innerHTML='<div class="pro-empty">لم يتم العثور على طالب بهذا الاسم.</div>';return;}
-        const all=[];
-        matches.forEach(found=>getStudentAbsenceDatesInRange(found,from,to).forEach(date=>all.push({name:found.name,className:found.classObj?.name||'-',date})));
-        const unique=all.filter((x,i,a)=>a.findIndex(y=>y.name===x.name&&y.className===x.className&&y.date===x.date)===i).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-        box.innerHTML=`<div style="margin-top:10px;padding:14px;border:1px solid #e1e7ee;border-radius:14px;background:#fbfcfe">
-            <div style="font-weight:900;font-size:16px;margin-bottom:6px">📊 تقرير غياب الطالب</div>
-            <div style="font-size:12px;color:#667;margin-bottom:10px">الفترة: ${escapeGlobalSearchHTML(from)} إلى ${escapeGlobalSearchHTML(to)}</div>
-            <div style="font-size:17px;font-weight:900;color:var(--danger);margin-bottom:10px">عدد أيام الغياب: ${unique.length}</div>
-            <div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr></thead><tbody>${unique.length?unique.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.name)}</td><td>${escapeGlobalSearchHTML(x.className)}</td><td>${escapeGlobalSearchHTML(x.date)}</td></tr>`).join(''):'<tr><td colspan="3" class="pro-empty">لا توجد غيابات في الفترة المحددة.</td></tr>'}</tbody></table></div>
-        </div>`;
-    }
-
-    function printStudentAbsenceRangeReport(){
-        if(!isPrimaryAdminUser()) return;
-        const q=document.getElementById('absenceReportStudentSearch')?.value.trim()||'';
-        const from=document.getElementById('absenceReportFromDate')?.value||getFormattedDate();
-        const to=document.getElementById('absenceReportToDate')?.value||getFormattedDate();
-        if(!q){alert('اكتب اسم الطالب أولاً.');return;}
-        if(from>to){alert('تأكد من صحة الفترة الزمنية.');return;}
-        const matches=findStudentAttendanceByName(q);
-        if(!matches.length){alert('لم يتم العثور على الطالب.');return;}
-        const all=[];
-        matches.forEach(found=>getStudentAbsenceDatesInRange(found,from,to).forEach(date=>all.push({name:found.name,className:found.classObj?.name||'-',date})));
-        const unique=all.filter((x,i,a)=>a.findIndex(y=>y.name===x.name&&y.className===x.className&&y.date===x.date)===i).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-        const names=[...new Set(unique.map(x=>x.name))];
-        const classes=[...new Set(unique.map(x=>x.className))];
-        const w=window.open('','_blank','width=1000,height=800');
-        if(!w){alert('اسمح بالنوافذ المنبثقة للطباعة.');return;}
-        const rows=unique.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.name)}</td><td>${escapeGlobalSearchHTML(x.className)}</td><td>${escapeGlobalSearchHTML(x.date)}</td></tr>`).join('');
-        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>تقرير غياب الطالب</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center;margin-bottom:8px}p{font-size:15px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #777;padding:9px;text-align:right}th{background:#eee}.summary{font-size:18px;font-weight:bold;margin:15px 0}</style></head><body><h1>تقرير غياب طالب</h1><p>اسم الطالب: ${escapeGlobalSearchHTML(names.join('، '))}</p><p>الصف: ${escapeGlobalSearchHTML(classes.join('، ')||'-')}</p><p>من تاريخ: ${escapeGlobalSearchHTML(from)} &nbsp;&nbsp; إلى تاريخ: ${escapeGlobalSearchHTML(to)}</p><div class="summary">عدد أيام الغياب: ${unique.length}</div><table><thead><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr></thead><tbody>${rows||'<tr><td colspan="3">لا توجد غيابات في الفترة المحددة.</td></tr>'}</tbody></table><script>window.onload=()=>window.print();<\/script>
-</body></html>`);
-        w.document.close();
-    }
-
-    function printMonitorDailyInventory(){
-        if(!isPrimaryAdminUser()) return;
-        const date=document.getElementById('dailyInventoryDate')?.value||getFormattedDate();
-        const q=document.getElementById('dailyInventoryStudentSearch')?.value.trim()||'';
-        const month=document.getElementById('dailyInventoryMonth')?.value||String(date).slice(0,7);
-        const reports=monitorInventoryReportsData.filter(r=>String(r.date)===String(date));
-        const history=q?getStudentMonthlyAbsenceHistoryByName(q,month):[];
-        const w=window.open('','_blank','width=1000,height=800'); if(!w){alert('اسمح بالنوافذ المنبثقة للطباعة.');return;}
-        w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>جرد الصفوف ${date}</title><style>body{font-family:Arial;padding:25px}h2{text-align:center}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid #999;padding:8px;text-align:right}th{background:#eee}.summary{font-size:17px;font-weight:bold;color:#a40000}</style></head><body><h2>جرد الصفوف اليومي</h2><p>التاريخ: ${escapeGlobalSearchHTML(date)}</p>${q?`<h3>سجل غياب الطالب في شهر ${escapeGlobalSearchHTML(month)}</h3><div class="summary">عدد أيام الغياب: ${history.length}</div><table><tr><th>الطالب</th><th>الصف</th><th>تاريخ الغياب</th></tr>${history.map(x=>`<tr><td>${escapeGlobalSearchHTML(x.name)}</td><td>${escapeGlobalSearchHTML(x.className)}</td><td>${escapeGlobalSearchHTML(x.date)}</td></tr>`).join('')}</table>`:''}<table><tr><th>المراقب</th><th>الصف</th><th>الغائبون</th><th>وقت الإرسال</th></tr>${reports.map(r=>`<tr><td>${escapeGlobalSearchHTML(r.monitorName)}</td><td>${escapeGlobalSearchHTML(r.className)}</td><td>${r.absentStudents?.length?r.absentStudents.map(x=>escapeGlobalSearchHTML(x.name)).join('، '):'لا يوجد غائبون — الجميع حاضر'}</td><td>${r.sentAt?new Date(r.sentAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):'-'}</td></tr>`).join('')}</table><script>window.onload=()=>window.print();<\/script></body></html>`); w.document.close();
     }
 
     window.onload = async function() {
