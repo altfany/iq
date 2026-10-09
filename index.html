@@ -3574,6 +3574,35 @@ function getStudentById(studentId) {
   return null;
 }
 
+// القراءة الموحدة لكل الشاشات: السجل المركزي أولاً، ثم سجل الصف القديم، ثم تقرير المراقب.
+// هذا يمنع واجهة من عرض «حاضر» لمجرد أن مصدرها القديم لا يحتوي الحالة.
+function getAttendanceCenterStatus(cls, studentId, dateStr, studentName='', slot=0, deskIndex=-1) {
+  const sid=String(studentId||'').trim(), day=String(dateStr||'').trim(), name=String(studentName||'').trim();
+  const valid=['present','absent','late','leave'];
+  const central=(window.ProfessionalModules?.attendanceData||[]).find(r=>
+    String(r?.studentId||'').trim()===sid && String(r?.date||'')===day && valid.includes(String(r?.status||''))
+  );
+  if(central) return central.status;
+  const records=cls?.absenceRecords?.[day]||{};
+  const desk=deskIndex>=0 ? cls?.desks?.[deskIndex] : null;
+  const deskNo=desk?.deskNumber ?? (deskIndex>=0 ? deskIndex+1 : '');
+  const legacy=name && deskNo!=='' ? `${deskNo}_${Number(slot)===1?'يمين':'يسار'}_${name}` : '';
+  for(const key of [sid,legacy,name].filter(Boolean)){
+    const value=records[key];
+    if(value===true) return 'absent';
+    if(valid.includes(String(value||''))) return String(value);
+  }
+  const reports=Array.isArray(monitorInventoryReportsData)?monitorInventoryReportsData:[];
+  for(const report of reports){
+    if(String(report?.date||'')!==day) continue;
+    if(report?.classId && cls?.id && String(report.classId)!==String(cls.id)) continue;
+    const items=[...(Array.isArray(report?.students)?report.students:[]),...(Array.isArray(report?.absentStudents)?report.absentStudents:[])];
+    const item=items.find(x=>(sid && String(x?.studentId||'').trim()===sid) || (name && String(x?.name||'').trim()===name));
+    if(item && valid.includes(String(item.status||''))) return String(item.status);
+  }
+  return 'present';
+}
+
 function normalizeSchoolDataValue(value) {
   if (Array.isArray(value)) return value;
   if (value && Array.isArray(value.classes)) return value.classes;
@@ -4482,6 +4511,9 @@ function updateCloudStatus(text, color) {
             }
             if (typeof window.__loadProfessionalAttendanceFromCloud === 'function' && cloud.attendanceData !== undefined) window.__loadProfessionalAttendanceFromCloud(cloud.attendanceData);
             if (typeof window.__loadProfessionalAuditFromCloud === 'function' && cloud.auditLog !== undefined) window.__loadProfessionalAuditFromCloud(cloud.auditLog);
+            try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
+            try{ if(typeof renderAbsenceTable==='function' && document.getElementById('absenceTableBody')) renderAbsenceTable(); }catch(_e){}
+            try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
             updateCloudStatus('مزامنة مباشرة ✓', '#16803c');
             try{updateParentTeacherMessageIndicators();}catch(e){}
             try{if(document.getElementById('teacherParentMessagesModal'))renderParentTeacherMessagesForTeacher();}catch(e){}
@@ -7609,13 +7641,8 @@ function updateCloudStatus(text, color) {
         const studentId = (deskIndex >= 0 && typeof canonicalStudentId === 'function')
             ? canonicalStudentId(cls, currentClassIndex, desk, deskIndex, slot)
             : '';
-        const professionalRow = (window.ProfessionalModules?.attendanceData || []).find(r =>
-            studentId && String(r?.studentId || '').trim() === String(studentId).trim() && String(r?.date || '') === String(date)
-        );
-        // الرحلة تعتمد على نفس المصدر الموحد للحضور والغياب.
-        if (professionalRow?.status) return professionalRow.status;
-        const key = `${desk.deskNumber}_${slot === 1 ? 'يمين' : 'يسار'}_${name}`;
-        return getStoredAttendanceStatus(cls, date, key);
+        // الرحلة تقرأ الحالة من مركز السجلات نفسه، مع توافق آمن مع السجلات القديمة.
+        return getAttendanceCenterStatus(cls,studentId,date,name,slot,deskIndex);
     }
 
     function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
@@ -9504,8 +9531,8 @@ function updateCloudStatus(text, color) {
             const deskForRow = desksForRow.find(x => x && String(x.deskNumber)===String(deskNum));
             studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,desksForRow.indexOf(deskForRow),slotForRow) : String(studentKey||'');
         }
-        const professionalRow = getUnifiedAttendanceRecord ? getUnifiedAttendanceRecord(studentIdForRow,dateStr) : (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
-        if (professionalRow?.status) status = professionalRow.status;
+        const rowDeskIndex=desksForRow.findIndex(d=>canonicalStudentId(cls,currentClassIndex,d,desksForRow.indexOf(d),slotForRow)===String(studentIdForRow));
+        status = getAttendanceCenterStatus(cls,studentIdForRow,dateStr,studentName,slotForRow,rowDeskIndex);
         const canEdit = canManageStudentAttendance(cls);
         const meta = cls?.attendanceChangeLog?.[dateStr]?.[studentKey];
         const metaText = meta ? `<div style=\"font-size:10px;color:#667;margin-top:3px;font-weight:700\">تم تغيير الحالة بواسطة ${escapeGlobalSearchHTML(meta.byName||'المستخدم')} — ${escapeGlobalSearchHTML(meta.at||'')}</div>` : '';
@@ -9606,19 +9633,7 @@ function getQuickAttendanceStudents(cls){
 }
 
 function getQuickAttendanceStatus(cls,dateStr,row){
-    // جميع الواجهات تقرأ الحالة من سجل الطالب الموحد أولاً.
-    const unified=(window.ProfessionalModules?.attendanceData||[]).find(r=>
-        String(r?.studentId||'').trim()===String(row.key||'').trim() && String(r?.date||'')===String(dateStr)
-    );
-    if(unified && ['present','absent','late','leave'].includes(String(unified.status))) return String(unified.status);
-    const rec=(cls?.absenceRecords&&typeof cls.absenceRecords==='object') ? (cls.absenceRecords[dateStr]||{}) : {};
-    const legacy=`${row.deskNumber}_${row.slot===1?'يمين':'يسار'}_${row.name}`;
-    for(const k of [row.key,legacy,row.name].filter(Boolean)){
-        const v=rec[k];
-        if(v===true) return 'absent';
-        if(['present','absent','late','leave'].includes(String(v))) return String(v);
-    }
-    return 'present';
+    return getAttendanceCenterStatus(cls,row.key,dateStr,row.name,row.slot,row.deskIndex);
 }
 
 function renderClassQuickAttendance(){
@@ -10800,7 +10815,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             // نفس المعرّف القياسي الذي تستخدمه شاشة الصف و«فتح الكشف».
             const unifiedId=canonicalStudentId(cls,canonicalClassIndex,desk,di,slot);
             out.push({
-                student:{id:String(unifiedId),name},
+                student:{id:String(unifiedId),name,slot,deskIndex:di,deskNumber:desk?.deskNumber??(di+1)},
                 classObj:cls,classIndex:canonicalClassIndex,deskIndex:di,slot
             });
         }));
@@ -10823,14 +10838,11 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const todayReportItems=monitorInventoryReportsData.filter(r=>String(r?.date||'')===String(date))
             .flatMap(r=>Array.isArray(r?.students)?r.students:(Array.isArray(r?.absentStudents)?r.absentStudents:[]));
         const getMonitorStatus=(f)=>{
-            const rec=attendance.find(r=>String(r?.studentId)===String(f.student.id)&&String(r?.date)===String(date));
+            const rec=attendance.find(r=>String(r?.studentId||'').trim()===String(f.student.id).trim()&&String(r?.date||'')===String(date));
             if(rec && ['late','absent','present','leave'].includes(rec.status)) return rec;
-            const report=todayReportItems.find(x=>
-                String(x?.studentId||'')===String(f.student.id) ||
-                String(x?.name||'').trim()===String(f.student.name).trim()
-            );
-            if(report && ['late','absent','present','leave'].includes(report.status)) return report;
-            return {status:'present'};
+            const status=getAttendanceCenterStatus(f.classObj,f.student.id,date,f.student.name,f.slot,f.deskIndex);
+            const report=todayReportItems.find(x=>String(x?.studentId||'').trim()===String(f.student.id).trim() || String(x?.name||'').trim()===String(f.student.name).trim());
+            return {...(report||{}),status};
         };
         const rows=students.map((f,i)=>{
             const rec=getMonitorStatus(f);
@@ -10954,9 +10966,10 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 if (student.classObj) {
                     if (!student.classObj.absenceRecords) student.classObj.absenceRecords = {};
                     if (!student.classObj.absenceRecords[date]) student.classObj.absenceRecords[date] = {};
-                    const seatPos = Number(student.slot) === 1 ? 'يمين' : 'يسار';
-                    const deskNo = Number(student.deskIndex) + 1;
-                    const legacyKey = `${deskNo}_${seatPos}_${student.student.name}`;
+                    const seatPos = Number(item.student.slot || item.slot) === 1 ? 'يمين' : 'يسار';
+                    const deskNo = Number(item.deskIndex) + 1;
+                    const actualDesk = student.classObj?.desks?.[Number(item.deskIndex)];
+                    const legacyKey = `${actualDesk?.deskNumber ?? deskNo}_${seatPos}_${student.student.name}`;
                     const legacyKeyId = String(student.student.id);
                     if (status === 'absent' || status === 'late' || status === 'leave') {
                         student.classObj.absenceRecords[date][legacyKey] = status;
