@@ -2291,7 +2291,7 @@ header > div:first-child{
                 <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم / هاتف / كود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
-            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون</button>
+            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
@@ -2321,7 +2321,7 @@ header > div:first-child{
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);">📋 سجل غياب معلم</button>
-          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون </button>
+          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون ومراقب</button>
           <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
           <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
         </div>
@@ -12369,12 +12369,34 @@ body.parent-only-mode header { display:none !important; }
     <div style="font-size:12px;color:#667">الإحصاءات مستخرجة من السجلات المحفوظة في النظام للتاريخ المحدد، وليست أرقاماً ثابتة.</div>`;
     window.__dailyStatsData={date,all,count,labels,icons,colors,warned};
   };
+  window.updateDailyStatsStudentStatus=function(studentId,dateStr,status){
+    if(!adminOnly())return;
+    const data=window.__dailyStatsData;if(!data)return;
+    const row=data.all.find(r=>String(r.id||'')===String(studentId||''));
+    if(!row){alert('تعذر العثور على الطالب.');return;}
+    const classIndex=Number(row.classIndex);
+    if(!Number.isInteger(classIndex) || !schoolData[classIndex]){alert('تعذر تحديد صف الطالب.');return;}
+    const previousClassIndex=currentClassIndex;
+    try{
+      currentClassIndex=classIndex;
+      updateStudentAbsence(String(dateStr),String(row.id),String(status));
+      data.all=data.all.map(r=>String(r.id||'')===String(row.id||'')?r:{...r});
+      window.__dailyStatsData.date=String(dateStr);
+      renderDailyAttendanceStats();
+      openDailyStatsCategory(String(status));
+    }finally{ currentClassIndex=previousClassIndex; }
+  };
   window.openDailyStatsCategory=function(status){
     const data=window.__dailyStatsData;if(!data)return;
     const rows=data.all.filter(r=>getDailySchoolStudentStatus(r,data.date)===status);
     const title=({present:'الحاضرون',absent:'الغائبون',leave:'المجازون',late:'المتأخرون'})[status]||'الطلاب';
+    const statusButtons=(r)=>{
+      const current=getDailySchoolStudentStatus(r,data.date);
+      const opts=[['present','حاضر','background:#16803c'],['absent','غائب','background:#c0392b'],['late','متأخر','background:#b26a00'],['leave','مجاز','background:#8e6a00']];
+      return `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">${opts.map(([st,label,style])=>`<button type="button" onclick="updateDailyStatsStudentStatus('${esc(String(r.id||''))}','${esc(data.date)}','${st}')" style="${style};color:#fff;border:0;border-radius:7px;padding:5px 8px;font-weight:900;opacity:${current===st?'1':'.72'}" title="تغيير الحالة إلى ${label}">${label}</button>`).join('')}</div>`;
+    };
     document.getElementById('dailyStatsCategoryModal')?.remove();const m=document.createElement('div');m.id='dailyStatsCategoryModal';m.className='modal';m.style.cssText='display:flex;position:fixed;inset:0;z-index:100160;background:#0009;padding:10px;align-items:center;justify-content:center;direction:rtl';
-    m.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:90vh;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>${data.icons[status]} ${title} — ${esc(data.date)} (${rows.length})</h3><button onclick="document.getElementById('dailyStatsCategoryModal')?.remove()" style="background:#c0392b">إغلاق</button></div><div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الرحلة/المقعد</th><th>كود الطالب</th><th>هاتف ولي الأمر</th><th>الحالة</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.className)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${esc(r.phone||'—')}</td><td>${data.labels[status]}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد أسماء لهذا القسم في التاريخ المحدد.</td></tr>'}</tbody></table></div><button onclick="printDailyStatsCategory('${status}')" style="background:#198754">🖨️ طباعة هذا القسم A4</button></div>`;document.body.appendChild(m);
+    m.innerHTML=`<div class="modal-content" style="width:min(1200px,98vw);max-height:92vh;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3>${data.icons[status]} ${title} — ${esc(data.date)} (${rows.length})</h3><button onclick="document.getElementById('dailyStatsCategoryModal')?.remove()" style="background:#c0392b">إغلاق</button></div><div style="margin:8px 0;padding:8px 10px;background:#effbfc;border:1px solid #b9e3e8;border-radius:10px;font-weight:800;color:#0f7c8c">صلاحية المدير: يمكن تغيير حالة أي طالب مباشرة من الأزرار أدناه.</div><div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>الرحلة/المقعد</th><th>كود الطالب</th><th>هاتف ولي الأمر</th><th>الحالة الحالية / التغيير</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.className)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${esc(r.phone||'—')}</td><td>${statusButtons(r)}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد أسماء لهذا القسم في التاريخ المحدد.</td></tr>'}</tbody></table></div><button onclick="printDailyStatsCategory('${status}')" style="background:#198754">🖨️ طباعة هذا القسم A4</button></div>`;document.body.appendChild(m);
   };
   window.printDailyStatsCategory=function(status){const d=window.__dailyStatsData;if(!d)return;const rows=d.all.filter(r=>getDailySchoolStudentStatus(r,d.date)===status);printTable(`إحصاء ${d.labels[status]} — ${d.date}`,rows,[['الطالب','name'],['الصف','className'],['الرحلة/المقعد','seat'],['كود الطالب','code'],['هاتف ولي الأمر','phone']]);};
   window.printDailyAttendanceStats=function(){const d=window.__dailyStatsData;if(!d)return;const rows=d.all.map(r=>({...r,status:getDailySchoolStudentStatus(r,d.date)}));printTable('الإحصاء اليومي للحضور والغياب — '+d.date,rows,[['الطالب','name'],['الصف','className'],['المقعد','seat'],['الحالة','status'],['هاتف ولي الأمر','phone']]);};
