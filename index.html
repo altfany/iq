@@ -10230,20 +10230,25 @@ function updateCloudStatus(text, color) {
         return out;
     }
     function updateParentTeacherMessageIndicators(){
+        // ولي الأمر: يتوهج الزر فقط عند وجود رسالة واردة من المعلم لم تُقرأ بعد.
         const parentBtn=document.getElementById('parentActionTeacherMessage');
         if(parentBtn && currentUser?.role==='parent'){
             const unread=getUnreadParentTeacherMessagesForParent().length>0;
             parentBtn.classList.toggle('parent-activity-unread',unread);
-            parentBtn.setAttribute('aria-label',unread?'يوجد رد جديد من المعلم — اضغط للمشاهدة':'رسالة إلى معلم');
+            parentBtn.setAttribute('aria-label',unread?'يوجد رد جديد من المعلم — اضغط لقراءة الرسالة':'رسالة إلى معلم');
             parentBtn.title=unread?'يوجد رد جديد من المعلم':'رسالة إلى معلم';
         }
-        const teacherBtn=document.getElementById('teacherParentMessagesButton');
-        if(teacherBtn && currentUser?.role==='teacher'){
+        // المعلم: حدّث زر لوحة المعلم وزر التنقل إن كان ظاهراً.
+        if(currentUser?.role==='teacher'){
             const unread=getUnreadParentTeacherMessagesForTeacher();
             const has=unread.length>0;
-            teacherBtn.classList.toggle('parent-messages-teacher-unread',has);
-            teacherBtn.setAttribute('aria-label',has?`يوجد ${unread.length} رسالة جديدة من أولياء الأمور`:'رسائل أولياء الأمور');
-            teacherBtn.title=has?`يوجد ${unread.length} رسالة جديدة من أولياء الأمور`:'رسائل أولياء الأمور';
+            ['teacherParentMessagesButton','btnTeacherParentMessagesNav'].forEach(id=>{
+                const teacherBtn=document.getElementById(id);
+                if(!teacherBtn) return;
+                teacherBtn.classList.toggle('parent-messages-teacher-unread',has);
+                teacherBtn.setAttribute('aria-label',has?`يوجد ${unread.length} رسالة جديدة من أولياء الأمور`:'رسائل أولياء الأمور');
+                teacherBtn.title=has?`يوجد ${unread.length} رسالة جديدة من أولياء الأمور`:'رسائل أولياء الأمور';
+            });
         }
     }
     function startParentTeacherMessageIndicatorPulse(){
@@ -10378,6 +10383,7 @@ function updateCloudStatus(text, color) {
         if(!rows.length){box.innerHTML='<div class="pro-empty">لا توجد رسائل من أولياء الأمور حالياً.</div>';return;}
         box.innerHTML=rows.map(m=>{
             const unread=!m.teacherReadAt;
+            // فتح صندوق الرسائل وظهور الرسالة للمعلم يُسجّلها مقروءة ويحفظ الحالة عبر saveData/Firebase.
             if(unread) markParentTeacherMessageTeacherRead(m.id);
             return `<div class="parent-teacher-message-card ${unread?'is-new':''}">
                 <div class="parent-teacher-message-head"><div><b>👨‍👩‍👦 ${escapeGlobalSearchHTML(m.parentName||'ولي الأمر')}</b><div class="parent-teacher-message-meta">الطالب: ${escapeGlobalSearchHTML(m.studentName||'-')} — الصف: ${escapeGlobalSearchHTML(m.className||'-')}</div></div><small>${escapeGlobalSearchHTML(new Date(m.createdAt).toLocaleString('ar-IQ'))}</small></div>
