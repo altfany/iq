@@ -10308,7 +10308,11 @@ function updateCloudStatus(text, color) {
                 </td>
             </tr>`;
         }).join('');
-        box.innerHTML=`<div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>#</th><th>اسم الطالب</th><th>الحضور</th></tr></thead><tbody>${rows}</tbody></table></div><div class="pro-toolbar" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="saveMonitorAttendance()" style="background:var(--success)">💾 حفظ الغياب وإرسال للمدير</button></div>`;
+        const statusCounts={present:0,absent:0,late:0,leave:0};
+        students.forEach(f=>{const rec=getMonitorStatus(f);const st=['present','absent','late','leave'].includes(rec?.status)?rec.status:'present';statusCounts[st]++;});
+        const statusLabels={present:'حاضر',absent:'غائب',late:'متأخر',leave:'مجاز'};
+        const summary=`<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 12px">${Object.keys(statusCounts).map(k=>`<div style="background:${k==='absent'?'#fff0f0':k==='leave'?'#fff8e7':k==='late'?'#fff7e6':'#effaf2'};padding:10px 6px;border-radius:10px;text-align:center;border:1px solid #e1e6ea"><small>${statusLabels[k]}</small><div data-monitor-count="${k}" style="font-size:22px;font-weight:900">${statusCounts[k]}</div></div>`).join('')}</div>`;
+        box.innerHTML=`<div style="font-weight:900;color:#0f6571;margin:4px 0 10px">📊 كشف الحضور الموحد — ${escapeGlobalSearchHTML(String(cls?.name||''))} — ${escapeGlobalSearchHTML(String(date))}</div>${summary}<div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>#</th><th>اسم الطالب</th><th>الحالة المسجلة في النظام الموحد</th></tr></thead><tbody>${rows}</tbody></table></div><div class="pro-toolbar" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="saveMonitorAttendance()" style="background:var(--success)">💾 حفظ الحالات ومزامنتها مع المدير والرحلة</button></div><div style="font-size:12px;color:#647789;margin-top:8px">الحالات تُقرأ من سجل الحضور الموحد نفسه الذي يظهر في كشف المدير والرحلة. حالة «مجاز» يحددها المدير ولا يستطيع المراقب تغييرها.</div>`;
     }
     function monitorAttendanceStatusChanged(sel){
         // دعم أي نسخة قديمة من الواجهة كانت تستخدم select.
@@ -10388,7 +10392,8 @@ function updateCloudStatus(text, color) {
             const reportStudents=[];
             controls.forEach(item=>{
                 const student=item.student;
-                const status=['late','absent','present'].includes(item.status) ? item.status : 'present';
+                // احفظ «مجاز» كما هي إذا كان المدير قد سجلها؛ لا يحولها حفظ المراقب إلى «حاضر».
+                const status=['late','absent','present','leave'].includes(item.status) ? item.status : 'present';
                 const lateInfo=student.classObj?.absenceRecords?.[date] || {};
                 const oldRec=window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(student.student.id,date) : (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
                 const checkedControl=item.row.querySelector('input[data-monitor-status]:checked');
@@ -10433,20 +10438,30 @@ function updateCloudStatus(text, color) {
             // الحفظ الأساسي يكون في Firebase مباشرة، ولا نعتمد على مهلة الحفظ المؤجلة.
             // هذا يضمن بقاء غياب الطالب عند تسجيل الخروج ثم الدخول من جديد.
             saveData();
-            if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
-                try {
-                    await saveCurrentCloudPayload();
-                    lastAppliedCloudUpdatedAt = String(new Date().toISOString());
-                    cloudSavePending = false;
-                    cloudSaveExpectedRevision = '';
-                    updateCloudStatus('تم حفظ جرد المراقب في Firebase ✓', '#16803c');
-                } catch (cloudError) {
-                    console.error('Monitor attendance Firebase save failed:', cloudError);
-                    alert('⚠️ تم تحديث الحضور على الشاشة، لكن تعذر تأكيد الحفظ في Firebase. تحقق من الإنترنت ثم حاول مرة أخرى.');
-                    return;
-                }
+            if (!(window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayloadWithPayload === 'function')) {
+                alert('لم يتم تأكيد حفظ الحالات في Firebase. تحقق من الإنترنت واتصال السحابة ثم أعد حفظ الحالات.');
+                return;
             }
-            alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
+            try {
+                // إلغاء الحفظ المؤجل الذي بدأه saveData حتى لا يكتب نسخة قديمة بعد الحفظ المباشر.
+                clearTimeout(cloudSaveTimer);
+                const payload = repairCloudPayloadForStartup(getCloudPayload());
+                payload.updatedAt = new Date().toISOString();
+                payload.resetGeneration = String(factoryResetGeneration || '0');
+                await saveCurrentCloudPayloadWithPayload(payload);
+                // نحتفظ بنفس رقم النسخة التي أرسلناها فعلياً إلى Firebase.
+                lastAppliedCloudUpdatedAt = String(payload.updatedAt);
+                APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
+                APP_SECURITY.lastGoodCloudSnapshot = payload;
+                cloudSavePending = false;
+                cloudSaveExpectedRevision = '';
+                updateCloudStatus('تم حفظ جرد المراقب في Firebase ✓', '#16803c');
+            } catch (cloudError) {
+                console.error('Monitor attendance Firebase save failed:', cloudError);
+                alert('⚠️ تعذر تأكيد حفظ الحالات في Firebase. لا تعتبر التعديل محفوظاً؛ تحقق من الاتصال ثم أعد الضغط على حفظ الحالات.');
+                return;
+            }
+            alert(absent.length?`تم حفظ حالات الطلاب في السحابة وإرسال ${absent.length} غائب/غائبين إلى المدير.`:'تم حفظ حالات الطلاب في السحابة وإرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
         }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
     }
