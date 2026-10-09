@@ -1703,6 +1703,7 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
           'systemControl/factoryReset': { generation: nextGen, resetAt: now, logoutToken: logoutToken },
           'systemControl/globalLogout': { token: logoutToken, reason: 'factory-reset', at: now },
           'schoolSystem': null,
+          'schoolSystemAttendanceCenter': null,
           'schoolSystemBackups': null
         });
         return {generation: nextGen, logoutToken: logoutToken};
@@ -1722,6 +1723,25 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
           throw err;
         }
         return firebaseDB.ref('schoolSystem').set(data);
+      },
+      // مركز سجلات مستقل عن مستند المدرسة الكبير؛ يمنع حفظ جهاز من استبدال حالة جهاز آخر.
+      async saveAttendanceCenterRecord(record) {
+        if (!record || !record.studentId || !record.date) throw new Error('INVALID_ATTENDANCE_CENTER_RECORD');
+        const sid = encodeURIComponent(String(record.studentId).trim()).replace(/\./g, '%2E');
+        const day = String(record.date).replace(/[^0-9-]/g, '');
+        const key = sid + '__' + day;
+        const ref = firebaseDB.ref('schoolSystemAttendanceCenter/records/' + key);
+        const incoming = sanitizeForFirebase(record);
+        // معاملة Firebase تسلسل الكتابات؛ آخر تعديل وصل للمركز هو المعتمد حتى لو اختلف توقيت الجهازين.
+        const result = await ref.transaction(() => incoming, undefined, false);
+        if (!result.committed) throw new Error('ATTENDANCE_CENTER_WRITE_NOT_COMMITTED');
+        return result.snapshot.val();
+      },
+      listenAttendanceCenter(callback) {
+        const ref = firebaseDB.ref('schoolSystemAttendanceCenter/records');
+        const handler = snap => callback(snap.exists() ? (snap.val() || {}) : {});
+        ref.on('value', handler);
+        return () => ref.off('value', handler);
       },
       listenFactoryReset(callback) {
         const ref = firebaseDB.ref('systemControl/factoryReset');
@@ -4306,6 +4326,7 @@ function updateCloudStatus(text, color) {
     }
 
     let realtimeUnsubscribe = null;
+    let attendanceCenterUnsubscribe = null;
     let lastAppliedCloudUpdatedAt = '';
     let automaticBackupTimer = null;
 
@@ -4469,6 +4490,13 @@ function updateCloudStatus(text, color) {
     function startRealtimeCloudSync() {
         if (!window.FirebaseCloud?.enabled || typeof window.FirebaseCloud.listen !== 'function') return;
         if (realtimeUnsubscribe) realtimeUnsubscribe();
+        if (attendanceCenterUnsubscribe) { try { attendanceCenterUnsubscribe(); } catch (_) {} attendanceCenterUnsubscribe=null; }
+        if (typeof window.FirebaseCloud.listenAttendanceCenter === 'function') {
+            attendanceCenterUnsubscribe = window.FirebaseCloud.listenAttendanceCenter(records => {
+                try { if (typeof window.__loadAttendanceCenterFromFirebase === 'function') window.__loadAttendanceCenterFromFirebase(records); }
+                catch (e) { console.error('Attendance center realtime listener failed:', e); }
+            });
+        }
         realtimeUnsubscribe = window.FirebaseCloud.listen(async rawCloud => {
             if (!rawCloud) return;
             const cloud = repairCloudPayloadForStartup(rawCloud);
@@ -11865,6 +11893,33 @@ window.addEventListener('unhandledrejection', function (event) {
 
   let attendanceData = safeParseStorage(STORAGE_KEYS.attendance, []);
   let auditLog = safeParseStorage(STORAGE_KEYS.audit, []);
+  // سجلات المركز منفصلة عن نسخة schoolSystem القابلة للاستبدال من عدة أجهزة.
+  let attendanceCenterRecords = new Map();
+  let attendanceCenterInitialized = false;
+  let attendanceCenterHasRecords = false;
+  let attendanceRootLoaded = false;
+  let attendanceCenterMigrationStarted = false;
+  const attendanceRecordKey = r => String(r?.studentId||'').trim() + '|' + String(r?.date||'').trim();
+  function migrateLegacyAttendanceToCenter() {
+    if (attendanceCenterMigrationStarted || !attendanceRootLoaded || !attendanceCenterInitialized || attendanceCenterHasRecords) return;
+    if (!window.FirebaseCloud?.enabled || typeof window.FirebaseCloud.saveAttendanceCenterRecord !== 'function') return;
+    attendanceCenterMigrationStarted = true;
+    const legacy = Array.isArray(attendanceData) ? attendanceData.slice() : [];
+    Promise.allSettled(legacy.map(r => window.FirebaseCloud.saveAttendanceCenterRecord(r)))
+      .then(results => {
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed) console.error('Attendance center migration failures:', failed);
+      });
+  }
+  function mergeAttendanceWithCenter(baseRecords) {
+    const merged = new Map();
+    (Array.isArray(baseRecords) ? baseRecords : []).forEach(r => {
+      if (r && String(r.studentId||'').trim() && String(r.date||'').trim()) merged.set(attendanceRecordKey(r), r);
+    });
+    // مركز Firebase هو المرجع الأعلى حتى إذا وصلت نسخة أقدم من المستند العام.
+    attendanceCenterRecords.forEach((r,k) => merged.set(k,r));
+    return Array.from(merged.values());
+  }
 
   if (!Array.isArray(attendanceData)) attendanceData = [];
   if (!Array.isArray(auditLog)) auditLog = [];
@@ -11893,10 +11948,32 @@ window.addEventListener('unhandledrejection', function (event) {
   window.__professionalAttendanceDataForCloud = () => attendanceData;
   window.__professionalAuditLogForCloud = () => auditLog;
   window.__loadProfessionalAttendanceFromCloud = (data) => {
-    attendanceData = Array.isArray(data) ? data : [];
+    attendanceRootLoaded = true;
+    attendanceData = mergeAttendanceWithCenter(Array.isArray(data) ? data : []);
     normalizeUnifiedAttendanceRecords();
     persistModulesLocalOnly();
-    // مركز السجلات هو المرجع: عند وصول بيانات Firebase نعيد إسقاطها على سجلات الصف والجرد.
+    migrateLegacyAttendanceToCenter();
+    // لا نسمح لمستند المدرسة باستبدال سجلات المركز الأحدث.
+    try { reconcileAttendanceCenterFromRecords(); } catch (e) { console.error('Attendance center reconcile failed:', e); }
+  };
+  window.__loadAttendanceCenterFromFirebase = (rawRecords) => {
+    attendanceCenterInitialized = true;
+    const values = rawRecords && typeof rawRecords === 'object' ? Object.values(rawRecords) : [];
+    if (!values.length) {
+      attendanceCenterHasRecords = false;
+      migrateLegacyAttendanceToCenter();
+      return;
+    }
+    attendanceCenterHasRecords = true;
+    const next = new Map();
+    values.forEach(r => {
+      if (!r || !String(r.studentId||'').trim() || !String(r.date||'').trim()) return;
+      next.set(attendanceRecordKey(r), r);
+    });
+    attendanceCenterRecords = next;
+    attendanceData = mergeAttendanceWithCenter(attendanceData);
+    normalizeUnifiedAttendanceRecords();
+    persistModulesLocalOnly();
     try { reconcileAttendanceCenterFromRecords(); } catch (e) { console.error('Attendance center reconcile failed:', e); }
   };
   window.__loadProfessionalAuditFromCloud = (data) => { auditLog = Array.isArray(data) ? data : []; pruneAuditToCurrentMonth(); persistModulesLocalOnly(); };
@@ -12145,6 +12222,15 @@ window.addEventListener('unhandledrejection', function (event) {
     };
     if(existing) Object.assign(existing,record);
     else attendanceData.unshift(record);
+    // اكتب الحالة إلى مسار مركزي مستقل، بعيداً عن استبدال مستند المدرسة الكامل.
+    attendanceCenterRecords.set(attendanceRecordKey(record), record);
+    attendanceCenterHasRecords = true;
+    if (window.FirebaseCloud?.enabled && navigator.onLine && typeof window.FirebaseCloud.saveAttendanceCenterRecord === 'function') {
+      window.FirebaseCloud.saveAttendanceCenterRecord(record).catch(error => {
+        console.error('Canonical attendance center save failed:', error);
+        try { updateCloudStatus('تعذر حفظ حالة الطالب في مركز السجلات؛ تحقق من اتصال Firebase وصلاحيات قاعدة البيانات', '#b42318'); } catch (_) {}
+      });
+    }
 
     // الحفظ الموحد قبل تحديث الواجهات: أي مصدر يسجل الحالة يكتب في نفس السجل.
     syncUnifiedAttendanceEverywhere(found,record);
