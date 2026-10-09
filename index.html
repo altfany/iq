@@ -12444,18 +12444,7 @@ body.parent-only-mode header { display:none !important; }
   const canEditClass=cls=>!!(currentUser&&cls&&(currentUser.role==='admin'||currentUser.role==='monitor'||(currentUser.role==='teacher'&&typeof isClassSupervisor==='function'&&isClassSupervisor(cls))));
   const statusLabels={present:'حاضر',absent:'غائب',late:'متأخر',leave:'مجاز'};
   function getRowsForClass(cls){return (typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).filter(r=>r.cls===cls);}
-  function getAttRecord(studentId,date){
-    const found=(window.ProfessionalModules?.attendanceData||[]).find(x=>String(x.studentId)===String(studentId)&&String(x.date)===String(date));
-    if(found)return found;
-    // Read legacy class records too, so late time/reason remain visible across every system view.
-    const row=(typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).find(r=>String(r.id)===String(studentId));
-    if(!row)return null;
-    const legacy=row.cls?.absenceRecords?.[date]||{};
-    const key=row.legacyKey;
-    const status=legacy[key]??legacy[studentId];
-    if(status==null)return null;
-    return {studentId:String(studentId),date:String(date),status:status===true?'absent':String(status),lateTime:String(legacy[key+'_lateTime']||legacy[String(studentId)+'_lateTime']||''),lateReason:String(legacy[key+'_lateReason']||legacy[String(studentId)+'_lateReason']||''),note:String(legacy[key+'_lateReason']||legacy[String(studentId)+'_lateReason']||'')};
-  }
+  function getAttRecord(studentId,date){return (window.ProfessionalModules?.attendanceData||[]).find(x=>String(x.studentId)===String(studentId)&&String(x.date)===String(date))||null;}
   function addLateFieldsToRow(tr,status,record){const wrap=tr.querySelector('.shared-late-fields');if(!wrap)return;wrap.style.display=status==='late'?'flex':'none';const time=wrap.querySelector('.shared-late-time'),reason=wrap.querySelector('.shared-late-reason');if(time&&record?.lateTime)time.value=record.lateTime;if(reason&&(record?.lateReason||record?.note))reason.value=record.lateReason||record.note||'';}
 
   window.openClassAbsenceRegister=function(){
@@ -12501,36 +12490,7 @@ body.parent-only-mode header { display:none !important; }
     const status=tr.querySelector('.shared-status')?.value||'present';if(status==='leave'&&currentUser?.role!=='admin'){alert('حالة مجاز متاحة للمدير فقط.');return;}
     const time=tr.querySelector('.shared-late-time')?.value||'',reason=tr.querySelector('.shared-late-reason')?.value?.trim()||'';
     if(status==='late'&&!time){alert('يرجى تحديد ساعة التأخر.');return;}if(status==='late'&&!reason){alert('يرجى كتابة سبب التأخر.');return;}
-    const actorName=String(currentUser?.name||currentUser?.fullName||currentUser?.username||'مستخدم غير محدد');
-    const actorRole=String(currentUser?.role||'غير محدد');
-    const changedAt=new Date().toISOString();
-    const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`ساعة التأخر: ${time} — سبب التأخر: ${reason}`:'',status==='late'?time:'',status==='late'?reason:'');
-    // Store who changed the status in the unified attendance record, so search results
-    // can show the actual user rather than only the role.
-    const savedAttRecord=getAttRecord(studentId,date);
-    if(savedAttRecord){
-      savedAttRecord.changedByName=actorName;
-      savedAttRecord.changedByRole=actorRole;
-      savedAttRecord.changedAt=changedAt;
-      savedAttRecord.updatedBy=actorName;
-    }
-    // Mirror the saved status and late details into the class record as well; this is
-    // synchronized with the rest of schoolData and supports legacy/system-wide views.
-    const matchingRow=getRowsForClass(cls).find(r=>String(r.id)===String(studentId));
-    if(matchingRow){
-      if(!cls.absenceRecords||typeof cls.absenceRecords!=='object')cls.absenceRecords={};
-      if(!cls.absenceRecords[date]||typeof cls.absenceRecords[date]!=='object')cls.absenceRecords[date]={};
-      cls.absenceRecords[date][matchingRow.legacyKey]=status;
-      cls.absenceRecords[date][String(studentId)]=status;
-      for(const key of [matchingRow.legacyKey,String(studentId)]){
-        cls.absenceRecords[date][key+'_changedByName']=actorName;
-        cls.absenceRecords[date][key+'_changedByRole']=actorRole;
-        cls.absenceRecords[date][key+'_changedAt']=changedAt;
-        if(status==='late'){cls.absenceRecords[date][key+'_lateTime']=time;cls.absenceRecords[date][key+'_lateReason']=reason;}
-        else {delete cls.absenceRecords[date][key+'_lateTime'];delete cls.absenceRecords[date][key+'_lateReason'];}
-      }
-      try{if(typeof saveData==='function')saveData();}catch(_e){}
-    }
+    const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`سبب التأخر: ${reason}`:'',status==='late'?time:'',status==='late'?reason:'');
     if(!ok){
       // Fallback for older school data where the unified student index does not
       // resolve the displayed student ID: preserve the entry in the class legacy
@@ -12600,29 +12560,14 @@ body.parent-only-mode header { display:none !important; }
   window.searchDailyStatsStudent=function(){
     const input=document.getElementById('dailyStatsStudentSearch'),out=document.getElementById('dailyStatsStudentResults');if(!input||!out)return;const q=input.value.trim().toLocaleLowerCase('ar');if(!q){out.innerHTML='';window.__dailyStudentSearchPrint=null;return;}
     const all=typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[],dates=new Set();(window.ProfessionalModules?.attendanceData||[]).forEach(r=>{if(r?.date)dates.add(String(r.date));});(schoolData||[]).forEach(c=>Object.keys(c?.absenceRecords||{}).forEach(d=>dates.add(d)));
-    const matched=all.filter(r=>String(r.name||'').toLocaleLowerCase('ar').includes(q)),records=[];matched.forEach(r=>[...dates].sort().reverse().forEach(date=>{const status=getDailySchoolStudentStatus(r,date);const rec=getAttRecord(r.id,date);const legacy=r.cls?.absenceRecords?.[date]||{};const hasLegacy=Object.prototype.hasOwnProperty.call(legacy,r.id)||Object.prototype.hasOwnProperty.call(legacy,r.legacyKey);if(rec||hasLegacy){const auditKey=Object.prototype.hasOwnProperty.call(legacy,r.id)?String(r.id):String(r.legacyKey);records.push({r,date,status,lateTime:rec?.lateTime||legacy[auditKey+'_lateTime']||'',lateReason:rec?.lateReason||legacy[auditKey+'_lateReason']||'',changedByName:rec?.changedByName||legacy[auditKey+'_changedByName']||'',changedByRole:rec?.changedByRole||legacy[auditKey+'_changedByRole']||''});}}));
+    const matched=all.filter(r=>String(r.name||'').toLocaleLowerCase('ar').includes(q)),records=[];matched.forEach(r=>[...dates].sort().reverse().forEach(date=>{const status=getDailySchoolStudentStatus(r,date);const rec=getAttRecord(r.id,date);const legacy=r.cls?.absenceRecords?.[date]||{};const hasLegacy=Object.prototype.hasOwnProperty.call(legacy,r.id)||Object.prototype.hasOwnProperty.call(legacy,r.legacyKey);if(rec||hasLegacy)records.push({r,date,status,lateTime:rec?.lateTime||'',lateReason:rec?.lateReason||'',changedByName:rec?.changedByName||'',changedByRole:rec?.changedByRole||''});}));
     const sorted=records.sort((a,b)=>b.date.localeCompare(a.date));out.innerHTML=`<div style="margin:10px 0;padding:12px;border:1px solid #cbd8e3;border-radius:12px;background:#f8fbfd"><h3>نتائج البحث (${matched.length} طالب مطابق، ${sorted.length} سجل)</h3>${matched.length?`<div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سُجل بواسطة</th></tr></thead><tbody>${sorted.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')||'<tr><td colspan="7">لا توجد حالات مسجلة لهذا الطالب.</td></tr>'}</tbody></table></div><button onclick="printDailyStudentSearch()" style="background:#198754;margin-top:10px">🖨️ طباعة سجل الطالب A4</button>`:'لم يتم العثور على طالب بهذا الاسم.'}</div>`;
     window.__dailyStudentSearchPrint={q,records:sorted};
   };
   window.printDailyStudentSearch=function(){const d=window.__dailyStudentSearchPrint;if(!d)return;const w=window.open('','_blank');if(!w){alert('يرجى السماح بالنوافذ المنبثقة للطباعة.');return;}w.document.write(`<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سجل الطالب</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Tahoma,Arial;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #777;padding:6px;text-align:center}th{background:#eee}</style></head><body><h2>السجل الكامل لحالات الطالب</h2><p>بحث عن: ${AESC(d.q)} — عدد السجلات: ${d.records.length}</p><table><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سجل بواسطة</th></tr></thead><tbody>${d.records.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();};
 })();
 </script>
-\n
-<style id="teacher-responsive-layout-fix">
-#teachersModal .modal-content,#teacherPermissionsModal .modal-content,#teachersAbsenceModal .modal-content{width:min(1180px,96vw)!important;max-width:96vw!important;max-height:92dvh!important;overflow:auto!important;box-sizing:border-box}
-#teacherPermissionsModal #teacherPermissionClasses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:8px}
-#teachersModal .teacher-card,#teachersAbsenceModal .teacher-card{min-width:0;overflow-wrap:anywhere}
-#teachersModal .teacher-info-grid{grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))!important;gap:8px!important}
-#teachersModal .teacher-card-actions{display:flex;flex-wrap:wrap;gap:8px}
-#teachersModal .teacher-card-actions button{flex:1 1 150px;min-width:0}
-#teachersAbsenceModal .pro-toolbar{display:flex;flex-wrap:wrap;gap:8px}
-#teachersAbsenceModal .pro-toolbar>*{min-width:0;flex:1 1 200px}
-@media(max-width:700px){#teachersModal .modal-content,#teacherPermissionsModal .modal-content,#teachersAbsenceModal .modal-content{width:100vw!important;max-width:100vw!important;max-height:96dvh!important;margin:0!important;padding:12px!important;border-radius:12px!important}#teachersModal .teacher-info-grid{grid-template-columns:1fr!important}#teachersModal .teacher-card-actions button{flex:1 1 100%}}
-</style>
-<script id="teacher-absence-shortcut-fix">
-(function(){function addShortcut(){var modal=document.querySelector('#teachersModal .modal-content');if(!modal||document.getElementById('teacherAbsenceShortcut'))return;var bar=document.createElement('div');bar.id='teacherAbsenceShortcut';bar.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:10px 0';var b=document.createElement('button');b.type='button';b.textContent='📋 سجل غياب معلم';b.style.cssText='flex:1 1 180px;background:#5145cd;color:white;border:0;border-radius:10px;padding:11px;font-weight:800';b.addEventListener('click',function(){if(typeof window.openTeachersAbsenceModal==='function')window.openTeachersAbsenceModal();else if(typeof window.openTeacherAbsenceRegister==='function')window.openTeacherAbsenceRegister();else alert('وظيفة سجل غياب المعلم غير متاحة في هذه النسخة.');});bar.appendChild(b);var table=document.getElementById('teachersTableBody');if(table&&table.parentNode)table.parentNode.insertBefore(bar,table);else modal.appendChild(bar)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addShortcut);else addShortcut();var observer=new MutationObserver(addShortcut);observer.observe(document.documentElement,{childList:true,subtree:true});})();
-</script>
-</body>
+\n</body>
 </html>
 
 
