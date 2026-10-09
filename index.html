@@ -6751,73 +6751,6 @@ function updateCloudStatus(text, color) {
         win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>ملف الطالب - ${esc(r.name)}</title><style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:"Noto Sans Arabic",Arial,sans-serif;color:#1f2937;margin:0;background:#fff;font-size:12px;line-height:1.6}.sheet{width:100%;min-height:270mm}.head{border:2px solid #26384a;border-radius:10px;padding:12px;text-align:center;margin-bottom:12px}.head h1{margin:0;font-size:22px}.head p{margin:4px 0 0;color:#64748b}.section{border:1px solid #cfd8e3;border-radius:8px;padding:9px;margin-bottom:10px}.section h2{font-size:14px;margin:0 0 8px;color:#243b53;border-bottom:1px solid #e5e7eb;padding-bottom:5px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.field{border:1px solid #e2e8f0;border-radius:6px;padding:7px;background:#fafcff}.field small{display:block;color:#64748b;font-size:10px}.field b{font-size:12px}.photo{text-align:center;margin:8px}.photo img{max-width:100px;max-height:100px;border:1px solid #cbd5e1;border-radius:8px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px;text-align:center}th{background:#f1f5f9}.footer{margin-top:12px;text-align:center;color:#64748b;font-size:10px}</style></head><body><div class="sheet"><div class="head"><h1>ملف الطالب</h1><p>تقرير صادر من نظام المدرسة الشامل</p></div><div class="section"><h2>👨‍🎓 معلومات الطالب</h2><div class="grid">${fields.concat(extras).map(x=>`<div class="field"><small>${esc(x[0])}</small><b>${esc(x[1]||'—')}</b></div>`).join('')}</div>${photo?`<div class="photo"><img src="${esc(photo)}" alt="صورة الطالب"></div>`:''}</div><div class="two"><div class="section"><h2>⭐ السلوك</h2><table><thead><tr><th>النوع</th><th>التقييم</th></tr></thead><tbody>${behaviorRows}</tbody></table></div><div class="section"><h2>📈 المستوى</h2><table><thead><tr><th>المادة</th><th>المستوى</th></tr></thead><tbody>${levelRows}</tbody></table></div></div><div class="section"><h2>📌 سجل الحضور والغياب</h2><table><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows}</tbody></table></div><div class="footer">لا تظهر في هذا التقرير حصص اليوم. تاريخ الطباعة: ${esc(new Date().toLocaleString('ar-IQ'))}</div></div>
 
 
-
-<style id="teacher-management-responsive-refresh">
-#teachersModal .modal-content,#teacherPermissionsModal .modal-content,#teachersAbsenceModal .modal-content{width:min(1180px,96vw)!important;max-width:96vw!important;max-height:92dvh!important;overflow:auto!important;box-sizing:border-box}
-#teachersModal .teacher-card{display:block!important;padding:0!important;overflow:hidden;border-radius:13px}
-#teachersModal .teacher-card-summary{display:flex;align-items:center;gap:12px;width:100%;padding:14px;background:#f8fafc;border:0;text-align:right;cursor:pointer;color:#172b3a;box-sizing:border-box}
-#teachersModal .teacher-card-summary .teacher-card-name{font-weight:900;font-size:16px}
-#teachersModal .teacher-card-summary .teacher-avatar{flex:0 0 auto}
-#teachersModal .teacher-card-details{padding:12px;border-top:1px solid #e2e8f0;overflow-wrap:anywhere}
-#teachersModal .teacher-card-details[hidden]{display:none!important}
-#teachersModal .teacher-info-grid{grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))!important;gap:8px!important}
-#teachersModal .teacher-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-#teachersModal .teacher-card-actions button{flex:1 1 150px;min-width:0}
-#teachersModal .teacher-responsive-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-#teachersModal .teacher-responsive-toolbar button{flex:1 1 180px}
-#teacherPermissionsModal .teacher-perm-pair{max-width:20px}
-#teacherPermissionsModal #teacherPermissionClasses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:8px}
-#teachersAbsenceModal .pro-modal-head{flex-wrap:wrap;gap:10px}
-#teachersAbsenceModal .pro-toolbar{display:flex;flex-wrap:wrap;gap:8px}
-#teachersAbsenceModal .pro-toolbar>*{min-width:0;flex:1 1 220px}
-@media(max-width:700px){
- #teachersModal .modal-content,#teacherPermissionsModal .modal-content,#teachersAbsenceModal .modal-content{width:100vw!important;max-width:100vw!important;max-height:96dvh!important;margin:0!important;border-radius:12px!important;padding:12px!important}
- #teachersModal .teacher-card-summary{padding:12px}
- #teachersModal .teacher-info-grid{grid-template-columns:1fr!important}
- #teachersModal .teacher-card-actions button{flex:1 1 100%}
- #teachersAbsenceModal .pro-date-box{width:100%}
- #teachersAbsenceModal .pro-date-box input{width:100%;box-sizing:border-box}
-}
-</style>
-<script id="teacher-management-responsive-refresh-js">
-(function(){
- const _originalRenderTeachersTable=window.renderTeachersTable;
- window.renderTeachersTable=function(){
-   const container=document.getElementById('teachersTableBody');
-   if(!container){if(typeof _originalRenderTeachersTable==='function')_originalRenderTeachersTable();return;}
-   const search=(document.getElementById('teacherSearchInput')?.value||'').trim().toLowerCase();
-   const list=(window.teachersData||[]).filter(t=>{
-     const text=[t.name,t.phone,t.spec,(typeof getTeacherSpecialties==='function'?getTeacherSpecialties(t).join(' '):''),(typeof getTeacherAssignedClassIndicesForRecord==='function'?getTeacherAssignedClassIndicesForRecord(t).map(i=>schoolData[i]?.name||'').join(' '):'')].join(' ').toLowerCase();
-     return !search||text.includes(search);
-   });
-   if(!(window.teachersData||[]).length){container.innerHTML='<div class="pro-empty">👨‍🏫<br><strong>لا توجد بيانات معلمين</strong><br><span>أضف أول معلم من النموذج أعلاه</span></div>';return;}
-   if(!list.length){container.innerHTML='<div class="pro-empty">🔎<br><strong>لا توجد نتائج مطابقة</strong></div>';return;}
-   container.innerHTML=list.map(t=>{
-     const index=teachersData.indexOf(t),safeName=String(t.name||'معلم').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-     const assigned=(typeof getTeacherAssignedClassIndicesForRecord==='function'?getTeacherAssignedClassIndicesForRecord(t).map(i=>schoolData[i]?.name).filter(Boolean).join('، '):'')||'غير محدد';
-     const sensitive=typeof isPrimaryAdminUser==='function'&&isPrimaryAdminUser();
-     const phone=sensitive&&t.phone&&t.phone!=='غير متوفر'?`<a href="tel:${String(t.phone).replace(/"/g,'')}">📞 ${String(t.phone)}</a>`:(sensitive?'غير متوفر':'غير متاح');
-     const code=sensitive?(t.password||'بدون كود'):'غير متاح';
-     const actions=sensitive?`<div class="teacher-card-actions"><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف</button></div>`:'';
-     const detailsId='teacherDetails_'+index;
-     const specs=(typeof getTeacherSpecialties==='function'?getTeacherSpecialties(t).join('، '):t.spec||'')||'اختصاص غير محدد';
-     return `<div class="teacher-card"><button type="button" class="teacher-card-summary" aria-expanded="false" onclick="(function(b){var d=document.getElementById('${detailsId}');var open=d.hidden;d.hidden=!open;b.setAttribute('aria-expanded',String(open));})(this)"><span class="teacher-avatar">👨‍🏫</span><span class="teacher-card-name">${safeName}</span><span style="margin-right:auto">＋</span></button><div class="teacher-card-details" id="${detailsId}" hidden><div class="teacher-card-spec">${specs}</div><div class="teacher-info-grid"><div class="teacher-info-item"><div class="k">الهاتف</div><div class="v">${phone}</div></div><div class="teacher-info-item"><div class="k">العمر</div><div class="v">${sensitive?(t.age||'-'):'غير متاح'}</div></div><div class="teacher-info-item"><div class="k">الصفوف المسموحة</div><div class="v">${assigned}</div></div><div class="teacher-info-item"><div class="k">كود الدخول</div><div class="v">${code}</div></div></div>${actions}</div></div>`;
-   }).join('');
- };
- // Keep the teacher-absence feature intact, but expose it directly inside the teachers modal.
- document.addEventListener('DOMContentLoaded',function(){
-   const modal=document.querySelector('#teachersModal .modal-content');
-   if(modal&&!document.getElementById('teacherAbsenceShortcut')){
-     const b=document.createElement('div');b.className='teacher-responsive-toolbar';b.id='teacherAbsenceShortcut';
-     b.innerHTML='<button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:800">📋 سجل غياب معلم</button>';
-     const table=document.getElementById('teachersTableBody');
-     if(table) table.parentNode.insertBefore(b,table);
-     else modal.appendChild(b);
-   }
- });
-})();
-</script>
-
 </body></html>`);
         win.document.close();
         setTimeout(()=>{try{win.focus();win.print();}catch(e){}},350);
@@ -12674,7 +12607,22 @@ body.parent-only-mode header { display:none !important; }
   window.printDailyStudentSearch=function(){const d=window.__dailyStudentSearchPrint;if(!d)return;const w=window.open('','_blank');if(!w){alert('يرجى السماح بالنوافذ المنبثقة للطباعة.');return;}w.document.write(`<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سجل الطالب</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Tahoma,Arial;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #777;padding:6px;text-align:center}th{background:#eee}</style></head><body><h2>السجل الكامل لحالات الطالب</h2><p>بحث عن: ${AESC(d.q)} — عدد السجلات: ${d.records.length}</p><table><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سجل بواسطة</th></tr></thead><tbody>${d.records.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();};
 })();
 </script>
-\n</body>
+\n
+<style id="teacher-responsive-layout-fix">
+#teachersModal .modal-content,#teacherPermissionsModal .modal-content,#teachersAbsenceModal .modal-content{width:min(1180px,96vw)!important;max-width:96vw!important;max-height:92dvh!important;overflow:auto!important;box-sizing:border-box}
+#teacherPermissionsModal #teacherPermissionClasses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:8px}
+#teachersModal .teacher-card,#teachersAbsenceModal .teacher-card{min-width:0;overflow-wrap:anywhere}
+#teachersModal .teacher-info-grid{grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))!important;gap:8px!important}
+#teachersModal .teacher-card-actions{display:flex;flex-wrap:wrap;gap:8px}
+#teachersModal .teacher-card-actions button{flex:1 1 150px;min-width:0}
+#teachersAbsenceModal .pro-toolbar{display:flex;flex-wrap:wrap;gap:8px}
+#teachersAbsenceModal .pro-toolbar>*{min-width:0;flex:1 1 200px}
+@media(max-width:700px){#teachersModal .modal-content,#teacherPermissionsModal .modal-content,#teachersAbsenceModal .modal-content{width:100vw!important;max-width:100vw!important;max-height:96dvh!important;margin:0!important;padding:12px!important;border-radius:12px!important}#teachersModal .teacher-info-grid{grid-template-columns:1fr!important}#teachersModal .teacher-card-actions button{flex:1 1 100%}}
+</style>
+<script id="teacher-absence-shortcut-fix">
+(function(){function addShortcut(){var modal=document.querySelector('#teachersModal .modal-content');if(!modal||document.getElementById('teacherAbsenceShortcut'))return;var bar=document.createElement('div');bar.id='teacherAbsenceShortcut';bar.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:10px 0';var b=document.createElement('button');b.type='button';b.textContent='📋 سجل غياب معلم';b.style.cssText='flex:1 1 180px;background:#5145cd;color:white;border:0;border-radius:10px;padding:11px;font-weight:800';b.addEventListener('click',function(){if(typeof window.openTeachersAbsenceModal==='function')window.openTeachersAbsenceModal();else if(typeof window.openTeacherAbsenceRegister==='function')window.openTeacherAbsenceRegister();else alert('وظيفة سجل غياب المعلم غير متاحة في هذه النسخة.');});bar.appendChild(b);var table=document.getElementById('teachersTableBody');if(table&&table.parentNode)table.parentNode.insertBefore(bar,table);else modal.appendChild(bar)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addShortcut);else addShortcut();var observer=new MutationObserver(addShortcut);observer.observe(document.documentElement,{childList:true,subtree:true});})();
+</script>
+</body>
 </html>
 
 
