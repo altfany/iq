@@ -12491,7 +12491,29 @@ body.parent-only-mode header { display:none !important; }
     const time=tr.querySelector('.shared-late-time')?.value||'',reason=tr.querySelector('.shared-late-reason')?.value?.trim()||'';
     if(status==='late'&&!time){alert('يرجى تحديد ساعة التأخر.');return;}if(status==='late'&&!reason){alert('يرجى كتابة سبب التأخر.');return;}
     const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`سبب التأخر: ${reason}`:'',status==='late'?time:'',status==='late'?reason:'');
-    if(!ok){alert('تعذر حفظ الحالة. تأكد من وجود الطالب في السجل.');return;}
+    if(!ok){
+      // Fallback for older school data where the unified student index does not
+      // resolve the displayed student ID: preserve the entry in the class legacy
+      // attendance record so it remains visible in the class register.
+      const fallbackRow=getRowsForClass(cls).find(r=>String(r.id)===String(studentId));
+      if(fallbackRow){
+        if(!cls.absenceRecords||typeof cls.absenceRecords!=='object')cls.absenceRecords={};
+        if(!cls.absenceRecords[date]||typeof cls.absenceRecords[date]!=='object')cls.absenceRecords[date]={};
+        cls.absenceRecords[date][fallbackRow.legacyKey]=status;
+        if(status==='late'){
+          cls.absenceRecords[date][fallbackRow.legacyKey+'_lateTime']=time;
+          cls.absenceRecords[date][fallbackRow.legacyKey+'_lateReason']=reason;
+        }
+        try{if(typeof saveData==='function')saveData();}catch(_e){}
+        try{if(typeof renderDesks==='function')renderDesks();}catch(_e){}
+        btn.textContent='✓ تم الحفظ';btn.style.background='#16803c';
+        window.renderClassAbsenceRegister();
+        alert('تم حفظ الحالة في سجل الصف القديم. إذا لم تظهر بعد تحديث الصفحة، أرسل لي نسخة من ملف النظام لاختبار توافق بياناته.');
+        return;
+      }
+      alert('تعذر حفظ الحالة: لم يتم العثور على الطالب ضمن بيانات الصف. تأكد من وجود اسمه في مقعده داخل الصف.');
+      return;
+    }
     btn.textContent='✓ تم الحفظ';btn.style.background='#16803c';
     window.renderClassAbsenceRegister();
   };
