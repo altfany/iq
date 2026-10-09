@@ -4099,6 +4099,48 @@ function acknowledgeAnnouncement(id) {
         return window.FirebaseCloud.save(safePayload);
     }
 
+    // حفظ فوري متسلسل لتعديلات الحضور: يمنع إغلاق النظام قبل انتهاء مهلة الحفظ المؤجل.
+    // يبقى Firebase هو المصدر الأساسي؛ لا نعرض نجاحاً إذا فشل الحفظ السحابي.
+    let attendanceImmediateSaveChain = Promise.resolve();
+    window.__saveAttendanceCloudImmediately = function(){
+        attendanceImmediateSaveChain = attendanceImmediateSaveChain.then(async function(){
+            if (!window.FirebaseCloud?.enabled || !cloudReady || !navigator.onLine) {
+                updateCloudStatus('الحضور تغيّر، لكن الحفظ السحابي يحتاج اتصالاً بالإنترنت.', '#9a6700');
+                return false;
+            }
+            try {
+                clearTimeout(cloudSaveTimer);
+                clearTimeout(cloudSaveConfirmTimer);
+                const payload = sanitizeForFirebase(getCloudPayload());
+                if (!validateCloudPayload(payload)) throw new Error('Invalid cloud payload');
+                payload.updatedAt = new Date().toISOString();
+                payload.resetGeneration = String(factoryResetGeneration || '0');
+                if (typeof window.FirebaseCloud.saveForGeneration === 'function') {
+                    await window.FirebaseCloud.saveForGeneration(payload, factoryResetGeneration);
+                } else {
+                    await window.FirebaseCloud.save(payload);
+                }
+                lastAppliedCloudUpdatedAt = String(payload.updatedAt);
+                cloudSaveExpectedRevision = String(payload.updatedAt);
+                APP_SECURITY.lastGoodCloudUpdatedAt = String(payload.updatedAt);
+                APP_SECURITY.lastGoodCloudSnapshot = payload;
+                cloudSavePending = false;
+                updateCloudStatus('تم حفظ تعديل الحضور في السحابة ✓', '#16803c');
+                return true;
+            } catch (error) {
+                cloudSavePending = false;
+                cloudSaveExpectedRevision = '';
+                updateCloudStatus('تعذر تأكيد حفظ تعديل الحضور في السحابة.', '#b42318');
+                console.error('Immediate attendance cloud save failed:', error);
+                return false;
+            }
+        }).catch(function(error){
+            console.error('Attendance save queue failed:', error);
+            return false;
+        });
+        return attendanceImmediateSaveChain;
+    };
+
     function getLastCloudRevision() {
         return String(lastAppliedCloudUpdatedAt || APP_SECURITY.lastGoodCloudUpdatedAt || '').trim();
     }
@@ -9591,11 +9633,18 @@ function getQuickAttendanceStudents(cls){
 }
 
 function getQuickAttendanceStatus(cls,dateStr,row){
+    // اقرأ أولاً من السجل الموحد حتى تتطابق شاشة الحضور السريع مع بقية الشاشات.
+    try{
+        const unified = window.ProfessionalModules?.getUnifiedAttendanceRecord?.(row.key,dateStr);
+        const unifiedStatus = String(unified?.status||'').trim();
+        if(['present','absent','late','leave'].includes(unifiedStatus)) return unifiedStatus;
+    }catch(_e){}
     const rec=(cls?.absenceRecords&&typeof cls.absenceRecords==='object') ? (cls.absenceRecords[dateStr]||{}) : {};
     const legacy=`${row.deskNumber}_${row.slot===1?'يمين':'يسار'}_${row.name}`;
     for(const k of [row.key,legacy,row.name].filter(Boolean)){
-        const v=String(rec[k]||'').trim();
-        if(v==='absent'||v==='late'||v==='leave') return v;
+        const raw=rec[k];
+        const v=raw===true?'absent':String(raw||'').trim();
+        if(v==='absent'||v==='late'||v==='leave'||v==='present') return v;
     }
     return 'present';
 }
@@ -9667,7 +9716,7 @@ function changeClassQuickAttendance(selectEl){
 function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const cls = schoolData[currentClassIndex];
         if (statusVal === 'leave' && currentUser?.role !== 'admin') {
-            alert('تغيير الطالب إلى مجاز متاح للمدير أو المعاون أو مرشد الصف فقط.');
+            alert('تغيير الطالب إلى مجاز متاح لمدير النظام فقط.');
             renderAbsenceTable();
             return;
         }
@@ -9823,6 +9872,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         // الحفظ العادي يبقى موجوداً، لكن تغيير الحضور والغياب يحتاج حفظاً فورياً
         // حتى لا تضيع الحالة إذا أُغلق النظام مباشرة بعد الضغط على الزر.
         saveData();
+        if (typeof window.__saveAttendanceCloudImmediately === 'function') window.__saveAttendanceCloudImmediately();
         try {
             if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
                 // اعتبر الحفظ الفوري نسخة معلّقة أيضاً، حتى لا تعيد المزامنة اللحظية نسخة أقدم فوق التعديل.
@@ -12075,6 +12125,8 @@ window.addEventListener('unhandledrejection', function (event) {
     syncUnifiedAttendanceEverywhere(found,record);
     persistModules();
     try{ if(typeof saveData==='function') saveData(); }catch(_e){}
+    // كل مصدر يغير حالة الطالب (الرحلة، المراقب، جرد الصفوف، أو الكشف) يحفظ التعديل فوراً.
+    try{ if(typeof window.__saveAttendanceCloudImmediately==='function') window.__saveAttendanceCloudImmediately(); }catch(_e){}
     addAudit('تسجيل حضور/غياب',`${found.student.name} - ${record.status} - ${day}`);
     return true;
   }
