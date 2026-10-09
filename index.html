@@ -10980,6 +10980,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             if(controls.length!==students.length){alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');return;}
             const absent=[];
             const reportStudents=[];
+            const centerSavePromises=[];
             window.__bulkSavingMonitorAttendance=true;
             controls.forEach(item=>{
                 const student=item.student;
@@ -10990,9 +10991,43 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 const lateTime=String(checkedControl?.dataset?.lateTime||oldRec?.lateTime||'').trim();
                 const lateReason=String(checkedControl?.dataset?.lateReason||oldRec?.lateReason||oldRec?.note||'').trim();
                 const note=status==='late' ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
-                const saved = window.ProfessionalModules?.recordAttendance ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : false);
-                if(saved===false){
-                    throw new Error(`تعذر حفظ الحالة الموحدة للطالب: ${student.student.name||student.student.id}`);
+                // الحفظ المتين: نجرّب دالة السجل الموحد أولاً، وإذا تعثرت بسبب خلل
+                // جانبي في تحديث إحدى الواجهات، نحفظ السجل نفسه مباشرة دون إسقاط تقرير الصف كله.
+                let saved=false;
+                let attendanceRecord=null;
+                try {
+                    saved = window.ProfessionalModules?.recordAttendance
+                        ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason)
+                        : false;
+                } catch (recordError) {
+                    console.error('تعذر استدعاء مسجل الحضور الموحد، سيتم استخدام مسار الحفظ الاحتياطي:', recordError);
+                }
+                if (!saved) {
+                    const records = window.ProfessionalModules?.attendanceData;
+                    if (!Array.isArray(records)) throw new Error('قائمة سجل الحضور الموحد غير متاحة. أعد تحميل النظام ثم حاول مجدداً.');
+                    const sid=String(student.student.id);
+                    const existing=records.find(r=>String(r?.studentId||'')===sid && String(r?.date||'')===String(date));
+                    attendanceRecord={
+                        id:existing?.id||createStableId('attendance'), studentId:sid,
+                        classId:student.classObj?.id||cls.id||null, date:String(date), status,
+                        note:String(note||''), lateTime:status==='late'?lateTime:'',
+                        lateReason:status==='late'?lateReason:'',
+                        createdAt:existing?.createdAt||new Date().toISOString(),
+                        updatedAt:new Date().toISOString(), changedByName:currentUser.name||'المراقب',
+                        changedByRole:'monitor'
+                    };
+                    if(existing) Object.assign(existing,attendanceRecord); else records.unshift(attendanceRecord);
+                } else {
+                    attendanceRecord=window.ProfessionalModules?.getUnifiedAttendanceRecord?.(student.student.id,date)||null;
+                }
+                // ضمان كتابة الحالة إلى مسار Firebase المركزي أيضاً، مع انتظار النتيجة حتى نعرف إن فشل الحفظ.
+                if (window.FirebaseCloud?.enabled && navigator.onLine && typeof window.FirebaseCloud.saveAttendanceCenterRecord==='function') {
+                    const centerRecord=attendanceRecord||{
+                        id:createStableId('attendance'),studentId:String(student.student.id),classId:student.classObj?.id||cls.id||null,
+                        date:String(date),status,note:String(note||''),lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',
+                        createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),changedByName:currentUser.name||'المراقب',changedByRole:'monitor'
+                    };
+                    centerSavePromises.push(window.FirebaseCloud.saveAttendanceCenterRecord(centerRecord));
                 }
                 // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور» و«فتح الكشف» والرحلات.
                 if (student.classObj) {
@@ -11014,6 +11049,10 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 if(status==='absent') absent.push({studentId:student.student.id,name:student.student.name,status:'absent'});
                 reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',date,changedBy:'المراقب',changedByName:currentUser.name||'المراقب',changedAt:new Date().toISOString()});
             });
+            if(centerSavePromises.length) {
+                const centerResults=await Promise.allSettled(centerSavePromises);
+                centerResults.filter(x=>x.status==='rejected').forEach(x=>console.error('فشل حفظ سجل في مركز Firebase المركزي؛ سيستمر إرسال تقرير الصف عبر سجل المدرسة:',x.reason));
+            }
             window.__bulkSavingMonitorAttendance=false;
             const report={
                 id:createStableId('minv'),
@@ -11057,8 +11096,8 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         }catch(err){
             window.__bulkSavingMonitorAttendance=false;
             console.error('فشل حفظ جرد المراقب وإرساله للمدير:',err);
-            const detail=String(err?.message||err||'خطأ غير معروف');
-            alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير.\nالتفاصيل: '+detail+'\nافتح وحدة التحكم (Console) لمعرفة السبب الكامل.');
+            const detail=String(err?.code ? `${err.code}: ${err.message||''}` : (err?.message||err||'خطأ غير معروف'));
+            alert('تعذر حفظ الغياب وإرساله للمدير.\nالسبب: '+detail+'\nتحقق من اتصال الإنترنت وصلاحيات Firebase ثم أعد المحاولة.');
         }
     }
 
