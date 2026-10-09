@@ -9626,31 +9626,39 @@ function updateCloudStatus(text, color) {
         // حتى لا تضيع الحالة إذا أُغلق النظام مباشرة بعد الضغط على الزر.
         saveData();
         try {
-            if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
-                // اعتبر الحفظ الفوري نسخة معلّقة أيضاً، حتى لا تعيد المزامنة اللحظية نسخة أقدم فوق التعديل.
-                cloudSavePending=true;
+            if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayloadWithPayload === 'function') {
+                // إلغاء أي حفظ مؤجل سابق قبل إرسال النسخة التي تتضمن الحالة الجديدة، لمنع تعارض نسختين.
+                clearTimeout(cloudSaveTimer);
                 clearTimeout(cloudSaveConfirmTimer);
+                cloudSavePending=true;
                 const immediatePayload=repairCloudPayloadForStartup(getCloudPayload());
                 immediatePayload.updatedAt=new Date().toISOString();
                 immediatePayload.resetGeneration=String(factoryResetGeneration||'0');
                 cloudSaveExpectedRevision=String(immediatePayload.updatedAt);
+                updateCloudStatus('جاري حفظ حالة الطالب في السحابة… لا تغلق النظام حتى يكتمل الحفظ', '#9a6700');
                 saveCurrentCloudPayloadWithPayload(immediatePayload).then(()=>{
                     lastAppliedCloudUpdatedAt=String(immediatePayload.updatedAt);
                     APP_SECURITY.lastGoodCloudUpdatedAt=String(immediatePayload.updatedAt);
                     APP_SECURITY.lastGoodCloudSnapshot=immediatePayload;
                     cloudSavePending=false;
-                    updateCloudStatus('تم حفظ حالة الحضور والغياب فوراً ✓', '#16803c');
+                    cloudSaveExpectedRevision=String(immediatePayload.updatedAt);
+                    updateCloudStatus('تم حفظ حالة الحضور والغياب في السحابة ✓', '#16803c');
                 }).catch(e=>{
                     console.error('Immediate attendance cloud save failed:', e);
                     cloudSavePending=false;
                     cloudSaveExpectedRevision='';
-                    queueCloudSave(0);
+                    updateCloudStatus('فشل حفظ حالة الطالب في السحابة — تحقق من الاتصال ثم أعد تغيير الحالة', '#b42318');
+                    try { queueCloudSave(0); } catch(_) {}
                 });
+            } else {
+                updateCloudStatus(!navigator.onLine ? 'لا يوجد إنترنت؛ حالة الطالب لم تُحفظ في السحابة.' : 'السحابة غير جاهزة؛ لم يتم تأكيد حفظ حالة الطالب.', '#b42318');
+                console.warn('Attendance status changed before cloud was ready; cloud persistence not confirmed.');
             }
         } catch(e) {
             console.error('Immediate attendance save setup failed:', e);
             cloudSavePending=false;
             cloudSaveExpectedRevision='';
+            updateCloudStatus('تعذر بدء حفظ حالة الطالب في السحابة.', '#b42318');
             try { queueCloudSave(0); } catch(_) {}
         }
         renderAbsenceTable();
