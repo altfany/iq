@@ -1109,11 +1109,6 @@ button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, in
 .seat.student-status-late .trip-status-label{background:#fff;color:#9a5b00;border:1px solid #d68910;}
 .seat.student-status-present .trip-status-label{background:#fff;color:#16803a;border:1px solid #27ae60;}
 .seat.student-status-present{background:linear-gradient(135deg,#dff8e8,#8ee0ae)!important;color:#145a32!important;box-shadow:0 0 0 2px rgba(39,174,96,.18),0 0 12px rgba(39,174,96,.30),inset 0 1px 2px rgba(255,255,255,.45)!important;}
-/* لون مقعد الطالب حسب الجنس ثابت في كل الحالات: وردي للمؤنث وأزرق للمذكر؛ نص الحالة يوضح الحضور. */
-.seat.student-status-seat.trip-gender-female{background:linear-gradient(135deg,#ffe0ed,#f7a8cb)!important;color:#7b1744!important;border:2px solid #e91e63!important;}
-.seat.student-status-seat.trip-gender-male{background:linear-gradient(135deg,#d9ecff,#8fc8ff)!important;color:#124c7a!important;border:2px solid #2980b9!important;}
-.seat.student-status-seat.trip-gender-female .trip-status-label{border-color:#e91e63!important;}
-.seat.student-status-seat.trip-gender-male .trip-status-label{border-color:#2980b9!important;}
 
 @keyframes tripAbsentGlow{0%,100%{filter:brightness(1);box-shadow:0 0 0 2px rgba(231,76,60,.22),0 0 12px rgba(231,76,60,.55)!important}50%{filter:brightness(1.12);box-shadow:0 0 0 3px rgba(231,76,60,.3),0 0 25px rgba(231,76,60,.9)!important}}
 @keyframes tripLeaveGlow{0%,100%{filter:brightness(1);box-shadow:0 0 0 2px rgba(243,156,18,.22),0 0 12px rgba(243,156,18,.55)!important}50%{filter:brightness(1.1);box-shadow:0 0 0 3px rgba(243,156,18,.3),0 0 25px rgba(243,156,18,.9)!important}}
@@ -1703,7 +1698,6 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
           'systemControl/factoryReset': { generation: nextGen, resetAt: now, logoutToken: logoutToken },
           'systemControl/globalLogout': { token: logoutToken, reason: 'factory-reset', at: now },
           'schoolSystem': null,
-          'schoolSystemAttendanceCenter': null,
           'schoolSystemBackups': null
         });
         return {generation: nextGen, logoutToken: logoutToken};
@@ -1723,25 +1717,6 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
           throw err;
         }
         return firebaseDB.ref('schoolSystem').set(data);
-      },
-      // مركز سجلات مستقل عن مستند المدرسة الكبير؛ يمنع حفظ جهاز من استبدال حالة جهاز آخر.
-      async saveAttendanceCenterRecord(record) {
-        if (!record || !record.studentId || !record.date) throw new Error('INVALID_ATTENDANCE_CENTER_RECORD');
-        const sid = encodeURIComponent(String(record.studentId).trim()).replace(/\./g, '%2E');
-        const day = String(record.date).replace(/[^0-9-]/g, '');
-        const key = sid + '__' + day;
-        const ref = firebaseDB.ref('schoolSystemAttendanceCenter/records/' + key);
-        const incoming = sanitizeForFirebase(record);
-        // معاملة Firebase تسلسل الكتابات؛ آخر تعديل وصل للمركز هو المعتمد حتى لو اختلف توقيت الجهازين.
-        const result = await ref.transaction(() => incoming, undefined, false);
-        if (!result.committed) throw new Error('ATTENDANCE_CENTER_WRITE_NOT_COMMITTED');
-        return result.snapshot.val();
-      },
-      listenAttendanceCenter(callback) {
-        const ref = firebaseDB.ref('schoolSystemAttendanceCenter/records');
-        const handler = snap => callback(snap.exists() ? (snap.val() || {}) : {});
-        ref.on('value', handler);
-        return () => ref.off('value', handler);
       },
       listenFactoryReset(callback) {
         const ref = firebaseDB.ref('systemControl/factoryReset');
@@ -3594,35 +3569,6 @@ function getStudentById(studentId) {
   return null;
 }
 
-// القراءة الموحدة لكل الشاشات: السجل المركزي أولاً، ثم سجل الصف القديم، ثم تقرير المراقب.
-// هذا يمنع واجهة من عرض «حاضر» لمجرد أن مصدرها القديم لا يحتوي الحالة.
-function getAttendanceCenterStatus(cls, studentId, dateStr, studentName='', slot=0, deskIndex=-1) {
-  const sid=String(studentId||'').trim(), day=String(dateStr||'').trim(), name=String(studentName||'').trim();
-  const valid=['present','absent','late','leave'];
-  const central=(window.ProfessionalModules?.attendanceData||[]).find(r=>
-    String(r?.studentId||'').trim()===sid && String(r?.date||'')===day && valid.includes(String(r?.status||''))
-  );
-  if(central) return central.status;
-  const records=cls?.absenceRecords?.[day]||{};
-  const desk=deskIndex>=0 ? cls?.desks?.[deskIndex] : null;
-  const deskNo=desk?.deskNumber ?? (deskIndex>=0 ? deskIndex+1 : '');
-  const legacy=name && deskNo!=='' ? `${deskNo}_${Number(slot)===1?'يمين':'يسار'}_${name}` : '';
-  for(const key of [sid,legacy,name].filter(Boolean)){
-    const value=records[key];
-    if(value===true) return 'absent';
-    if(valid.includes(String(value||''))) return String(value);
-  }
-  const reports=Array.isArray(monitorInventoryReportsData)?monitorInventoryReportsData:[];
-  for(const report of reports){
-    if(String(report?.date||'')!==day) continue;
-    if(report?.classId && cls?.id && String(report.classId)!==String(cls.id)) continue;
-    const items=[...(Array.isArray(report?.students)?report.students:[]),...(Array.isArray(report?.absentStudents)?report.absentStudents:[])];
-    const item=items.find(x=>(sid && String(x?.studentId||'').trim()===sid) || (name && String(x?.name||'').trim()===name));
-    if(item && valid.includes(String(item.status||''))) return String(item.status);
-  }
-  return 'present';
-}
-
 function normalizeSchoolDataValue(value) {
   if (Array.isArray(value)) return value;
   if (value && Array.isArray(value.classes)) return value.classes;
@@ -4326,7 +4272,6 @@ function updateCloudStatus(text, color) {
     }
 
     let realtimeUnsubscribe = null;
-    let attendanceCenterUnsubscribe = null;
     let lastAppliedCloudUpdatedAt = '';
     let automaticBackupTimer = null;
 
@@ -4490,13 +4435,6 @@ function updateCloudStatus(text, color) {
     function startRealtimeCloudSync() {
         if (!window.FirebaseCloud?.enabled || typeof window.FirebaseCloud.listen !== 'function') return;
         if (realtimeUnsubscribe) realtimeUnsubscribe();
-        if (attendanceCenterUnsubscribe) { try { attendanceCenterUnsubscribe(); } catch (_) {} attendanceCenterUnsubscribe=null; }
-        if (typeof window.FirebaseCloud.listenAttendanceCenter === 'function') {
-            attendanceCenterUnsubscribe = window.FirebaseCloud.listenAttendanceCenter(records => {
-                try { if (typeof window.__loadAttendanceCenterFromFirebase === 'function') window.__loadAttendanceCenterFromFirebase(records); }
-                catch (e) { console.error('Attendance center realtime listener failed:', e); }
-            });
-        }
         realtimeUnsubscribe = window.FirebaseCloud.listen(async rawCloud => {
             if (!rawCloud) return;
             const cloud = repairCloudPayloadForStartup(rawCloud);
@@ -4539,9 +4477,6 @@ function updateCloudStatus(text, color) {
             }
             if (typeof window.__loadProfessionalAttendanceFromCloud === 'function' && cloud.attendanceData !== undefined) window.__loadProfessionalAttendanceFromCloud(cloud.attendanceData);
             if (typeof window.__loadProfessionalAuditFromCloud === 'function' && cloud.auditLog !== undefined) window.__loadProfessionalAuditFromCloud(cloud.auditLog);
-            try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
-            try{ if(typeof renderAbsenceTable==='function' && document.getElementById('absenceTableBody')) renderAbsenceTable(); }catch(_e){}
-            try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
             updateCloudStatus('مزامنة مباشرة ✓', '#16803c');
             try{updateParentTeacherMessageIndicators();}catch(e){}
             try{if(document.getElementById('teacherParentMessagesModal'))renderParentTeacherMessagesForTeacher();}catch(e){}
@@ -7669,8 +7604,13 @@ function updateCloudStatus(text, color) {
         const studentId = (deskIndex >= 0 && typeof canonicalStudentId === 'function')
             ? canonicalStudentId(cls, currentClassIndex, desk, deskIndex, slot)
             : '';
-        // الرحلة تقرأ الحالة من مركز السجلات نفسه، مع توافق آمن مع السجلات القديمة.
-        return getAttendanceCenterStatus(cls,studentId,date,name,slot,deskIndex);
+        const professionalRow = (window.ProfessionalModules?.attendanceData || []).find(r =>
+            studentId && String(r?.studentId || '').trim() === String(studentId).trim() && String(r?.date || '') === String(date)
+        );
+        // الرحلة تعتمد على نفس المصدر الموحد للحضور والغياب.
+        if (professionalRow?.status) return professionalRow.status;
+        const key = `${desk.deskNumber}_${slot === 1 ? 'يمين' : 'يسار'}_${name}`;
+        return getStoredAttendanceStatus(cls, date, key);
     }
 
     function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
@@ -7678,9 +7618,8 @@ function updateCloudStatus(text, color) {
         status = ['present','absent','late','leave'].includes(String(status)) ? String(status) : 'present';
         const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : (status === 'late' ? 'student-status-late' : 'student-status-present'));
         const label = status === 'absent' ? '<span class="trip-status-label">غائب ❌</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز 🏖️</span>' : (status === 'late' ? '<span class="trip-status-label">متأخر ⏰</span>' : '<span class="trip-status-label">حاضر ✔️</span>'));
-        const normalizedGender=String(gender||'').trim().toLowerCase();
-        const genderClass=['female','f','أنثى','مؤنث','بنت'].includes(normalizedGender) ? 'trip-gender-female' : (['male','m','ذكر','مذكر','ولد'].includes(normalizedGender) ? 'trip-gender-male' : '');
-        return `<div class="seat seat-full student-status-seat ${statusClass} ${genderClass} ${extraClass}">${label}<span class="trip-student-name">${name}</span></div>`;
+        const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
+        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
 
     function renderDesks() {
@@ -9546,21 +9485,12 @@ function updateCloudStatus(text, color) {
         if (currentUser.role === 'parent' && studentName !== currentUser.name) return;
 
         let status = getStoredAttendanceStatus(cls, dateStr, studentKey);
-        // استخدم المعرّف القياسي الممرر من الصف نفسه أولاً؛ لا تستنتج الطالب من رقم المقعد فقط،
-        // لأن أرقام المقاعد قد تتكرر أو تختلف عن ترتيبها، وهذا كان يسبب اختلاف الحالة بين الشاشات.
-        const desksForRow = Array.isArray(cls?.desks) ? cls.desks : [];
+        // زر الحضور والغياب يجب أن يستخدم نفس المعرّف القياسي في القراءة والحفظ.
+        const deskForRow = (Array.isArray(cls?.desks) ? cls.desks : []).find(x => x && String(x.deskNumber)===String(deskNum));
         const slotForRow = seatPos==='يمين' ? 1 : 2;
-        let studentIdForRow = '';
-        for(let di=0; di<desksForRow.length; di++){
-            const candidate=canonicalStudentId(cls,currentClassIndex,desksForRow[di],di,slotForRow);
-            if(String(candidate)===String(studentKey||'')) { studentIdForRow=candidate; break; }
-        }
-        if(!studentIdForRow){
-            const deskForRow = desksForRow.find(x => x && String(x.deskNumber)===String(deskNum));
-            studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,desksForRow.indexOf(deskForRow),slotForRow) : String(studentKey||'');
-        }
-        const rowDeskIndex=desksForRow.findIndex(d=>canonicalStudentId(cls,currentClassIndex,d,desksForRow.indexOf(d),slotForRow)===String(studentIdForRow));
-        status = getAttendanceCenterStatus(cls,studentIdForRow,dateStr,studentName,slotForRow,rowDeskIndex);
+        const studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,(cls.desks||[]).indexOf(deskForRow),slotForRow) : '';
+        const professionalRow = getUnifiedAttendanceRecord ? getUnifiedAttendanceRecord(studentIdForRow,dateStr) : (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
+        if (professionalRow?.status) status = professionalRow.status;
         const canEdit = canManageStudentAttendance(cls);
         const meta = cls?.attendanceChangeLog?.[dateStr]?.[studentKey];
         const metaText = meta ? `<div style=\"font-size:10px;color:#667;margin-top:3px;font-weight:700\">تم تغيير الحالة بواسطة ${escapeGlobalSearchHTML(meta.byName||'المستخدم')} — ${escapeGlobalSearchHTML(meta.at||'')}</div>` : '';
@@ -9574,7 +9504,7 @@ function updateCloudStatus(text, color) {
                     <option value="present" ${status === 'present' ? 'selected' : ''}>حاضر ✔️</option>
                     <option value="late" ${status === 'late' ? 'selected' : ''}>متأخر ⏰</option>
                     <option value="absent" ${status === 'absent' ? 'selected' : ''}>غائب ❌</option>
-                    ${(currentUser.role === 'admin' || currentUser.role === 'monitor' || currentUser.isAssistant || currentUser.role === 'teacher') ? `<option value="leave" ${status === 'leave' ? 'selected' : ''}>مجاز 🏖️</option>` : ''}
+                    ${currentUser.role === 'admin' ? `<option value="leave" ${status === 'leave' ? 'selected' : ''}>مجاز 🏖️</option>` : ''}
                 </select>`;
         } else {
             const label = status === 'absent' ? 'غائب ❌' : (status === 'leave' ? 'مجاز 🏖️' : (status === 'late' ? 'متأخر ⏰' : 'حاضر ✔️'));
@@ -9593,7 +9523,7 @@ function updateCloudStatus(text, color) {
 
     
 /* =========================================================
-   الحضور السريع داخل الصف — الحالة الموحدة
+   الحضور السريع داخل الصف — المدير
    يستخدم نفس نظام الغيابات الموجود ولا ينشئ سجلاً منفصلاً.
    ========================================================= */
 function openClassQuickAttendance(){
@@ -9661,7 +9591,13 @@ function getQuickAttendanceStudents(cls){
 }
 
 function getQuickAttendanceStatus(cls,dateStr,row){
-    return getAttendanceCenterStatus(cls,row.key,dateStr,row.name,row.slot,row.deskIndex);
+    const rec=(cls?.absenceRecords&&typeof cls.absenceRecords==='object') ? (cls.absenceRecords[dateStr]||{}) : {};
+    const legacy=`${row.deskNumber}_${row.slot===1?'يمين':'يسار'}_${row.name}`;
+    for(const k of [row.key,legacy,row.name].filter(Boolean)){
+        const v=String(rec[k]||'').trim();
+        if(v==='absent'||v==='late'||v==='leave') return v;
+    }
+    return 'present';
 }
 
 function renderClassQuickAttendance(){
@@ -9730,8 +9666,8 @@ function changeClassQuickAttendance(selectEl){
 
 function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const cls = schoolData[currentClassIndex];
-        if (statusVal === 'leave' && !(currentUser?.role === 'admin' || currentUser?.role === 'monitor' || currentUser?.isAssistant || currentUser?.role === 'teacher')) {
-            alert('لا تملك صلاحية تغيير حالة الطالب إلى مجاز.');
+        if (statusVal === 'leave' && currentUser?.role !== 'admin') {
+            alert('تغيير الطالب إلى مجاز متاح للمدير أو المعاون أو مرشد الصف فقط.');
             renderAbsenceTable();
             return;
         }
@@ -10843,7 +10779,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             // نفس المعرّف القياسي الذي تستخدمه شاشة الصف و«فتح الكشف».
             const unifiedId=canonicalStudentId(cls,canonicalClassIndex,desk,di,slot);
             out.push({
-                student:{id:String(unifiedId),name,slot,deskIndex:di,deskNumber:desk?.deskNumber??(di+1)},
+                student:{id:String(unifiedId),name},
                 classObj:cls,classIndex:canonicalClassIndex,deskIndex:di,slot
             });
         }));
@@ -10866,11 +10802,14 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const todayReportItems=monitorInventoryReportsData.filter(r=>String(r?.date||'')===String(date))
             .flatMap(r=>Array.isArray(r?.students)?r.students:(Array.isArray(r?.absentStudents)?r.absentStudents:[]));
         const getMonitorStatus=(f)=>{
-            const rec=attendance.find(r=>String(r?.studentId||'').trim()===String(f.student.id).trim()&&String(r?.date||'')===String(date));
+            const rec=attendance.find(r=>String(r?.studentId)===String(f.student.id)&&String(r?.date)===String(date));
             if(rec && ['late','absent','present','leave'].includes(rec.status)) return rec;
-            const status=getAttendanceCenterStatus(f.classObj,f.student.id,date,f.student.name,f.slot,f.deskIndex);
-            const report=todayReportItems.find(x=>String(x?.studentId||'').trim()===String(f.student.id).trim() || String(x?.name||'').trim()===String(f.student.name).trim());
-            return {...(report||{}),status};
+            const report=todayReportItems.find(x=>
+                String(x?.studentId||'')===String(f.student.id) ||
+                String(x?.name||'').trim()===String(f.student.name).trim()
+            );
+            if(report && ['late','absent','present','leave'].includes(report.status)) return report;
+            return {status:'present'};
         };
         const rows=students.map((f,i)=>{
             const rec=getMonitorStatus(f);
@@ -10879,7 +10818,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const lateReason=String(rec?.lateReason||rec?.note||'').trim();
             const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const safeId=escAttr(f.student.id);
-            // جميع الحالات قابلة للتسجيل من المراقب والمدير وتذهب إلى مركز السجلات.
+            // «مجاز» حالة مقروءة من السجل الموحد؛ صلاحية تغييرها تبقى للمدير.
             const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
             return `<tr>
                 <td>${i+1}</td>
@@ -10887,7 +10826,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 <td>
                   <div class="monitor-status-checks" data-current-status="${status}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                     ${checks.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;cursor:pointer;font-weight:800;font-size:12px">
-                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
+                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='leave'?'disabled title="حالة المجاز تسجل من المدير"':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
                         onchange="monitorAttendanceCheckboxChanged(this,'${safeId}','${escapeGlobalSearchHTML(date)}')"
                         style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer">
                       <span>${icon} ${label}</span>
@@ -10968,11 +10907,8 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const students=getMonitorClassStudents(classIndex);
             if(!cls||!students.length){alert('لا يوجد طلاب مسجلون في هذا الصف.');return;}
             const rows=[...document.querySelectorAll('#monitorClassStudents tbody tr')];
-            // مقارنة معرّف الطالب مباشرة لتجنب مشاكل CSS.escape في بعض بيئات المتصفح.
             const controls=students.map(student=>{
-                const studentId=String(student.student.id);
-                const row=rows.find(tr=>[...tr.querySelectorAll('input[data-monitor-student]')]
-                    .some(input=>String(input.dataset.monitorStudent||'')===studentId));
+                const row=rows.find(tr=>tr.querySelector(`input[data-monitor-student="${CSS.escape(String(student.student.id))}"]`));
                 if(!row) return null;
                 const checked=row.querySelector('input[data-monitor-status]:checked');
                 return {student,row,status:checked?.dataset?.monitorStatus||'present'};
@@ -10980,65 +10916,25 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             if(controls.length!==students.length){alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');return;}
             const absent=[];
             const reportStudents=[];
-            const centerSavePromises=[];
-            window.__bulkSavingMonitorAttendance=true;
             controls.forEach(item=>{
                 const student=item.student;
-                const status=['late','absent','present','leave'].includes(item.status) ? item.status : 'present';
+                const status=['late','absent','present'].includes(item.status) ? item.status : 'present';
                 const lateInfo=student.classObj?.absenceRecords?.[date] || {};
                 const oldRec=window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(student.student.id,date) : (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
                 const checkedControl=item.row.querySelector('input[data-monitor-status]:checked');
                 const lateTime=String(checkedControl?.dataset?.lateTime||oldRec?.lateTime||'').trim();
                 const lateReason=String(checkedControl?.dataset?.lateReason||oldRec?.lateReason||oldRec?.note||'').trim();
                 const note=status==='late' ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
-                // الحفظ المتين: نجرّب دالة السجل الموحد أولاً، وإذا تعثرت بسبب خلل
-                // جانبي في تحديث إحدى الواجهات، نحفظ السجل نفسه مباشرة دون إسقاط تقرير الصف كله.
-                let saved=false;
-                let attendanceRecord=null;
-                try {
-                    saved = window.ProfessionalModules?.recordAttendance
-                        ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason)
-                        : false;
-                } catch (recordError) {
-                    console.error('تعذر استدعاء مسجل الحضور الموحد، سيتم استخدام مسار الحفظ الاحتياطي:', recordError);
-                }
-                if (!saved) {
-                    const records = window.ProfessionalModules?.attendanceData;
-                    if (!Array.isArray(records)) throw new Error('قائمة سجل الحضور الموحد غير متاحة. أعد تحميل النظام ثم حاول مجدداً.');
-                    const sid=String(student.student.id);
-                    const existing=records.find(r=>String(r?.studentId||'')===sid && String(r?.date||'')===String(date));
-                    attendanceRecord={
-                        id:existing?.id||createStableId('attendance'), studentId:sid,
-                        classId:student.classObj?.id||cls.id||null, date:String(date), status,
-                        note:String(note||''), lateTime:status==='late'?lateTime:'',
-                        lateReason:status==='late'?lateReason:'',
-                        createdAt:existing?.createdAt||new Date().toISOString(),
-                        updatedAt:new Date().toISOString(), changedByName:currentUser.name||'المراقب',
-                        changedByRole:'monitor'
-                    };
-                    if(existing) Object.assign(existing,attendanceRecord); else records.unshift(attendanceRecord);
-                } else {
-                    attendanceRecord=window.ProfessionalModules?.getUnifiedAttendanceRecord?.(student.student.id,date)||null;
-                }
-                // ضمان كتابة الحالة إلى مسار Firebase المركزي أيضاً، مع انتظار النتيجة حتى نعرف إن فشل الحفظ.
-                if (window.FirebaseCloud?.enabled && navigator.onLine && typeof window.FirebaseCloud.saveAttendanceCenterRecord==='function') {
-                    const centerRecord=attendanceRecord||{
-                        id:createStableId('attendance'),studentId:String(student.student.id),classId:student.classObj?.id||cls.id||null,
-                        date:String(date),status,note:String(note||''),lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',
-                        createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),changedByName:currentUser.name||'المراقب',changedByRole:'monitor'
-                    };
-                    centerSavePromises.push(window.FirebaseCloud.saveAttendanceCenterRecord(centerRecord));
-                }
-                // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور» و«فتح الكشف» والرحلات.
+                const saved = window.ProfessionalModules?.recordAttendance ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : false);
+                // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور والغياب» في كارت الصف.
                 if (student.classObj) {
                     if (!student.classObj.absenceRecords) student.classObj.absenceRecords = {};
                     if (!student.classObj.absenceRecords[date]) student.classObj.absenceRecords[date] = {};
-                    const seatPos = Number(item.student.slot || item.slot) === 1 ? 'يمين' : 'يسار';
-                    const deskNo = Number(item.deskIndex) + 1;
-                    const actualDesk = student.classObj?.desks?.[Number(item.deskIndex)];
-                    const legacyKey = `${actualDesk?.deskNumber ?? deskNo}_${seatPos}_${student.student.name}`;
+                    const seatPos = Number(student.slot) === 1 ? 'يمين' : 'يسار';
+                    const deskNo = Number(student.deskIndex) + 1;
+                    const legacyKey = `${deskNo}_${seatPos}_${student.student.name}`;
                     const legacyKeyId = String(student.student.id);
-                    if (status === 'absent' || status === 'late' || status === 'leave') {
+                    if (status === 'absent' || status === 'late') {
                         student.classObj.absenceRecords[date][legacyKey] = status;
                         student.classObj.absenceRecords[date][legacyKeyId] = status;
                     } else {
@@ -11049,11 +10945,6 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 if(status==='absent') absent.push({studentId:student.student.id,name:student.student.name,status:'absent'});
                 reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',date,changedBy:'المراقب',changedByName:currentUser.name||'المراقب',changedAt:new Date().toISOString()});
             });
-            if(centerSavePromises.length) {
-                const centerResults=await Promise.allSettled(centerSavePromises);
-                centerResults.filter(x=>x.status==='rejected').forEach(x=>console.error('فشل حفظ سجل في مركز Firebase المركزي؛ سيستمر إرسال تقرير الصف عبر سجل المدرسة:',x.reason));
-            }
-            window.__bulkSavingMonitorAttendance=false;
             const report={
                 id:createStableId('minv'),
                 monitorId:currentUser.monitorId,
@@ -11085,20 +10976,9 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                     return;
                 }
             }
-            // إعادة رسم الواجهات المفتوحة من السجل الموحد بعد إتمام إرسال المراقب.
-            try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('dailyInventoryReports')) renderMonitorDailyInventory(); }catch(_e){}
-            try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderAbsenceTable(); }catch(_e){}
-            try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
-            try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
-            try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
             alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
-        }catch(err){
-            window.__bulkSavingMonitorAttendance=false;
-            console.error('فشل حفظ جرد المراقب وإرساله للمدير:',err);
-            const detail=String(err?.code ? `${err.code}: ${err.message||''}` : (err?.message||err||'خطأ غير معروف'));
-            alert('تعذر حفظ الغياب وإرساله للمدير.\nالسبب: '+detail+'\nتحقق من اتصال الإنترنت وصلاحيات Firebase ثم أعد المحاولة.');
-        }
+        }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
     }
 
     function sendMonitorGeneralMessage(){
@@ -11942,33 +11822,6 @@ window.addEventListener('unhandledrejection', function (event) {
 
   let attendanceData = safeParseStorage(STORAGE_KEYS.attendance, []);
   let auditLog = safeParseStorage(STORAGE_KEYS.audit, []);
-  // سجلات المركز منفصلة عن نسخة schoolSystem القابلة للاستبدال من عدة أجهزة.
-  let attendanceCenterRecords = new Map();
-  let attendanceCenterInitialized = false;
-  let attendanceCenterHasRecords = false;
-  let attendanceRootLoaded = false;
-  let attendanceCenterMigrationStarted = false;
-  const attendanceRecordKey = r => String(r?.studentId||'').trim() + '|' + String(r?.date||'').trim();
-  function migrateLegacyAttendanceToCenter() {
-    if (attendanceCenterMigrationStarted || !attendanceRootLoaded || !attendanceCenterInitialized || attendanceCenterHasRecords) return;
-    if (!window.FirebaseCloud?.enabled || typeof window.FirebaseCloud.saveAttendanceCenterRecord !== 'function') return;
-    attendanceCenterMigrationStarted = true;
-    const legacy = Array.isArray(attendanceData) ? attendanceData.slice() : [];
-    Promise.allSettled(legacy.map(r => window.FirebaseCloud.saveAttendanceCenterRecord(r)))
-      .then(results => {
-        const failed = results.filter(r => r.status === 'rejected').length;
-        if (failed) console.error('Attendance center migration failures:', failed);
-      });
-  }
-  function mergeAttendanceWithCenter(baseRecords) {
-    const merged = new Map();
-    (Array.isArray(baseRecords) ? baseRecords : []).forEach(r => {
-      if (r && String(r.studentId||'').trim() && String(r.date||'').trim()) merged.set(attendanceRecordKey(r), r);
-    });
-    // مركز Firebase هو المرجع الأعلى حتى إذا وصلت نسخة أقدم من المستند العام.
-    attendanceCenterRecords.forEach((r,k) => merged.set(k,r));
-    return Array.from(merged.values());
-  }
 
   if (!Array.isArray(attendanceData)) attendanceData = [];
   if (!Array.isArray(auditLog)) auditLog = [];
@@ -11996,35 +11849,7 @@ window.addEventListener('unhandledrejection', function (event) {
   normalizeUnifiedAttendanceRecords();
   window.__professionalAttendanceDataForCloud = () => attendanceData;
   window.__professionalAuditLogForCloud = () => auditLog;
-  window.__loadProfessionalAttendanceFromCloud = (data) => {
-    attendanceRootLoaded = true;
-    attendanceData = mergeAttendanceWithCenter(Array.isArray(data) ? data : []);
-    normalizeUnifiedAttendanceRecords();
-    persistModulesLocalOnly();
-    migrateLegacyAttendanceToCenter();
-    // لا نسمح لمستند المدرسة باستبدال سجلات المركز الأحدث.
-    try { reconcileAttendanceCenterFromRecords(); } catch (e) { console.error('Attendance center reconcile failed:', e); }
-  };
-  window.__loadAttendanceCenterFromFirebase = (rawRecords) => {
-    attendanceCenterInitialized = true;
-    const values = rawRecords && typeof rawRecords === 'object' ? Object.values(rawRecords) : [];
-    if (!values.length) {
-      attendanceCenterHasRecords = false;
-      migrateLegacyAttendanceToCenter();
-      return;
-    }
-    attendanceCenterHasRecords = true;
-    const next = new Map();
-    values.forEach(r => {
-      if (!r || !String(r.studentId||'').trim() || !String(r.date||'').trim()) return;
-      next.set(attendanceRecordKey(r), r);
-    });
-    attendanceCenterRecords = next;
-    attendanceData = mergeAttendanceWithCenter(attendanceData);
-    normalizeUnifiedAttendanceRecords();
-    persistModulesLocalOnly();
-    try { reconcileAttendanceCenterFromRecords(); } catch (e) { console.error('Attendance center reconcile failed:', e); }
-  };
+  window.__loadProfessionalAttendanceFromCloud = (data) => { attendanceData = Array.isArray(data) ? data : []; normalizeUnifiedAttendanceRecords(); persistModulesLocalOnly(); };
   window.__loadProfessionalAuditFromCloud = (data) => { auditLog = Array.isArray(data) ? data : []; pruneAuditToCurrentMonth(); persistModulesLocalOnly(); };
   function persistModulesLocalOnly(){
     try{
@@ -12126,30 +11951,7 @@ window.addEventListener('unhandledrejection', function (event) {
     return getUnifiedAttendanceRecord(studentId,date)?.status || fallbackStatus;
   }
 
-  // مركز السجلات المخفي: سجل واحد لكل طالب/تاريخ، وكل واجهات النظام تُحدّث انطلاقاً منه.
-  function reconcileAttendanceCenterFromRecords(){
-    normalizeUnifiedAttendanceRecords();
-    const records=attendanceData.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.updatedAt||'').localeCompare(String(b.updatedAt||'')));
-    records.forEach(record=>{
-      const found=findStudent(String(record.studentId||''));
-      if(found) syncUnifiedAttendanceEverywhere(found,record,{reconcileOnly:true});
-    });
-    try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderAbsenceTable(); }catch(_e){}
-    try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
-    try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
-    try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
-    try{ if(typeof renderMonitorDailyInventory==='function' && (document.getElementById('monitorDailyInventoryModal') || document.getElementById('dailyInventoryReports'))) renderMonitorDailyInventory(); }catch(_e){}
-    try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
-  }
-
-  window.AttendanceRecordsCenter = Object.freeze({
-    get: (studentId,date) => getUnifiedAttendanceRecord(studentId,date),
-    list: () => attendanceData.slice(),
-    set: (studentId,status,date,note='',lateTime='',lateReason='') => recordAttendance(studentId,status,date,note,lateTime,lateReason),
-    reconcile: () => reconcileAttendanceCenterFromRecords()
-  });
-
-  function syncUnifiedAttendanceEverywhere(found, record, options={}){
+  function syncUnifiedAttendanceEverywhere(found, record){
     // هذا هو المصدر الموحد: أي تغيير في سجل الحضور الاحترافي ينعكس
     // على سجل الصف القديم، وجرد المراقب، وجميع الشاشات التي تقرأ هذه البيانات.
     try{
@@ -12175,18 +11977,15 @@ window.addEventListener('unhandledrejection', function (event) {
         else cls.absenceRecords[day][key]=status;
       });
 
-      // 2) مركز السجلات يحدّث تقرير الجرد المطابق، وينشئ سجلاً داخلياً عند الحاجة.
-      let targetReports=(monitorInventoryReportsData||[]).filter(report=>{
-        if(String(report?.date||'')!==day) return false;
-        return !report?.classId || String(report.classId)===String(cls.id||'') || String(report.className||'')===String(cls.name||'');
-      });
-      if(!targetReports.length && status!=='present' && !options.reconcileOnly){
-        const synthetic={id:createStableId('attendance-center'),monitorId:'',monitorName:'مركز السجلات',classId:cls.id||'',className:cls.name||'',date:day,students:[],absentStudents:[],sentAt:record.updatedAt||new Date().toISOString(),completedAt:record.updatedAt||new Date().toISOString(),changedBy:'مركز السجلات',changedByName:record.changedByName||actorName(),changedAt:record.updatedAt||new Date().toISOString(),source:'attendance-center'};
-        monitorInventoryReportsData.unshift(synthetic);
-        if(monitorInventoryReportsData.length>500) monitorInventoryReportsData.length=500;
-        targetReports=[synthetic];
-      }
-      targetReports.forEach(report=>{
+      // 2) مزامنة جرد الصفوف/تقارير المراقب الموجودة في نفس الصف واليوم.
+      // لا ننشئ تقرير مراقب وهمياً هنا؛ شاشة «جرد الصفوف» تنشئ عرضاً افتراضياً
+      // مباشرة من attendanceData إذا لم يوجد تقرير مراقب.
+      (monitorInventoryReportsData||[]).forEach(report=>{
+        if(String(report?.date||'')!==day) return;
+        const sameClass=!report?.classId ||
+          String(report.classId)===String(cls.id||'') ||
+          String(report.className||'')===String(cls.name||'');
+        if(!sameClass) return;
 
         if(!Array.isArray(report.students)) report.students=[];
         if(!Array.isArray(report.absentStudents)) report.absentStudents=[];
@@ -12245,8 +12044,8 @@ window.addEventListener('unhandledrejection', function (event) {
   }
 
   function recordAttendance(studentId,status,date,note='',lateTime='',lateReason=''){
-    // المراقب والمدير يرسلان كل حالات الطالب إلى مركز السجلات نفسه.
-    if(currentUser?.role==='monitor' && !['present','absent','late','leave'].includes(status)) return false;
+    // المراقب مسموح له فقط بحاضر/غائب/متأخر؛ خيار مجاز يبقى للمدير فقط.
+    if(currentUser?.role==='monitor' && !['present','absent','late'].includes(status)) return false;
     const found=findStudent(studentId);
     if(!found) return false;
     const day=String(date||todayISO());
@@ -12271,27 +12070,11 @@ window.addEventListener('unhandledrejection', function (event) {
     };
     if(existing) Object.assign(existing,record);
     else attendanceData.unshift(record);
-    // اكتب الحالة إلى مسار مركزي مستقل، بعيداً عن استبدال مستند المدرسة الكامل.
-    attendanceCenterRecords.set(attendanceRecordKey(record), record);
-    attendanceCenterHasRecords = true;
-    if (window.FirebaseCloud?.enabled && navigator.onLine && typeof window.FirebaseCloud.saveAttendanceCenterRecord === 'function') {
-      window.FirebaseCloud.saveAttendanceCenterRecord(record).catch(error => {
-        console.error('Canonical attendance center save failed:', error);
-        try { updateCloudStatus('تعذر حفظ حالة الطالب في مركز السجلات؛ تحقق من اتصال Firebase وصلاحيات قاعدة البيانات', '#b42318'); } catch (_) {}
-      });
-    }
 
     // الحفظ الموحد قبل تحديث الواجهات: أي مصدر يسجل الحالة يكتب في نفس السجل.
     syncUnifiedAttendanceEverywhere(found,record);
     persistModules();
     try{ if(typeof saveData==='function') saveData(); }catch(_e){}
-    // تحديث كل الواجهات المفتوحة من المصدر الموحد، دون تغيير وظائف الأزرار أو صلاحياتها.
-    try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
-    if(!window.__bulkSavingMonitorAttendance){
-      try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
-      try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('dailyInventoryReports')) renderMonitorDailyInventory(); }catch(_e){}
-    }
-    try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
     addAudit('تسجيل حضور/غياب',`${found.student.name} - ${record.status} - ${day}`);
     return true;
   }
