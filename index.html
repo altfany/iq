@@ -10968,8 +10968,11 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const students=getMonitorClassStudents(classIndex);
             if(!cls||!students.length){alert('لا يوجد طلاب مسجلون في هذا الصف.');return;}
             const rows=[...document.querySelectorAll('#monitorClassStudents tbody tr')];
+            // مقارنة معرّف الطالب مباشرة لتجنب مشاكل CSS.escape في بعض بيئات المتصفح.
             const controls=students.map(student=>{
-                const row=rows.find(tr=>tr.querySelector(`input[data-monitor-student="${CSS.escape(String(student.student.id))}"]`));
+                const studentId=String(student.student.id);
+                const row=rows.find(tr=>[...tr.querySelectorAll('input[data-monitor-student]')]
+                    .some(input=>String(input.dataset.monitorStudent||'')===studentId));
                 if(!row) return null;
                 const checked=row.querySelector('input[data-monitor-status]:checked');
                 return {student,row,status:checked?.dataset?.monitorStatus||'present'};
@@ -10977,6 +10980,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             if(controls.length!==students.length){alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');return;}
             const absent=[];
             const reportStudents=[];
+            window.__bulkSavingMonitorAttendance=true;
             controls.forEach(item=>{
                 const student=item.student;
                 const status=['late','absent','present','leave'].includes(item.status) ? item.status : 'present';
@@ -11010,6 +11014,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 if(status==='absent') absent.push({studentId:student.student.id,name:student.student.name,status:'absent'});
                 reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',date,changedBy:'المراقب',changedByName:currentUser.name||'المراقب',changedAt:new Date().toISOString()});
             });
+            window.__bulkSavingMonitorAttendance=false;
             const report={
                 id:createStableId('minv'),
                 monitorId:currentUser.monitorId,
@@ -11049,7 +11054,12 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
             alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
-        }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
+        }catch(err){
+            window.__bulkSavingMonitorAttendance=false;
+            console.error('فشل حفظ جرد المراقب وإرساله للمدير:',err);
+            const detail=String(err?.message||err||'خطأ غير معروف');
+            alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير.\nالتفاصيل: '+detail+'\nافتح وحدة التحكم (Console) لمعرفة السبب الكامل.');
+        }
     }
 
     function sendMonitorGeneralMessage(){
@@ -12238,8 +12248,10 @@ window.addEventListener('unhandledrejection', function (event) {
     try{ if(typeof saveData==='function') saveData(); }catch(_e){}
     // تحديث كل الواجهات المفتوحة من المصدر الموحد، دون تغيير وظائف الأزرار أو صلاحياتها.
     try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
-    try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
-    try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('dailyInventoryReports')) renderMonitorDailyInventory(); }catch(_e){}
+    if(!window.__bulkSavingMonitorAttendance){
+      try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
+      try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('dailyInventoryReports')) renderMonitorDailyInventory(); }catch(_e){}
+    }
     try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
     addAudit('تسجيل حضور/غياب',`${found.student.name} - ${record.status} - ${day}`);
     return true;
