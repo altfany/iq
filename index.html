@@ -166,61 +166,7 @@
         .section-box h3 { font-size: 15px; margin: 0; }
         .section-box p { font-size: 11px; color: #666; margin-top: 0; }
 
-        
-/* ===== زر الحضور السريع داخل الصف ===== */
-.class-quick-attendance-btn{
-    background:linear-gradient(135deg,#16a085,#1abc9c) !important;
-    color:#fff !important;border:0 !important;
-    min-height:38px !important;padding:7px 11px !important;
-    border-radius:10px !important;font-size:12px !important;
-    font-weight:900 !important;white-space:nowrap;
-}
-.class-quick-attendance-btn:hover{filter:brightness(1.05);transform:translateY(-1px);}
-@media(max-width:600px){.class-quick-attendance-btn{width:100%;min-height:44px !important;font-size:13px !important;}}
-.quick-attendance-overlay{
-    position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;
-    padding:14px;background:rgba(10,25,40,.58);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-}
-.quick-attendance-box{
-    width:min(900px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:20px;
-    box-shadow:0 20px 60px rgba(0,0,0,.28);direction:rtl;padding:16px;
-}
-.quick-attendance-head{
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-    position:sticky;top:-16px;z-index:4;background:rgba(255,255,255,.97);
-    padding:4px 0 12px;border-bottom:1px solid #e3eaf0;
-}
-.quick-attendance-head h3{margin:0;color:#243447;font-size:18px;}
-.quick-attendance-close{background:#c0392b !important;color:#fff !important;border:0 !important;border-radius:10px !important;padding:8px 12px !important;min-height:40px !important;}
-.quick-attendance-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px 0;}
-.quick-attendance-toolbar label{font-weight:900;color:#34495e;font-size:13px;}
-.quick-attendance-toolbar input{width:170px;min-height:42px;border:1px solid #cfdbe5;border-radius:10px;padding:8px;}
-.quick-attendance-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:11px;}
-.quick-attendance-summary .qa-stat{border-radius:12px;padding:9px;text-align:center;background:#f5f8fa;border:1px solid #e2e9ee;}
-.quick-attendance-summary b{display:block;font-size:18px;}
-.quick-attendance-summary small{font-size:10px;color:#687b89;font-weight:800;}
-.qa-stat.present b{color:#16803c}.qa-stat.absent b{color:#c0392b}.qa-stat.late b{color:#b26a00}.qa-stat.leave b{color:#d68910}
-.quick-attendance-list{display:grid;gap:7px;}
-.quick-attendance-row{display:grid;grid-template-columns:minmax(180px,1fr) 240px;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e0e7ed;border-radius:12px;background:#fff;}
-.quick-attendance-name{font-weight:900;color:#26384a;min-width:0;}
-.quick-attendance-seat{display:block;font-size:10px;color:#82909c;margin-top:2px;font-weight:700;}
-.quick-attendance-select{width:100%;min-height:42px;border-radius:10px;border:2px solid #d5dfe7;padding:7px 9px;background:#fff;font-weight:800;color:#243447;}
-.quick-attendance-select.qa-present{border-color:#7bc995;background:#f2fbf5;color:#176b2b;}
-.quick-attendance-select.qa-absent{border-color:#e79a94;background:#fff5f4;color:#a40000;}
-.quick-attendance-select.qa-late{border-color:#e4bd69;background:#fff9ed;color:#8a5a00;}
-.quick-attendance-select.qa-leave{border-color:#e9bd64;background:#fff8e7;color:#9a5b00;}
-.quick-attendance-empty{text-align:center;padding:25px;color:#71808e;border:1px dashed #ccd7df;border-radius:12px;}
-@media(max-width:600px){
-    .quick-attendance-overlay{padding:0;align-items:flex-end;}
-    .quick-attendance-box{width:100%;max-height:94vh;border-radius:20px 20px 0 0;padding:13px;}
-    .quick-attendance-head h3{font-size:16px;}
-    .quick-attendance-toolbar{display:grid;grid-template-columns:1fr 1fr;}
-    .quick-attendance-toolbar input{width:100%;}
-    .quick-attendance-summary{grid-template-columns:repeat(2,1fr);}
-    .quick-attendance-row{grid-template-columns:1fr;gap:7px;padding:10px;}
-    .quick-attendance-select{min-height:46px;font-size:15px;}
-}
-.class-actions {
+        .class-actions {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
@@ -2403,7 +2349,6 @@ header > div:first-child{
                 </div>
                 <div class="class-actions">
                     <button class="btn-supervisor" id="currentClassSupervisorBtn" onclick="openClassSupervisorModal()">👨‍🏫 مرشد الصف: غير محدد</button>
-                    <button type="button" id="classQuickAttendanceBtn" class="class-quick-attendance-btn" onclick="openClassQuickAttendance()" title="تسجيل حضور وغياب طلاب الصف">📝 الحضور</button>
                     <div class="class-management-group" id="classManagementGroup">
                         <button type="button" class="class-management-toggle" onclick="toggleClassActionGroup('classManagementActions',this)">⚙️ إدارة الصف <span>⌄</span></button>
                         <div class="class-management-items" id="classManagementActions" style="display:none">
@@ -7579,15 +7524,11 @@ function updateCloudStatus(text, color) {
             let btnEdit = document.getElementById('btnEditClass');
             let btnDelete = document.getElementById('btnDeleteClass');
             let btnSupervisor = document.getElementById('currentClassSupervisorBtn');
-            let btnQuickAttendance = document.getElementById('classQuickAttendanceBtn');
 
             if (btnEdit) btnEdit.style.display = 'none';
             if (btnDelete) btnDelete.style.display = 'none';
             if (btnSupervisor) btnSupervisor.style.display = 'none';
-            if (btnQuickAttendance) btnQuickAttendance.style.display = 'none';
         } else {
-            const btnQuickAttendance = document.getElementById('classQuickAttendanceBtn');
-            if (btnQuickAttendance) btnQuickAttendance.style.display = currentUser?.role === 'admin' ? '' : 'none';
             document.getElementById('currentClassInfo').innerText =
                 `إجمالي الرحلات: ${cls.totalDesks}`;
         }
@@ -9521,150 +9462,7 @@ function updateCloudStatus(text, color) {
         tbody.appendChild(tr);
     }
 
-    
-/* =========================================================
-   الحضور السريع داخل الصف — المدير
-   يستخدم نفس نظام الغيابات الموجود ولا ينشئ سجلاً منفصلاً.
-   ========================================================= */
-function openClassQuickAttendance(){
-    if(!currentUser || currentUser.role!=='admin'){
-        alert('هذه الخاصية متاحة لمدير النظام فقط.');
-        return;
-    }
-    const cls=schoolData?.[currentClassIndex];
-    if(!cls){ alert('افتح الصف أولاً.'); return; }
-
-    const old=document.getElementById('classQuickAttendanceOverlay');
-    if(old) old.remove();
-
-    const overlay=document.createElement('div');
-    overlay.id='classQuickAttendanceOverlay';
-    overlay.className='quick-attendance-overlay';
-    overlay.dir='rtl';
-    overlay.innerHTML=`
-      <div class="quick-attendance-box" role="dialog" aria-modal="true">
-        <div class="quick-attendance-head">
-          <div>
-            <h3>📝 حضور وغياب الصف — ${escapeQuickAttendanceHTML(cls.name||'')}</h3>
-            <div style="font-size:11px;color:#71808e;margin-top:3px;">تعديل مباشر ومربوط بسجل الغيابات الأساسي</div>
-          </div>
-          <button type="button" class="quick-attendance-close" onclick="closeClassQuickAttendance()">إغلاق ✕</button>
-        </div>
-        <div class="quick-attendance-toolbar">
-          <label for="quickAttendanceDate">📅 التاريخ</label>
-          <input id="quickAttendanceDate" type="date" value="${escapeQuickAttendanceHTML(getFormattedDate())}" onchange="renderClassQuickAttendance()">
-        </div>
-        <div id="quickAttendanceSummary"></div>
-        <div id="quickAttendanceList" class="quick-attendance-list"></div>
-      </div>`;
-    document.body.appendChild(overlay);
-
-    overlay.addEventListener('click',function(e){ if(e.target===overlay) closeClassQuickAttendance(); });
-    renderClassQuickAttendance();
-}
-
-function closeClassQuickAttendance(){
-    const el=document.getElementById('classQuickAttendanceOverlay');
-    if(el) el.remove();
-}
-
-function escapeQuickAttendanceHTML(value){
-    return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
-}
-
-function getQuickAttendanceStudents(cls){
-    const rows=[];
-    (Array.isArray(cls?.desks)?cls.desks:[]).forEach((desk,di)=>{
-        if(!desk)return;
-        const deskNumber=desk.deskNumber ?? (di+1);
-        [1,2].forEach(slot=>{
-            const name=String(desk[`student${slot}`]||'').trim();
-            if(!name)return;
-            rows.push({
-                name,slot,deskIndex:di,deskNumber,
-                seat:slot===1?'يمين':'يسار',
-                key:canonicalStudentId(cls,currentClassIndex,desk,di,slot)
-            });
-        });
-    });
-    return rows;
-}
-
-function getQuickAttendanceStatus(cls,dateStr,row){
-    const rec=(cls?.absenceRecords&&typeof cls.absenceRecords==='object') ? (cls.absenceRecords[dateStr]||{}) : {};
-    const legacy=`${row.deskNumber}_${row.slot===1?'يمين':'يسار'}_${row.name}`;
-    for(const k of [row.key,legacy,row.name].filter(Boolean)){
-        const v=String(rec[k]||'').trim();
-        if(v==='absent'||v==='late'||v==='leave') return v;
-    }
-    return 'present';
-}
-
-function renderClassQuickAttendance(){
-    const cls=schoolData?.[currentClassIndex];
-    const list=document.getElementById('quickAttendanceList');
-    const summary=document.getElementById('quickAttendanceSummary');
-    const dateInput=document.getElementById('quickAttendanceDate');
-    if(!cls||!list||!summary)return;
-
-    const dateStr=String(dateInput?.value||getFormattedDate());
-    const rows=getQuickAttendanceStudents(cls);
-
-    if(!rows.length){
-        summary.innerHTML='';
-        list.innerHTML='<div class="quick-attendance-empty">لا توجد أسماء طلاب مسجلين في هذا الصف.</div>';
-        return;
-    }
-
-    const counts={present:0,absent:0,late:0,leave:0};
-    rows.forEach(r=>counts[getQuickAttendanceStatus(cls,dateStr,r)]++);
-
-    summary.innerHTML=`
-      <div class="quick-attendance-summary">
-        <div class="qa-stat present"><small>حاضر</small><b>${counts.present}</b></div>
-        <div class="qa-stat absent"><small>غائب</small><b>${counts.absent}</b></div>
-        <div class="qa-stat late"><small>متأخر</small><b>${counts.late}</b></div>
-        <div class="qa-stat leave"><small>مجاز</small><b>${counts.leave}</b></div>
-      </div>`;
-
-    list.innerHTML=rows.map((r,index)=>{
-        const status=getQuickAttendanceStatus(cls,dateStr,r);
-        return `
-          <div class="quick-attendance-row">
-            <div class="quick-attendance-name">
-              ${index+1}. ${escapeQuickAttendanceHTML(r.name)}
-              <span class="quick-attendance-seat">المقعد #${escapeQuickAttendanceHTML(r.deskNumber)} — ${r.seat}</span>
-            </div>
-            <select class="quick-attendance-select qa-${status}"
-                    data-student-key="${escapeQuickAttendanceHTML(r.key)}"
-                    onchange="changeClassQuickAttendance(this)">
-              <option value="present" ${status==='present'?'selected':''}>حاضر ✔️</option>
-              <option value="absent" ${status==='absent'?'selected':''}>غائب ❌</option>
-              <option value="late" ${status==='late'?'selected':''}>متأخر ⏰</option>
-              <option value="leave" ${status==='leave'?'selected':''}>مجاز 🏖️</option>
-            </select>
-          </div>`;
-    }).join('');
-}
-
-function changeClassQuickAttendance(selectEl){
-    if(!selectEl)return;
-    const dateStr=String(document.getElementById('quickAttendanceDate')?.value||getFormattedDate());
-    const studentKey=String(selectEl.dataset.studentKey||'').trim();
-    const status=String(selectEl.value||'present').trim();
-    if(!studentKey)return;
-
-    if(typeof updateStudentAbsence!=='function'){
-        alert('تعذر الوصول إلى نظام الغيابات الأساسي.');
-        return;
-    }
-
-    // نفس الدالة الأساسية: absenceRecords + ProfessionalModules + جرد الصفوف + Firebase.
-    updateStudentAbsence(dateStr,studentKey,status);
-    setTimeout(()=>renderClassQuickAttendance(),150);
-}
-
-function updateStudentAbsence(dateStr, studentKey, statusVal) {
+    function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const cls = schoolData[currentClassIndex];
         if (statusVal === 'leave' && currentUser?.role !== 'admin') {
             alert('تغيير الطالب إلى مجاز متاح للمدير أو المعاون أو مرشد الصف فقط.');
