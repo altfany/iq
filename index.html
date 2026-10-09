@@ -2239,6 +2239,53 @@ header > div:first-child{
   #dev5QuickButtons .dev5-btn-title{font-size:11px !important;}
 }
 </style>
+
+<style id="teacher-management-responsive-polish">
+#teachersModal .modal-content{width:min(980px,96vw);max-height:92vh;overflow:auto}
+#teachersModal .pro-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#teachersModal .pro-toolbar{display:flex;gap:8px;align-items:center;margin:12px 0}
+#teachersModal .teacher-name-row{display:flex;align-items:center;gap:12px;width:100%;min-width:0;text-align:right;color:#243447;background:linear-gradient(135deg,#fff,#f5f9fc);border:1px solid #dce6ee;border-radius:14px;padding:13px 15px;margin:0;box-shadow:0 3px 10px rgba(31,45,61,.06)}
+#teachersModal .teacher-name-row:hover{background:#edf6fc;border-color:#9ec6df}
+#teachersModal .teachers-cards{display:grid;grid-template-columns:1fr;gap:8px}
+#teachersModal .teacher-name-avatar{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:12px;background:#e8f3fb;font-size:22px}
+#teachersModal .teacher-name-text{font-size:15px;font-weight:900;flex:1;min-width:0;overflow-wrap:anywhere}
+#teachersModal .teacher-name-open{font-size:12px;font-weight:800;color:#2879a8;white-space:nowrap}
+#teachersModal .teacher-detail-head{padding:14px;border-radius:15px;background:linear-gradient(135deg,#edf6fc,#fff);border:1px solid #d8e6ef;margin-bottom:12px}
+#teachersModal .teacher-back-btn{background:#34495e;margin-bottom:12px}
+#teachersModal .teacher-detail-name{font-size:21px;font-weight:900;color:#243447;overflow-wrap:anywhere}
+#teachersModal .teacher-detail-sub{color:#647789;font-size:13px;margin-top:3px}
+#teachersModal .teacher-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+#teachersModal .teacher-detail-info{padding:12px;border:1px solid #e0e8ee;border-radius:12px;background:#fff;min-width:0}
+#teachersModal .teacher-detail-info small{display:block;color:#738393;margin-bottom:5px}
+#teachersModal .teacher-detail-info strong{display:block;overflow-wrap:anywhere}
+#teachersModal .teacher-detail-section-title{margin:16px 0 9px}
+#teachersModal .teacher-detail-classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+#teachersModal .teacher-detail-class{border:1px solid #dce6ee;background:#f8fbfd;border-radius:13px;padding:12px;min-width:0}
+#teachersModal .teacher-detail-class-title{font-weight:900;margin-bottom:9px;color:#263d50}
+#teachersModal .teacher-detail-tags{display:flex;flex-wrap:wrap;gap:6px}
+#teachersModal .teacher-detail-tags span{background:#e8f3fb;color:#245c7c;border:1px solid #cfe4f2;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;overflow-wrap:anywhere}
+#teachersModal .teacher-detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+#teacherPermissionsModal .modal-content{width:min(900px,96vw)!important;max-height:90vh;overflow:auto}
+#teacherPermissionsModal #teacherPermissionClasses{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+#teacherPermissionsModal .teacher-perm-pair{width:auto;min-height:auto;flex:none}
+@media(max-width:600px){
+ #teachersModal .modal-content{width:100%!important;max-width:none!important;max-height:94vh;border-radius:18px 18px 0 0;padding:12px}
+ #teachersModal .pro-modal-head{align-items:flex-start}
+ #teachersModal .pro-modal-title{font-size:16px}
+ #teachersModal .teacher-name-row{padding:11px;gap:8px}
+ #teachersModal .teacher-name-open{font-size:11px}
+ #teachersModal .teacher-detail-name{font-size:19px}
+ #teachersModal .teacher-detail-grid,#teachersModal .teacher-detail-classes{grid-template-columns:1fr}
+ #teachersModal .teacher-detail-actions{display:grid;grid-template-columns:1fr}
+ #teacherPermissionsModal .modal-content{width:100%!important;max-height:94vh}
+ #teacherPermissionsModal #teacherPermissionClasses{grid-template-columns:1fr}
+}
+@media(min-width:601px) and (max-width:900px){
+ #teachersModal .teacher-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #teachersModal .teacher-detail-classes{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+
 </head>
 <body>
 
@@ -2293,7 +2340,7 @@ header > div:first-child{
             </div>
             <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون 
 				</button>
-            <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
+            <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="display:none!important;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
             <button onclick="openAnnouncementsModal()" id="btnAnnouncementsNav" style="background: #8e44ad;">🔔 التنبيهات والرسائل</button>
@@ -2321,7 +2368,6 @@ header > div:first-child{
       <div style="background:#fff;border:1px solid #d9e2e9;border-radius:16px;padding:10px 12px;box-shadow:0 4px 15px rgba(31,45,61,.08);">
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);">📋 سجل غياب معلم</button>
           <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون</button>
           <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
           <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
@@ -2522,7 +2568,7 @@ header > div:first-child{
     <div class="modal-content large">
         <div class="pro-modal-head">
             <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo)">📋 سجل غياب معلم</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -2547,7 +2593,7 @@ header > div:first-child{
             <div id="schoolLessonsManagerList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
         </div>
         <div class="pro-toolbar"><div class="pro-search"><input type="text" id="teacherSearchInput" oninput="filterTeachersTable()" placeholder="ابحث باسم المعلم أو الاختصاص أو الهاتف أو الكود..."></div></div>
-        <div id="teachersTableBody" class="teachers-cards"></div>
+        <div id="teacherDetailsPanel" style="display:none"></div><div id="teachersTableBody" class="teachers-cards"></div>
     </div>
 </div>
 
@@ -6310,27 +6356,69 @@ function updateCloudStatus(text, color) {
 
     function filterTeachersTable() { renderTeachersTable(); }
 
+    let selectedTeacherDetailsIndex = null;
+    function openTeacherDetails(index) {
+        const t = teachersData[index];
+        if (!t) return;
+        selectedTeacherDetailsIndex = index;
+        const panel = document.getElementById('teacherDetailsPanel');
+        const list = document.getElementById('teachersTableBody');
+        const search = document.querySelector('#teachersModal .pro-toolbar');
+        if (list) list.style.display = 'none';
+        if (search) search.style.display = 'none';
+        if (!panel) return;
+        const sensitive = isPrimaryAdminUser();
+        const assignedIndices = getTeacherAssignedClassIndicesForRecord(t);
+        const assigned = assignedIndices.map(i => schoolData[i]?.name).filter(Boolean);
+        const permissions = getTeacherClassSubjectPermissions(t);
+        const classDetails = assignedIndices.map(i => {
+            const cls = schoolData[i]; if (!cls) return '';
+            const lessons = permissions[String(cls.id)] || getTeacherSpecialties(t);
+            return `<div class="teacher-detail-class"><div class="teacher-detail-class-title">🏫 ${escapeGlobalSearchHTML(cls.name || 'صف')}</div><div class="teacher-detail-tags">${(lessons||[]).map(x=>`<span>${escapeGlobalSearchHTML(x)}</span>`).join('') || '<small>لم تحدد دروس</small>'}</div></div>`;
+        }).join('');
+        const indexCode = sensitive ? (t.password || 'بدون كود') : 'محجوب';
+        panel.style.display = 'block';
+        panel.innerHTML = `<div class="teacher-detail-head"><button type="button" onclick="closeTeacherDetails()" class="teacher-back-btn">→ العودة إلى أسماء المعلمين</button><div class="teacher-detail-name">👨‍🏫 ${escapeGlobalSearchHTML(t.name || '')}</div><div class="teacher-detail-sub">${escapeGlobalSearchHTML(getTeacherSpecialties(t).join('، ') || 'اختصاص غير محدد')}</div></div>
+        <div class="teacher-detail-grid">
+          <div class="teacher-detail-info"><small>الاختصاص / الدروس</small><strong>${escapeGlobalSearchHTML(getTeacherSpecialties(t).join('، ') || 'غير محدد')}</strong></div>
+          <div class="teacher-detail-info"><small>الصفوف المسموحة</small><strong>${escapeGlobalSearchHTML(assigned.join('، ') || 'غير محدد')}</strong></div>
+          ${sensitive ? `<div class="teacher-detail-info"><small>رقم الهاتف</small><strong>${t.phone && t.phone !== 'غير متوفر' ? `<a class="call-link" href="tel:${escapeGlobalSearchHTML(t.phone)}">${escapeGlobalSearchHTML(t.phone)}</a>` : 'غير متوفر'}</strong></div><div class="teacher-detail-info"><small>العمر</small><strong>${escapeGlobalSearchHTML(t.age || '—')}</strong></div><div class="teacher-detail-info"><small>كود الدخول</small><strong class="teacher-code">${escapeGlobalSearchHTML(indexCode)}</strong></div>` : ''}
+        </div>
+        <h4 class="teacher-detail-section-title">الصفوف والدروس المسموحة</h4>
+        <div class="teacher-detail-classes">${classDetails || '<div class="pro-empty">لم يتم تحديد صفوف لهذا المعلم.</div>'}</div>
+        ${sensitive ? `<div class="teacher-card-actions teacher-detail-actions"><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ تعديل الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف المعلم</button></div>` : ''}`;
+    }
+    function closeTeacherDetails() {
+        const panel = document.getElementById('teacherDetailsPanel');
+        const list = document.getElementById('teachersTableBody');
+        const search = document.querySelector('#teachersModal .pro-toolbar');
+        if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+        if (list) list.style.display = '';
+        if (search) search.style.display = '';
+        selectedTeacherDetailsIndex = null;
+    }
     function renderTeachersTable() {
         const container = document.getElementById('teachersTableBody');
         if (!container) return;
+        const panel = document.getElementById('teacherDetailsPanel');
+        const searchBox = document.querySelector('#teachersModal .pro-toolbar');
         const search = (document.getElementById('teacherSearchInput')?.value || '').trim().toLowerCase();
         const list = teachersData.filter(t => {
-            const text = [t.name,t.phone,t.spec,getTeacherSpecialties(t).join(' '),getTeacherAssignedClassIndicesForRecord(t).map(i=>schoolData[i]?.name||'').join(' ')].join(' ').toLowerCase();
+            const text = [t.name].join(' ').toLowerCase();
             return !search || text.includes(search);
         });
-        if (!teachersData.length) { container.innerHTML='<div class="pro-empty">👨‍🏫<br><strong>لا توجد بيانات معلمين</strong><br><span>أضف أول معلم من النموذج أعلاه</span></div>'; return; }
-        if (!list.length) { container.innerHTML='<div class="pro-empty">🔎<br><strong>لا توجد نتائج مطابقة</strong><br><span>جرّب كلمة بحث أخرى</span></div>'; return; }
+        if (selectedTeacherDetailsIndex !== null && teachersData[selectedTeacherDetailsIndex]) {
+            openTeacherDetails(selectedTeacherDetailsIndex);
+            return;
+        }
+        if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+        if (searchBox) searchBox.style.display = '';
+        container.style.display = '';
+        if (!teachersData.length) { container.innerHTML='<div class="pro-empty">👨‍🏫<br><strong>لا توجد أسماء معلمين</strong><br><span>أضف أول معلم من النموذج أعلاه</span></div>'; return; }
+        if (!list.length) { container.innerHTML='<div class="pro-empty">🔎<br><strong>لا توجد أسماء مطابقة</strong><br><span>جرّب البحث باسم المعلم</span></div>'; return; }
         container.innerHTML = list.map(t => {
             const index = teachersData.indexOf(t);
-            const assignedIndices = getTeacherAssignedClassIndicesForRecord(t);
-            const assignedName = assignedIndices.length ? assignedIndices.map(i=>schoolData[i]?.name).filter(Boolean).join('، ') : 'غير محدد';
-            const extraHtml='';
-            const sensitive = isPrimaryAdminUser();
-            const phone = sensitive && t.phone && t.phone !== 'غير متوفر' ? `<a href="tel:${t.phone}" class="call-link">📞 ${t.phone}</a>` : (sensitive ? 'غير متوفر' : 'غير متاح');
-            const ageHtml = sensitive ? `<div class="teacher-info-item"><div class="k">العمر</div><div class="v">${t.age || '-'}</div></div>` : '';
-            const code = (sensitive && showTeacherCodes) ? `<span class="teacher-code">${t.password || 'بدون كود'}</span>` : 'محجوب';
-            const actions = sensitive ? `<div class="teacher-card-actions"><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف</button></div>` : '';
-            return `<div class="teacher-card"><div class="teacher-card-top"><div class="teacher-avatar">👨‍🏫</div><div><div class="teacher-card-name">${t.name}</div><div class="teacher-card-spec">${getTeacherSpecialties(t).join('، ') || 'اختصاص غير محدد'}</div></div></div><div class="teacher-info-grid"><div class="teacher-info-item"><div class="k">الهاتف</div><div class="v">${phone}</div></div>${ageHtml}<div class="teacher-info-item" style="grid-column:1/-1"><div class="k">الصفوف المسموحة</div><div class="v">${assignedName}</div></div>${extraHtml}<div class="teacher-info-item" style="grid-column:1/-1"><div class="k">كود الدخول</div><div class="v">${code}</div></div></div>${actions}</div>`;
+            return `<button type="button" class="teacher-name-row" onclick="openTeacherDetails(${index})"><span class="teacher-name-avatar">👨‍🏫</span><span class="teacher-name-text">${escapeGlobalSearchHTML(t.name || 'بدون اسم')}</span><span class="teacher-name-open">عرض التفاصيل ←</span></button>`;
         }).join('');
     }
 
