@@ -2651,8 +2651,8 @@ header > div:first-child{
                 <div class="form-group pro-field"><label>اسم المدرسة للطباعة على النتائج</label><input type="text" id="printSchoolNameInput" placeholder="مثال: مدرسة التسامي"></div>
                 <div class="form-group pro-field"><label>السنة الدراسية — من سنة</label><input type="number" id="studyYearFromInput" min="2000" max="2100" placeholder="2025"></div>
                 <div class="form-group pro-field"><label>السنة الدراسية — إلى سنة</label><input type="number" id="studyYearToInput" min="2000" max="2100" placeholder="2026"></div>
-                <div class="form-group pro-field"><label>الكود الجديد</label><input type="password" id="adminNewPasswordInput" inputmode="numeric" autocomplete="new-password" placeholder="مثال: 5678"></div>
-                <div class="form-group pro-field"><label>تأكيد الكود الجديد</label><input type="password" id="adminConfirmPasswordInput" inputmode="numeric" autocomplete="new-password" placeholder="أعد كتابة الكود"></div>
+                <div class="form-group pro-field"><label>الكود الجديد</label><input type="password" id="adminNewPasswordInput" autocomplete="new-password" placeholder="مثال: 5678"></div>
+                <div class="form-group pro-field"><label>تأكيد الكود الجديد</label><input type="password" id="adminConfirmPasswordInput" autocomplete="new-password" placeholder="أعد كتابة الكود"></div>
             </div>
             <div class="pro-primary-action"><button onclick="changeCurrentAdminPassword()" style="background:var(--success)">💾 حفظ الكود الجديد</button></div>
             <div class="pro-primary-action"><button onclick="savePrintPrintSettings()" style="background:var(--blue)">🖨️ حفظ اسم المدير واسم المدرسة للطباعة</button></div>
@@ -5926,7 +5926,7 @@ function updateCloudStatus(text, color) {
         modal.innerHTML=`<div style="width:min(500px,96vw);background:#fff;border-radius:18px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);direction:rtl;">
           <h3 style="margin:0 0 8px;color:#c0392b;">🔐 تأكيد أمني — ${escapeAnnouncementHTML(label)}</h3>
           <p style="font-size:12px;color:#555;line-height:1.7;margin-top:0;">لأن العملية خطيرة، يجب إدخال الرمز السري للمدير <b>3 مرات</b>. إذا أخطأت في أي مرة سيتم إلغاء العملية بالكامل.</p>
-          ${[1,2,3].map(i=>`<div style="margin:9px 0;"><label style="font-size:11px;font-weight:900;">التحقق ${i}</label><input type="password" id="systemResetPass${i}" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px;border:1px solid #ccd6dd;border-radius:9px;" placeholder="أدخل رمز المدير"></div>`).join('')}
+          ${[1,2,3].map(i=>`<div style="margin:9px 0;"><label style="font-size:11px;font-weight:900;">التحقق ${i}</label><input type="password" id="systemResetPass${i}" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px;border:1px solid #ccd6dd;border-radius:9px;" placeholder="أدخل رمز المدير"></div>`).join('')}
           <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;margin-top:8px;"><input type="checkbox" onchange="toggleSystemResetPasswords(this.checked)"> ✓ إظهار الرموز</label>
           <div style="display:flex;gap:8px;margin-top:15px;"><button type="button" onclick="confirmSystemReset('${type}')" style="flex:1;background:#c0392b;font-weight:900;">⚠️ تنفيذ الترسيت</button><button type="button" onclick="document.getElementById('systemResetPasswordModal')?.remove()" style="background:#7f8c8d;">إلغاء</button></div>
         </div>`;
@@ -5934,7 +5934,7 @@ function updateCloudStatus(text, color) {
         setTimeout(()=>document.getElementById('systemResetPass1')?.focus(),50);
     }
 
-    function toggleSystemResetPasswords(show){[1,2,3].forEach(i=>{const e=document.getElementById('systemResetPass'+i);if(e)e.type='password';});}
+    function toggleSystemResetPasswords(show){[1,2,3].forEach(i=>{const e=document.getElementById('systemResetPass'+i);if(e){e.type='password';e.setAttribute('autocomplete','new-password');e.removeAttribute('inputmode');}});}
 
     function startFactoryReset(){
         if(!isPrimaryAdminUser()){alert('الترسيت العام متاح لمدير النظام فقط.');return;}
@@ -5947,7 +5947,7 @@ function updateCloudStatus(text, color) {
             ⚠️ تحذير شديد جداً: سيتم حذف <b>جميع بيانات النظام</b> من الجهاز ومن Firebase، بما فيها الصفوف والطلاب والمعلمين والأكواد والدرجات والحضور والملاحظات والرسائل والمواد وسجلات التدقيق والنسخ الاحتياطية السحابية. <b>لا يمكن التراجع عن العملية.</b>
           </div>
           <p style="font-size:12px;color:#555;line-height:1.8;margin-top:0;">للتأكد من أن العملية ينفذها المدير، أدخل باسورد المدير الصحيح <b>3 مرات متتالية</b>. إذا أخطأت في أي مرة فلن يتم حذف أي شيء.</p>
-          ${[1,2,3].map(i=>`<div style="margin:9px 0;"><label style="font-size:11px;font-weight:900;">التحقق ${i}</label><input type="password" id="factoryResetPass${i}" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:4px;padding:11px;border:1px solid #ccd6dd;border-radius:9px;" placeholder="أدخل باسورد المدير"></div>`).join('')}
+          ${[1,2,3].map(i=>`<div style="margin:9px 0;"><label style="font-size:11px;font-weight:900;">التحقق ${i}</label><input type="password" id="factoryResetPass${i}" autocomplete="off" style="width:100%;box-sizing:border-box;margin-top:4px;padding:11px;border:1px solid #ccd6dd;border-radius:9px;" placeholder="أدخل باسورد المدير"></div>`).join('')}
           <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;margin-top:8px;"><input type="checkbox" onchange="toggleFactoryResetPasswords(this.checked)"> ✓ إظهار الرموز</label>
           <div style="display:flex;gap:8px;margin-top:16px;"><button type="button" onclick="confirmFactoryReset()" style="flex:1;background:#7f0000;font-weight:1000;">🔥 متابعة الترسيت العام</button><button type="button" onclick="document.getElementById('factoryResetPasswordModal')?.remove()" style="background:#7f8c8d;">إلغاء</button></div>
         </div>`;
@@ -5955,7 +5955,7 @@ function updateCloudStatus(text, color) {
         setTimeout(()=>document.getElementById('factoryResetPass1')?.focus(),50);
     }
 
-    function toggleFactoryResetPasswords(show){[1,2,3].forEach(i=>{const e=document.getElementById('factoryResetPass'+i);if(e)e.type='password';});}
+    function toggleFactoryResetPasswords(show){[1,2,3].forEach(i=>{const e=document.getElementById('factoryResetPass'+i);if(e){e.type='password';e.setAttribute('autocomplete','new-password');e.removeAttribute('inputmode');}});}
 
     async function confirmFactoryReset(){
         if(!isPrimaryAdminUser()){alert('الترسيت العام متاح لمدير النظام فقط.');return;}
@@ -6303,7 +6303,7 @@ function updateCloudStatus(text, color) {
             const old=document.getElementById('maskedSecurityCodeModal'); if(old) old.remove();
             const modal=document.createElement('div'); modal.id='maskedSecurityCodeModal';
             modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:14px;direction:rtl;';
-            modal.innerHTML=`<div style="width:min(420px,96vw);background:var(--card-bg,#fff);color:var(--text-color,#222);border-radius:18px;padding:20px;box-shadow:0 20px 60px #0005;"><h3 style="margin:0 0 10px">🔐 التحقق الأمني</h3><p style="line-height:1.7">${message}</p><input id="maskedSecurityCodeValue" type="password" autocomplete="off" inputmode="numeric" placeholder="أدخل الرمز السري" style="box-sizing:border-box;width:100%;padding:13px;border:1px solid #aab7c4;border-radius:10px;font-size:18px;"><div style="display:flex;gap:8px;margin-top:14px"><button id="maskedSecurityCodeCancel" type="button" style="flex:1;padding:11px;border:0;border-radius:9px;background:#87939e;color:white">إلغاء</button><button id="maskedSecurityCodeConfirm" type="button" style="flex:1;padding:11px;border:0;border-radius:9px;background:#167d55;color:white">تأكيد</button></div></div>`;
+            modal.innerHTML=`<div style="width:min(420px,96vw);background:var(--card-bg,#fff);color:var(--text-color,#222);border-radius:18px;padding:20px;box-shadow:0 20px 60px #0005;"><h3 style="margin:0 0 10px">🔐 التحقق الأمني</h3><p style="line-height:1.7">${message}</p><input id="maskedSecurityCodeValue" type="password" autocomplete="off" placeholder="أدخل الرمز السري" style="box-sizing:border-box;width:100%;padding:13px;border:1px solid #aab7c4;border-radius:10px;font-size:18px;"><div style="display:flex;gap:8px;margin-top:14px"><button id="maskedSecurityCodeCancel" type="button" style="flex:1;padding:11px;border:0;border-radius:9px;background:#87939e;color:white">إلغاء</button><button id="maskedSecurityCodeConfirm" type="button" style="flex:1;padding:11px;border:0;border-radius:9px;background:#167d55;color:white">تأكيد</button></div></div>`;
             document.body.appendChild(modal);
             const input=modal.querySelector('#maskedSecurityCodeValue');
             const finish=value=>{modal.remove();resolve(value);};
@@ -11068,15 +11068,15 @@ function updateCloudStatus(text, color) {
         }
     }
 
-    function verifyResetAdminPassword(){
+    async function verifyResetAdminPassword(){
         if(!isPrimaryAdminUser()){
             alert('هذه الخاصية متاحة لمدير النظام فقط.');
             return false;
         }
-        const code=prompt('🔐 أدخل كود المدير لتأكيد عملية الترسيت:');
+        const code=await requestMaskedSecurityCode('أدخل الرمز السري للمدير لتأكيد عملية الترسيت. يمكنك استخدام الأحرف والأرقام والرموز.');
         if(code===null) return false;
         if(String(code).trim()!==String(adminCredentials.password||'').trim()){
-            alert('❌ كود المدير غير صحيح. لم يتم تنفيذ أي حذف.');
+            alert('❌ الرمز السري غير صحيح. لم يتم تنفيذ أي حذف.');
             return false;
         }
         return true;
