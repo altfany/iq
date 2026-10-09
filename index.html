@@ -10925,16 +10925,22 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 const lateTime=String(checkedControl?.dataset?.lateTime||oldRec?.lateTime||'').trim();
                 const lateReason=String(checkedControl?.dataset?.lateReason||oldRec?.lateReason||oldRec?.note||'').trim();
                 const note=status==='late' ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
-                const saved = window.ProfessionalModules?.recordAttendance ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : false);
-                // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور والغياب» في كارت الصف.
+                const attendanceWriter = window.ProfessionalModules?.recordAttendance || (typeof recordAttendance==='function' ? recordAttendance : null);
+                const saved = attendanceWriter ? attendanceWriter(student.student.id,status,date,note,lateTime,lateReason) : false;
+                if (!saved) {
+                    console.warn('Monitor attendance could not be written to unified attendance source:', student.student.id, student.student.name, date, status);
+                }
+                // مزامنة سجل الصف القديم بالمفتاح الفعلي للمقعد، لا برقم فهرس الرحلة فقط.
+                // وتبقى السجلات الموحدة هي المصدر الأساسي الذي تقرأ منه «فتح الكشف» والرحلات.
                 if (student.classObj) {
                     if (!student.classObj.absenceRecords) student.classObj.absenceRecords = {};
                     if (!student.classObj.absenceRecords[date]) student.classObj.absenceRecords[date] = {};
                     const seatPos = Number(student.slot) === 1 ? 'يمين' : 'يسار';
-                    const deskNo = Number(student.deskIndex) + 1;
+                    const desk = student.classObj.desks?.[Number(student.deskIndex)];
+                    const deskNo = String(desk?.deskNumber ?? (Number(student.deskIndex) + 1));
                     const legacyKey = `${deskNo}_${seatPos}_${student.student.name}`;
                     const legacyKeyId = String(student.student.id);
-                    if (status === 'absent' || status === 'late') {
+                    if (status === 'absent' || status === 'late' || status === 'leave') {
                         student.classObj.absenceRecords[date][legacyKey] = status;
                         student.classObj.absenceRecords[date][legacyKeyId] = status;
                     } else {
@@ -10962,7 +10968,10 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             if(monitorInventoryReportsData.length>500)monitorInventoryReportsData.length=500;
             // الحفظ الأساسي يكون في Firebase مباشرة، ولا نعتمد على مهلة الحفظ المؤجلة.
             // هذا يضمن بقاء غياب الطالب عند تسجيل الخروج ثم الدخول من جديد.
+            // حفظ الحالة الموحدة وسجلات الصف والتقرير معاً قبل المزامنة السحابية.
             saveData();
+            try { if (typeof renderDesks === 'function') renderDesks(); } catch (e) { console.warn('Trip refresh after monitor save failed:', e); }
+            try { if (typeof renderAbsenceTable === 'function') renderAbsenceTable(); } catch (e) { console.warn('Attendance sheet refresh after monitor save failed:', e); }
             if (window.FirebaseCloud?.enabled && cloudReady && navigator.onLine && typeof saveCurrentCloudPayload === 'function') {
                 try {
                     await saveCurrentCloudPayload();
