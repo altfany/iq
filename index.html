@@ -2292,7 +2292,7 @@ header > div:first-child{
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
             <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 سجل الغيابات</button>
-            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
+            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
@@ -2303,7 +2303,7 @@ header > div:first-child{
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
             
-            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقب</button>
+            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقبون</button>
             <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none;">📊 ملخص الحضور الشهري</button>
             <button onclick="openAddModal()" id="btnAddClassNav">+ إضافة صف جديد</button>
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
@@ -2325,7 +2325,7 @@ header > div:first-child{
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);">📋 سجل غياب معلم</button>
-          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون ومراقب</button>
+          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون</button>
           <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
           <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
         </div>
@@ -2524,8 +2524,8 @@ header > div:first-child{
 <div class="modal" id="teachersModal">
     <div class="modal-content large">
         <div class="pro-modal-head">
-            <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين والمراقبين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openMonitorsModal()" style="background:#16a085;color:#fff;font-weight:900;">👁️ إدارة المراقبين</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين</h3>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -5247,7 +5247,7 @@ function updateCloudStatus(text, color) {
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
-            if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
+            if(btnMonitorsNav) btnMonitorsNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'flex';
@@ -10629,19 +10629,20 @@ function updateCloudStatus(text, color) {
             const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const safeId=escAttr(f.student.id);
             // «مجاز» حالة مقروءة من السجل الموحد؛ صلاحية تغييرها تبقى للمدير.
-            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
-            return `<tr>
+            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰']];
+            const isManagerLeave=status==='leave';
+            return `<tr data-preserve-status="${isManagerLeave?'leave':''}">
                 <td>${i+1}</td>
                 <td>${escapeGlobalSearchHTML(f.student.name)}</td>
                 <td>
-                  <div class="monitor-status-checks" data-current-status="${status}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                  ${isManagerLeave ? '<span style="display:inline-block;padding:7px 11px;border-radius:9px;background:#f3e8ff;color:#6b21a8;font-weight:900">الحالة مسجلة من المدير</span>' : `<div class="monitor-status-checks" data-current-status="${status}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                     ${checks.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;cursor:pointer;font-weight:800;font-size:12px">
-                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='leave'?'disabled title="حالة المجاز تسجل من المدير"':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
+                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
                         onchange="monitorAttendanceCheckboxChanged(this,'${safeId}','${escapeGlobalSearchHTML(date)}')"
                         style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer">
                       <span>${icon} ${label}</span>
                     </label>`).join('')}
-                  </div>
+                  </div>`}
                   <div data-late-info="${escapeGlobalSearchHTML(f.student.id)}" style="font-size:11px;color:#8a5a00;font-weight:700;margin-top:4px;">
                     ${status==='late' ? `وقت الدخول: ${escapeGlobalSearchHTML(lateTime||'-')} — السبب: ${escapeGlobalSearchHTML(lateReason||'-')}` : ''}
                   </div>
@@ -10660,16 +10661,31 @@ function updateCloudStatus(text, color) {
         if(target){ target.checked=true; window.monitorAttendanceCheckboxChanged(target,target.dataset.monitorStudent,''); }
     }
 
+    function selectMonitorClass(classIndex){
+        const select=document.getElementById('monitorClassSelect');
+        if(!select) return;
+        select.value=String(classIndex);
+        const list=document.getElementById('monitorClassList');
+        if(list) list.querySelectorAll('[data-monitor-class-button]').forEach(btn=>{
+            const active=String(btn.dataset.monitorClassButton)===String(classIndex);
+            btn.style.background=active?'#0f766e':'#fff';
+            btn.style.color=active?'#fff':'#17435a';
+            btn.style.borderColor=active?'#0f766e':'#d5e0e8';
+        });
+        renderMonitorSelectedClass();
+        document.getElementById('monitorClassStudents')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }
     function openMonitorCenter(){
         if(!currentUser||currentUser.role!=='monitor')return;
         const old=document.getElementById('monitorCenterModal');if(old)old.remove();
         const today=getFormattedDate();
         const classes=getMonitorClasses();
         const options=classes.map((cls,i)=>`<option value="${i}">${escapeGlobalSearchHTML(String(cls?.name||`الصف ${i+1}`))}</option>`).join('');
+        const classButtons=classes.map((cls,i)=>`<button type="button" data-monitor-class-button="${i}" onclick="selectMonitorClass(${i})" style="text-align:right;background:#fff;color:#17435a;border:1px solid #d5e0e8;border-radius:12px;padding:13px 15px;font-weight:900;box-shadow:0 2px 7px rgba(0,0,0,.04)">🏫 ${escapeGlobalSearchHTML(String(cls?.name||`الصف ${i+1}`))}<span style="display:block;font-size:11px;font-weight:600;opacity:.75;margin-top:4px">اضغط لفتح سجل حضور الصف</span></button>`).join('');
         const modal=document.createElement('div');
         modal.id='monitorCenterModal';modal.className='modal';
         modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100008;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:18px"><div style="text-align:center;margin-bottom:14px"><h2 style="margin:0;color:#16a085">👁️ مركز المراقب</h2><div style="font-size:12px;color:#6b7b88;margin-top:4px">اختر الصف ثم سجل حضور وغياب الطلاب</div><button type="button" onclick="logoutSystem()" style="margin-top:10px;background:var(--danger)">🚪 تسجيل الخروج</button></div><div class="pro-panel"><label style="font-weight:700">الصف</label><select id="monitorClassSelect" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"><option value="">-- اختر الصف --</option>${options}</select><label style="font-weight:700;display:block;margin-top:12px">تاريخ الجرد</label><input type="date" id="monitorAttendanceDate" value="${today}" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"></div><div class="pro-panel" style="margin-top:12px"><h3 style="margin-top:0">📝 ملاحظة إلى المدرسة</h3><textarea id="monitorGeneralNote" rows="3" placeholder="اكتب ملاحظة أو رسالة للمدرسة، ولا علاقة لها بالحضور والغياب..." style="width:100%;resize:vertical"></textarea><div class="pro-toolbar" style="justify-content:flex-end;margin-top:8px"><button type="button" onclick="sendMonitorGeneralMessage()" style="background:var(--primary)">📨 إرسال للمدير</button></div></div><div id="monitorClassStudents"><div class="pro-empty" style="padding:25px;text-align:center">اختر الصف لعرض أسماء الطلاب المسجلين فيه.</div></div></div>`;
+        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:18px"><div style="text-align:center;margin-bottom:14px"><h2 style="margin:0;color:#16a085">👁️ نظام المراقب</h2><div style="font-size:12px;color:#6b7b88;margin-top:4px">اختر الصف من القائمة ثم حدّث حالات الطلاب واحفظها ليطّلع عليها المدير في الإحصاء اليومي وسجل الصف</div><button type="button" onclick="logoutSystem()" style="margin-top:10px;background:var(--danger)">🚪 تسجيل الخروج</button></div><div class="pro-panel"><label style="font-weight:900;display:block;margin-bottom:9px">📚 قائمة الصفوف</label><div id="monitorClassList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px">${classButtons||'<div class="pro-empty">لا توجد صفوف مضافة في النظام.</div>'}</div><select id="monitorClassSelect" onchange="renderMonitorSelectedClass()" style="display:none"><option value="">-- اختر الصف --</option>${options}</select><label style="font-weight:700;display:block;margin-top:14px">تاريخ الحضور</label><input type="date" id="monitorAttendanceDate" value="${today}" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"></div><div class="pro-panel" style="margin-top:12px"><h3 style="margin-top:0">📝 ملاحظة إلى المدرسة</h3><textarea id="monitorGeneralNote" rows="3" placeholder="اكتب ملاحظة أو رسالة للمدرسة، ولا علاقة لها بالحضور والغياب..." style="width:100%;resize:vertical"></textarea><div class="pro-toolbar" style="justify-content:flex-end;margin-top:8px"><button type="button" onclick="sendMonitorGeneralMessage()" style="background:var(--primary)">📨 إرسال للمدير</button></div></div><div id="monitorClassStudents"><div class="pro-empty" style="padding:25px;text-align:center">اختر صفاً من القائمة لعرض سجل الطلاب.</div></div></div>`;
         document.body.appendChild(modal);
     }
     window.monitorAttendanceCheckboxChanged=async function(box,studentId,date){
@@ -10721,14 +10737,14 @@ function updateCloudStatus(text, color) {
                 const row=rows.find(tr=>tr.querySelector(`input[data-monitor-student="${CSS.escape(String(student.student.id))}"]`));
                 if(!row) return null;
                 const checked=row.querySelector('input[data-monitor-status]:checked');
-                return {student,row,status:checked?.dataset?.monitorStatus||'present'};
+                return {student,row,status:checked?.dataset?.monitorStatus||(row.dataset.preserveStatus==='leave'?'leave':'present')};
             }).filter(Boolean);
             if(controls.length!==students.length){alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');return;}
             const absent=[];
             const reportStudents=[];
             controls.forEach(item=>{
                 const student=item.student;
-                const status=['late','absent','present'].includes(item.status) ? item.status : 'present';
+                const status=item.row?.dataset?.preserveStatus==='leave' ? 'leave' : (['late','absent','present'].includes(item.status) ? item.status : 'present');
                 const lateInfo=student.classObj?.absenceRecords?.[date] || {};
                 const oldRec=window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(student.student.id,date) : (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
                 const checkedControl=item.row.querySelector('input[data-monitor-status]:checked');
