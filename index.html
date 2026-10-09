@@ -12351,8 +12351,33 @@ body.parent-only-mode header { display:none !important; }
     document.getElementById('dailyAttendanceStatsModal')?.remove();
     const modal=document.createElement('div');modal.id='dailyAttendanceStatsModal';modal.className='modal';
     modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100150;background:rgba(4,20,35,.76);padding:10px;align-items:center;justify-content:center;direction:rtl';
-    modal.innerHTML=`<div class="modal-content" style="width:min(1200px,98vw);max-height:95vh;overflow:auto;padding:18px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h2 style="margin:0;color:#0f7c8c">📊 الإحصاء اليومي للحضور والغياب</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="printDailyAttendanceStats()" style="background:#198754">🖨️ طباعة A4</button><button onclick="document.getElementById('dailyAttendanceStatsModal')?.remove()" style="background:#c0392b">✕ إغلاق</button></div></div><label style="display:block;font-weight:900;margin:12px 0 5px">📅 اختر اليوم المطلوب</label><input id="dailyAttendanceStatsDate" type="date" value="${typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10)}" onchange="renderDailyAttendanceStats()" style="max-width:260px;width:100%"><div id="dailyAttendanceStatsBody"></div></div>`;
+    modal.innerHTML=`<div class="modal-content" style="width:min(1200px,98vw);max-height:95vh;overflow:auto;padding:18px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h2 style="margin:0;color:#0f7c8c">📊 الإحصاء اليومي للحضور والغياب</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="printDailyAttendanceStats()" style="background:#198754">🖨️ طباعة A4</button><button onclick="document.getElementById('dailyAttendanceStatsModal')?.remove()" style="background:#c0392b">✕ إغلاق</button></div></div><label style="display:block;font-weight:900;margin:12px 0 5px">📅 اختر اليوم المطلوب</label><input id="dailyAttendanceStatsDate" type="date" value="${typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10)}" onchange="renderDailyAttendanceStats()" style="max-width:260px;width:100%"><label style="display:block;font-weight:900;margin:14px 0 5px">🔎 البحث عن طالب في جميع السجلات</label><input id="dailyStatsStudentSearch" type="search" placeholder="اكتب اسم الطالب..." oninput="searchDailyStatsStudent()" style="width:100%;max-width:600px"><div id="dailyStatsStudentResults"></div><div id="dailyAttendanceStatsBody"></div></div>`;
     document.body.appendChild(modal);window.renderDailyAttendanceStats();
+  };
+  window.searchDailyStatsStudent=function(){
+    const input=document.getElementById('dailyStatsStudentSearch');
+    const out=document.getElementById('dailyStatsStudentResults');if(!input||!out)return;
+    const q=input.value.trim().toLocaleLowerCase('ar');
+    if(!q){out.innerHTML='';return;}
+    const all=(typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]);
+    const dates=new Set();
+    (Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[]).forEach(r=>{if(r?.date)dates.add(String(r.date));});
+    (Array.isArray(schoolData)?schoolData:[]).forEach(cls=>Object.keys(cls?.absenceRecords||{}).forEach(d=>dates.add(d)));
+    const rows=all.filter(r=>String(r.name||'').toLocaleLowerCase('ar').includes(q));
+    const records=[];
+    rows.forEach(r=>[...dates].sort().reverse().forEach(date=>{
+      const status=typeof getDailySchoolStudentStatus==='function'?getDailySchoolStudentStatus(r,date):'';
+      if(status&&status!=='present')records.push({r,date,status});
+    }));
+    const labels={absent:'غائب',late:'متأخر',leave:'مجاز',present:'حاضر'};
+    out.innerHTML=`<div style="margin:10px 0;padding:12px;border:1px solid #cbd8e3;border-radius:12px;background:#f8fbfd"><h3>نتائج البحث (${rows.length} طالب مطابق، ${records.length} حالة مسجلة)</h3>${rows.length?`<div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${records.map(x=>`<tr><td>${esc(x.r.name)}</td><td>${esc(x.r.className||'—')}</td><td>${esc(x.date)}</td><td>${labels[x.status]||esc(x.status)}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد حالات مسجلة لهذا الطالب في السجلات المتاحة.</td></tr>'}</tbody></table></div><button onclick="printDailyStudentSearch()" style="background:#198754;margin-top:10px">🖨️ طباعة نتائج الطالب A4</button>`:'لم يتم العثور على طالب بهذا الاسم.'}</div>`;
+    window.__dailyStudentSearchPrint={q,records};
+  };
+  window.printDailyStudentSearch=function(){
+    const d=window.__dailyStudentSearchPrint;if(!d)return;
+    const rows=d.records.map(x=>({name:x.r.name,className:x.r.className||'—',date:x.date,status:({absent:'غائب',late:'متأخر',leave:'مجاز',present:'حاضر'})[x.status]||x.status}));
+    const w=window.open('','_blank');if(!w){alert('يرجى السماح بفتح نافذة الطباعة.');return;}
+    w.document.write(`<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سجل الطالب</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;padding:8px;text-align:center}th{background:#eee}</style></head><body><h2>سجل حالات الطالب</h2><p>بحث: ${esc(d.q)}</p><table><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.className)}</td><td>${esc(r.date)}</td><td>${esc(r.status)}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();
   };
   window.renderDailyAttendanceStats=function(){
     const body=document.getElementById('dailyAttendanceStatsBody');if(!body)return;
@@ -12412,7 +12437,115 @@ body.parent-only-mode header { display:none !important; }
   window.printClassAbsenceRegister=function(){const d=window.__classAbsencePrint;if(d)printTable(`سجل الغيابات — ${d.name} — ${d.date}`,d.rows.map(r=>({...r,status:getDailySchoolStudentStatus(r,d.date)})),[['الطالب','name'],['الرحلة/المقعد','seat'],['الكود','code'],['الحالة','status'],['الهاتف','phone']]);};
 })();
 </script>
-</body>
+<script id="shared-attendance-monitor-upgrades">
+(function(){
+  const AESC=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const TODAY=()=>typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10);
+  const canEditClass=cls=>!!(currentUser&&cls&&(currentUser.role==='admin'||currentUser.role==='monitor'||(currentUser.role==='teacher'&&typeof isClassSupervisor==='function'&&isClassSupervisor(cls))));
+  const statusLabels={present:'حاضر',absent:'غائب',late:'متأخر',leave:'مجاز'};
+  function getRowsForClass(cls){return (typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).filter(r=>r.cls===cls);}
+  function getAttRecord(studentId,date){return (window.ProfessionalModules?.attendanceData||[]).find(x=>String(x.studentId)===String(studentId)&&String(x.date)===String(date))||null;}
+  function addLateFieldsToRow(tr,status,record){const wrap=tr.querySelector('.shared-late-fields');if(!wrap)return;wrap.style.display=status==='late'?'flex':'none';const time=wrap.querySelector('.shared-late-time'),reason=wrap.querySelector('.shared-late-reason');if(time&&record?.lateTime)time.value=record.lateTime;if(reason&&(record?.lateReason||record?.note))reason.value=record.lateReason||record.note||'';}
+
+  window.openClassAbsenceRegister=function(){
+    if(!currentUser){alert('يرجى تسجيل الدخول أولاً.');return;}
+    const idx=Number(currentClassIndex),cls=(Array.isArray(schoolData)?schoolData:[])[idx];
+    if(!cls){alert('تعذر تحديد الصف الحالي. افتح الصف من قائمة الصفوف ثم حاول مرة أخرى.');return;}
+    if(!canEditClass(cls)){alert('صلاحية تسجيل الحضور والغياب متاحة للمدير ومرشد الصف المعيّن فقط.');return;}
+    window.openSharedAttendanceRegister(idx,currentUser.role==='monitor');
+  };
+
+  window.openSharedAttendanceRegister=function(classIndex,monitorMode=false){
+    const idx=Number(classIndex),cls=(Array.isArray(schoolData)?schoolData:[])[idx];
+    if(!cls||!canEditClass(cls)){alert('لا تملك صلاحية تسجيل الحضور والغياب لهذا الصف.');return;}
+    if(monitorMode && currentUser?.role!=='monitor') monitorMode=false;
+    window.__sharedAttendanceClassIndex=idx;window.__sharedAttendanceMonitorMode=monitorMode;
+    document.getElementById('classAbsenceRegisterModal')?.remove();
+    const modal=document.createElement('div');modal.id='classAbsenceRegisterModal';modal.className='modal';
+    modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100190;background:#0009;padding:10px;align-items:center;justify-content:center;direction:rtl';
+    const dateControl=monitorMode?`<div style="padding:9px 12px;border-radius:9px;background:#eef7ff;font-weight:800">📅 تاريخ اليوم فقط: ${AESC(TODAY())}</div>`:`<label style="font-weight:800">📅 التاريخ <input id="classAbsenceRegisterDate" type="date" value="${AESC(TODAY())}" onchange="renderClassAbsenceRegister()"></label>`;
+    modal.innerHTML=`<div class="modal-content" style="width:min(1150px,98vw);max-height:94vh;overflow:auto;padding:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0;color:#0f7c8c">📋 سجل غيابات هذا الصف — ${AESC(cls.name||`الصف ${idx+1}`)}</h2><div style="display:flex;gap:8px"><button onclick="printClassAbsenceRegister()" style="background:#198754">🖨️ طباعة A4</button><button onclick="document.getElementById('classAbsenceRegisterModal')?.remove()" style="background:#c0392b">إغلاق</button></div></div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0">${dateControl}<span style="font-size:12px;color:#657786">الحالات تُحفظ في السجل الموحد وتظهر للمدير والمرشد والمراقب.</span></div><div id="classAbsenceRegisterBody"></div></div>`;
+    document.body.appendChild(modal);window.renderClassAbsenceRegister();
+  };
+
+  window.renderClassAbsenceRegister=function(){
+    const body=document.getElementById('classAbsenceRegisterBody');if(!body)return;
+    const idx=Number(window.__sharedAttendanceClassIndex ?? window.__classAbsenceClassIndex ?? currentClassIndex),cls=(Array.isArray(schoolData)?schoolData:[])[idx];
+    if(!cls){body.innerHTML='<p>تعذر تحديد الصف. أغلق السجل وافتحه من جديد.</p>';return;}
+    const monitorMode=!!window.__sharedAttendanceMonitorMode;
+    const date=monitorMode?TODAY():(document.getElementById('classAbsenceRegisterDate')?.value||TODAY());
+    const rows=getRowsForClass(cls),isAdmin=currentUser?.role==='admin';
+    const counts={present:0,absent:0,late:0,leave:0};rows.forEach(r=>{const s=getDailySchoolStudentStatus(r,date)||'present';if(counts[s]!==undefined)counts[s]++;});
+    body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0">${Object.entries(counts).filter(([s])=>isAdmin||s!=='leave').map(([s,n])=>`<div style="background:#f5f8fb;border:1px solid #dbe4ec;border-radius:10px;padding:10px"><b>${statusLabels[s]}</b><div style="font-size:23px;font-weight:900">${n}</div></div>`).join('')}</div><div style="overflow:auto"><table class="pro-table"><thead><tr><th>#</th><th>الطالب</th><th>المقعد</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>إجراء</th></tr></thead><tbody>${rows.map((r,i)=>{
+      const rec=getAttRecord(r.id,date),s=getDailySchoolStudentStatus(r,date)||'present';
+      const options=['present','absent','late',...(isAdmin?['leave']:[])].map(k=>`<option value="${k}" ${s===k?'selected':''}>${statusLabels[k]}</option>`).join('');
+      return `<tr data-shared-student="${AESC(r.id)}"><td>${i+1}</td><td><b>${AESC(r.name)}</b></td><td>${AESC(r.deskNumber)} — ${AESC(r.seat)}</td><td><select class="shared-status" style="min-width:105px;padding:7px;border-radius:8px" onchange="toggleSharedLateFields(this)">${options}</select></td><td colspan="2"><div class="shared-late-fields" style="display:${s==='late'?'flex':'none'};gap:6px;flex-wrap:wrap"><input class="shared-late-time" type="time" aria-label="ساعة التأخر" value="${AESC(rec?.lateTime||'')}" style="min-width:115px;padding:7px;border:1px solid #ccd6df;border-radius:7px"><input class="shared-late-reason" type="text" aria-label="سبب التأخر" placeholder="سبب التأخر" value="${AESC(rec?.lateReason||'')}" style="min-width:160px;flex:1;padding:7px;border:1px solid #ccd6df;border-radius:7px"></div>${s==='late'?'':`<span style="color:#9aa5b1;font-size:11px">—</span>`}</td><td><button type="button" onclick="saveSharedAttendanceRow(this)" style="background:#16803c;padding:7px 10px">💾 حفظ</button></td></tr>`;
+    }).join('')||'<tr><td colspan="7">لا يوجد طلاب مسجلون في هذا الصف.</td></tr>'}</tbody></table></div>`;
+    window.__classAbsencePrint={rows,date,name:cls.name||''};
+  };
+  window.toggleSharedLateFields=function(sel){const tr=sel?.closest('tr');if(!tr)return;const w=tr.querySelector('.shared-late-fields');if(w)w.style.display=sel.value==='late'?'flex':'none';};
+  window.saveSharedAttendanceRow=function(btn){
+    const tr=btn?.closest('tr');if(!tr)return;const studentId=tr.dataset.sharedStudent,date=window.__sharedAttendanceMonitorMode?TODAY():(document.getElementById('classAbsenceRegisterDate')?.value||TODAY());
+    const idx=Number(window.__sharedAttendanceClassIndex),cls=schoolData?.[idx];if(!cls||!canEditClass(cls)){alert('لا تملك صلاحية تعديل هذا السجل.');return;}
+    const status=tr.querySelector('.shared-status')?.value||'present';if(status==='leave'&&currentUser?.role!=='admin'){alert('حالة مجاز متاحة للمدير فقط.');return;}
+    const time=tr.querySelector('.shared-late-time')?.value||'',reason=tr.querySelector('.shared-late-reason')?.value?.trim()||'';
+    if(status==='late'&&!time){alert('يرجى تحديد ساعة التأخر.');return;}if(status==='late'&&!reason){alert('يرجى كتابة سبب التأخر.');return;}
+    const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`سبب التأخر: ${reason}`:'',status==='late'?time:'',status==='late'?reason:'');
+    if(!ok){alert('تعذر حفظ الحالة. تأكد من وجود الطالب في السجل.');return;}
+    btn.textContent='✓ تم الحفظ';btn.style.background='#16803c';
+    window.renderClassAbsenceRegister();
+  };
+  window.changeClassAbsenceStatus=function(select){const tr=select?.closest('tr');const btn=tr?.querySelector('button[onclick="saveSharedAttendanceRow(this)"]');if(btn)window.saveSharedAttendanceRow(btn);};
+  window.printClassAbsenceRegister=function(){const d=window.__classAbsencePrint;if(!d)return;const rows=d.rows.map(r=>{const rec=getAttRecord(r.id,d.date);return {...r,status:getDailySchoolStudentStatus(r,d.date),lateTime:rec?.lateTime||'',lateReason:rec?.lateReason||''};});const w=window.open('','_blank');if(!w){alert('يرجى السماح بالنوافذ المنبثقة للطباعة.');return;}w.document.write(`<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سجل الغيابات</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Tahoma,Arial;color:#172b3a}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #888;padding:6px;text-align:center}th{background:#eef4f7}</style></head><body><h2>سجل غيابات الصف — ${AESC(d.name)} — ${AESC(d.date)}</h2><table><thead><tr><th>الطالب</th><th>المقعد</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${AESC(r.name)}</td><td>${AESC(r.deskNumber)} — ${AESC(r.seat)}</td><td>${AESC(statusLabels[r.status]||r.status)}</td><td>${AESC(r.lateTime||'—')}</td><td>${AESC(r.lateReason||'—')}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();};
+
+  // واجهة المراقب: جميع الصفوف، تسجيل اليوم فقط، من دون خيار «مجاز».
+  window.openMonitorCenter=function(){
+    if(!currentUser||currentUser.role!=='monitor')return;
+    document.getElementById('monitorCenterModal')?.remove();
+    const options=(schoolData||[]).map((c,i)=>`<option value="${i}">${AESC(c.name||`الصف ${i+1}`)}</option>`).join('');
+    const m=document.createElement('div');m.id='monitorCenterModal';m.className='modal';m.style.cssText='display:flex;position:fixed;inset:0;z-index:100180;background:#0009;padding:10px;align-items:center;justify-content:center;direction:rtl';
+    m.innerHTML=`<div class="modal-content" style="width:min(1050px,98vw);max-height:94vh;overflow:auto;padding:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><h2 style="margin:0;color:#0f7c8c">👁️ نظام المراقب</h2><div style="margin-top:5px">المراقب: <b>${AESC(currentUser.name)}</b> — التاريخ: <b>${AESC(TODAY())}</b></div></div><button onclick="logoutSystem()" style="background:#c0392b">🚪 تسجيل الخروج</button></div><div style="margin:14px 0;padding:12px;border:1px solid #dbe5ec;border-radius:12px"><label style="font-weight:900">اختر الصف</label><select id="monitorSharedClassSelect" style="display:block;width:100%;margin-top:8px;padding:10px;border-radius:8px"><option value="">— اختر الصف —</option>${options}</select><button onclick="openMonitorSharedClassRegister()" style="margin-top:10px;background:#0f7c8c">📋 سجل غيابات هذا الصف</button></div><div style="font-size:12px;color:#6a7885">يمكن للمراقب تسجيل حاضر أو غائب أو متأخر لليوم الحالي فقط. لا تظهر له حالة «مجاز».</div></div>`;
+    document.body.appendChild(m);
+  };
+  window.openMonitorSharedClassRegister=function(){const sel=document.getElementById('monitorSharedClassSelect');if(!sel||sel.value===''){alert('اختر الصف أولاً.');return;}window.openSharedAttendanceRegister(Number(sel.value),true);};
+
+  // توحيد تسجيل التأخر في جدول الحضور القديم أيضاً، بحيث يطلب الساعة والسبب ويحفظهما في السجل المشترك.
+  document.addEventListener('change',function(ev){
+    const el=ev.target;if(!el||el.tagName!=='SELECT')return;const attr=el.getAttribute('onchange')||'';if(!attr.includes('updateStudentAbsence('))return;
+    const match=attr.match(/updateStudentAbsence\('([^']*)'\s*,\s*'([^']*)'\s*,/);if(!match)return;
+    const date=match[1],studentId=match[2],status=el.value;
+    if(!currentUser||!['admin','monitor','teacher'].includes(currentUser.role))return;
+    if(status==='leave'&&currentUser.role!=='admin'){ev.stopImmediatePropagation();ev.preventDefault();alert('حالة مجاز متاحة للمدير فقط.');return;}
+    ev.stopImmediatePropagation();ev.preventDefault();let time='',reason='';
+    if(status==='late'){time=prompt('أدخل ساعة وصول الطالب (مثال 08:15):','');if(time===null){try{renderAbsenceTable();}catch(_){}return;}reason=prompt('اكتب سبب التأخر:','');if(reason===null||!reason.trim()){alert('يجب كتابة سبب التأخر.');try{renderAbsenceTable();}catch(_){}return;}if(!time.trim()){alert('يجب تحديد ساعة التأخر.');try{renderAbsenceTable();}catch(_){}return;}}
+    const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`سبب التأخر: ${reason.trim()}`:'',time,reason.trim());if(!ok)alert('تعذر حفظ الحالة.');try{renderAbsenceTable();}catch(_){}
+  },true);
+
+  // زر إدارة المراقبين داخل واجهة المدير.
+  window.openMonitorManagement=function(){
+    if(currentUser?.role!=='admin'){alert('هذه الخاصية للمدير فقط.');return;}
+    document.getElementById('monitorManagementModal')?.remove();const m=document.createElement('div');m.id='monitorManagementModal';m.className='modal';m.style.cssText='display:flex;position:fixed;inset:0;z-index:100200;background:#0009;padding:10px;align-items:center;justify-content:center;direction:rtl';
+    m.innerHTML=`<div class="modal-content" style="width:min(760px,96vw);max-height:92vh;overflow:auto;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;color:#0f7c8c">👁️ إدارة المراقبين</h2><button onclick="document.getElementById('monitorManagementModal')?.remove()" style="background:#c0392b">إغلاق</button></div><form onsubmit="addSystemMonitor(event)" style="margin-top:14px;padding:14px;background:#f5f9fc;border:1px solid #dbe5ec;border-radius:12px"><label style="font-weight:900">اسم المراقب</label><input id="newSystemMonitorName" required maxlength="80" placeholder="اكتب اسم المراقب" style="display:block;width:100%;padding:10px;margin:7px 0 12px;border:1px solid #ccd6df;border-radius:8px"><button type="submit" style="background:#16803c">➕ إضافة مراقب وتوليد كود</button><div id="newSystemMonitorResult" style="margin-top:10px"></div></form><div id="systemMonitorsList" style="margin-top:14px"></div></div>`;
+    document.body.appendChild(m);window.renderSystemMonitorsList();
+  };
+  window.addSystemMonitor=function(ev){ev?.preventDefault();if(currentUser?.role!=='admin')return;const name=document.getElementById('newSystemMonitorName')?.value?.trim();if(!name){alert('اكتب اسم المراقب.');return;}if(!Array.isArray(monitorsData))monitorsData=[];let code='';const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';do{code=Array.from({length:8},()=>alphabet[Math.floor(Math.random()*alphabet.length)]).join('');}while(monitorsData.some(m=>String(m.code||'')===code));const item={id:'monitor_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7),name,code,createdAt:new Date().toISOString(),active:true};monitorsData.push(item);if(typeof saveData==='function')saveData();const out=document.getElementById('newSystemMonitorResult');if(out)out.innerHTML=`<div style="padding:12px;background:#e8f7ed;border:1px solid #b8e2c4;border-radius:9px"><b>تم إنشاء المراقب.</b><br>الاسم: ${AESC(name)}<br>كود الدخول: <strong style="font-size:22px;letter-spacing:2px;user-select:all">${AESC(code)}</strong><br><button type="button" onclick="navigator.clipboard?.writeText('${code}').then(()=>alert('تم نسخ الكود')).catch(()=>{})" style="margin-top:8px;background:#0f7c8c">نسخ الكود</button><div style="font-size:12px;margin-top:5px">احتفظ بالكود وأعطه للمراقب لتسجيل الدخول.</div></div>`;const input=document.getElementById('newSystemMonitorName');if(input)input.value='';window.renderSystemMonitorsList();};
+  window.renderSystemMonitorsList=function(){const box=document.getElementById('systemMonitorsList');if(!box)return;const list=Array.isArray(monitorsData)?monitorsData:[];box.innerHTML=`<h3>المراقبون المسجلون (${list.length})</h3>${list.map((m,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border-bottom:1px solid #e0e7ed"><div><b>${AESC(m.name||'مراقب')}</b><div style="font-size:12px;color:#657786">الكود: <code>${AESC(m.code||'—')}</code></div></div><button type="button" onclick="removeSystemMonitor('${AESC(m.id)}')" style="background:#c0392b">حذف</button></div>`).join('')||'<p>لا يوجد مراقبون بعد.</p>'}`;};
+  window.removeSystemMonitor=function(id){if(currentUser?.role!=='admin')return;if(!confirm('هل تريد حذف هذا المراقب؟ لن يستطيع استخدام الكود بعد الحذف.'))return;monitorsData=monitorsData.filter(m=>String(m.id)!==String(id));if(typeof saveData==='function')saveData();window.renderSystemMonitorsList();};
+  function ensureMonitorAdminButton(){const bar=document.getElementById('staffAdminBar');if(!bar||document.getElementById('btnMonitorManagement'))return;const b=document.createElement('button');b.id='btnMonitorManagement';b.type='button';b.textContent='👁️ المراقب';b.style.cssText='background:#0f7c8c;color:#fff;font-weight:900;margin:5px';b.onclick=window.openMonitorManagement;bar.appendChild(b);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureMonitorAdminButton);else ensureMonitorAdminButton();
+
+  // البحث في الإحصاء اليومي يعرض كل الحالات المسجلة للطالب، مع تفاصيل التأخر والجهة المسجلة.
+  window.searchDailyStatsStudent=function(){
+    const input=document.getElementById('dailyStatsStudentSearch'),out=document.getElementById('dailyStatsStudentResults');if(!input||!out)return;const q=input.value.trim().toLocaleLowerCase('ar');if(!q){out.innerHTML='';window.__dailyStudentSearchPrint=null;return;}
+    const all=typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[],dates=new Set();(window.ProfessionalModules?.attendanceData||[]).forEach(r=>{if(r?.date)dates.add(String(r.date));});(schoolData||[]).forEach(c=>Object.keys(c?.absenceRecords||{}).forEach(d=>dates.add(d)));
+    const matched=all.filter(r=>String(r.name||'').toLocaleLowerCase('ar').includes(q)),records=[];matched.forEach(r=>[...dates].sort().reverse().forEach(date=>{const status=getDailySchoolStudentStatus(r,date);const rec=getAttRecord(r.id,date);const legacy=r.cls?.absenceRecords?.[date]||{};const hasLegacy=Object.prototype.hasOwnProperty.call(legacy,r.id)||Object.prototype.hasOwnProperty.call(legacy,r.legacyKey);if(rec||hasLegacy)records.push({r,date,status,lateTime:rec?.lateTime||'',lateReason:rec?.lateReason||'',changedByName:rec?.changedByName||'',changedByRole:rec?.changedByRole||''});}));
+    const sorted=records.sort((a,b)=>b.date.localeCompare(a.date));out.innerHTML=`<div style="margin:10px 0;padding:12px;border:1px solid #cbd8e3;border-radius:12px;background:#f8fbfd"><h3>نتائج البحث (${matched.length} طالب مطابق، ${sorted.length} سجل)</h3>${matched.length?`<div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سُجل بواسطة</th></tr></thead><tbody>${sorted.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')||'<tr><td colspan="7">لا توجد حالات مسجلة لهذا الطالب.</td></tr>'}</tbody></table></div><button onclick="printDailyStudentSearch()" style="background:#198754;margin-top:10px">🖨️ طباعة سجل الطالب A4</button>`:'لم يتم العثور على طالب بهذا الاسم.'}</div>`;
+    window.__dailyStudentSearchPrint={q,records:sorted};
+  };
+  window.printDailyStudentSearch=function(){const d=window.__dailyStudentSearchPrint;if(!d)return;const w=window.open('','_blank');if(!w){alert('يرجى السماح بالنوافذ المنبثقة للطباعة.');return;}w.document.write(`<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سجل الطالب</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Tahoma,Arial;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #777;padding:6px;text-align:center}th{background:#eee}</style></head><body><h2>السجل الكامل لحالات الطالب</h2><p>بحث عن: ${AESC(d.q)} — عدد السجلات: ${d.records.length}</p><table><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سجل بواسطة</th></tr></thead><tbody>${d.records.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();};
+})();
+</script>
+\n</body>
 </html>
 
 
