@@ -2303,7 +2303,7 @@ header > div:first-child{
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
             
-            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقب</button>
+            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">🦅 صقر</button>
             <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none;">📊 ملخص الحضور الشهري</button>
             <button onclick="openAddModal()" id="btnAddClassNav">+ إضافة صف جديد</button>
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
@@ -2525,7 +2525,7 @@ header > div:first-child{
     <div class="modal-content large">
         <div class="pro-modal-head">
             <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين والمراقبين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openMonitorsModal()" style="background:#16a085;color:#fff;font-weight:900;">👁️ إدارة المراقبين</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openMonitorsModal()" style="background:#16a085;color:#fff;font-weight:900;">🦅 إدارة صقر</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -5086,7 +5086,7 @@ function updateCloudStatus(text, color) {
 
     async function logoutSystem() {
         clearParentSessionTimers();
-        // إذا كان المستخدم مراقباً، أغلق مركز المراقب فوراً حتى لا تبقى الواجهة
+        // إذا كان المستخدم مراقباً، أغلق نظام صقر فوراً حتى لا تبقى الواجهة
         // ظاهرة بعد تسجيل الخروج، ثم ألغِ أي جلسة/لوحة مفتوحة مرتبطة بالمستخدم.
         const monitorModal = document.getElementById('monitorCenterModal');
         if (monitorModal) monitorModal.remove();
@@ -10563,12 +10563,12 @@ function updateCloudStatus(text, color) {
         const old=document.getElementById('monitorsModal'); if(old)old.remove();
         const modal=document.createElement('div'); modal.id='monitorsModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100009;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
         const rows=monitorsData.map((m,i)=>`<tr><td>${escapeGlobalSearchHTML(m.name)}</td><td><b>${escapeGlobalSearchHTML(m.code)}</b></td><td>${m.active===false?'موقوف':'فعال'}</td><td><button onclick="deleteMonitor(${i})" style="background:var(--danger)">حذف</button></td></tr>`).join('');
-        modal.innerHTML=`<div class="modal-content" style="width:min(900px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#16a085">👁️ إدارة المراقبين</h2><button onclick="document.getElementById('monitorsModal')?.remove()">✕</button></div><div class="pro-panel"><h3>➕ إضافة مراقب</h3><input id="monitorNameInput" placeholder="اسم المراقب"><div class="pro-toolbar" style="justify-content:flex-end;margin-top:10px"><button onclick="saveNewMonitor()" style="background:var(--success)">إضافة وتوليد الكود</button></div></div><div class="pro-panel"><h3>المراقبون</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الاسم</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا يوجد مراقبون.</td></tr>'}</tbody></table></div></div></div>`;
+        modal.innerHTML=`<div class="modal-content" style="width:min(900px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#16a085">🦅 إدارة صقر</h2><button onclick="document.getElementById('monitorsModal')?.remove()">✕</button></div><div class="pro-panel"><h3>➕ إضافة صقر جديد</h3><input id="monitorNameInput" placeholder="اسم المراقب"><div class="pro-toolbar" style="justify-content:flex-end;margin-top:10px"><button onclick="saveNewMonitor()" style="background:var(--success)">إضافة وتوليد الكود</button></div></div><div class="pro-panel"><h3>قائمة صقر</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الاسم</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا يوجد مراقبون.</td></tr>'}</tbody></table></div></div></div>`;
         document.body.appendChild(modal);
     }
     function saveNewMonitor(){
         if(!isPrimaryAdminUser())return; const name=String(document.getElementById('monitorNameInput')?.value||'').trim(); if(!name){alert('اكتب اسم المراقب.');return;}
-        const code=generateMonitorCode(); monitorsData.push({id:createStableId('monitor'),name,code,active:true,createdAt:new Date().toISOString()}); saveData(); openMonitorsModal(); alert(`تم إضافة المراقب ${name}.\nكود الدخول: ${code}`);
+        const code=generateMonitorCode(); monitorsData.push({id:createStableId('monitor'),name,code,active:true,createdAt:new Date().toISOString()}); saveData(); openMonitorsModal(); alert(`تم إضافة صقر ${name}.\nكود الدخول: ${code}`);
     }
     function deleteMonitor(index){ if(!isPrimaryAdminUser())return; if(!confirm('حذف هذا المراقب؟'))return; monitorsData.splice(index,1); saveData(); openMonitorsModal(); }
     function getMonitorClasses(){
@@ -10629,7 +10629,7 @@ function updateCloudStatus(text, color) {
             const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const safeId=escAttr(f.student.id);
             // «مجاز» حالة مقروءة من السجل الموحد؛ صلاحية تغييرها تبقى للمدير.
-            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
+            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰']];
             return `<tr>
                 <td>${i+1}</td>
                 <td>${escapeGlobalSearchHTML(f.student.name)}</td>
@@ -10648,7 +10648,7 @@ function updateCloudStatus(text, color) {
                 </td>
             </tr>`;
         }).join('');
-        box.innerHTML=`<div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>#</th><th>اسم الطالب</th><th>الحضور</th></tr></thead><tbody>${rows}</tbody></table></div><div class="pro-toolbar" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="saveMonitorAttendance()" style="background:var(--success)">💾 حفظ الغياب وإرسال للمدير</button></div>`;
+        box.innerHTML=`<div class="pro-toolbar" style="justify-content:space-between"><strong>📋 سجل غيابات هذا الصف — ${escapeGlobalSearchHTML(cls?.name||"الصف")}</strong><button type="button" onclick="renderMonitorClassEntry()" style="background:#34495e">← الرجوع للصف</button></div><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>#</th><th>اسم الطالب</th><th>الحضور</th></tr></thead><tbody>${rows}</tbody></table></div><div class="pro-toolbar" style="justify-content:flex-end;margin-top:14px"><button type="button" onclick="saveMonitorAttendance()" style="background:var(--success)">💾 حفظ جرد الصف وإرسال للمدير</button></div>`;
     }
     function monitorAttendanceStatusChanged(sel){
         // دعم أي نسخة قديمة من الواجهة كانت تستخدم select.
@@ -10669,8 +10669,26 @@ function updateCloudStatus(text, color) {
         const modal=document.createElement('div');
         modal.id='monitorCenterModal';modal.className='modal';
         modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100008;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:18px"><div style="text-align:center;margin-bottom:14px"><h2 style="margin:0;color:#16a085">👁️ مركز المراقب</h2><div style="font-size:12px;color:#6b7b88;margin-top:4px">اختر الصف ثم سجل حضور وغياب الطلاب</div><button type="button" onclick="logoutSystem()" style="margin-top:10px;background:var(--danger)">🚪 تسجيل الخروج</button></div><div class="pro-panel"><label style="font-weight:700">الصف</label><select id="monitorClassSelect" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"><option value="">-- اختر الصف --</option>${options}</select><label style="font-weight:700;display:block;margin-top:12px">تاريخ الجرد</label><input type="date" id="monitorAttendanceDate" value="${today}" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"></div><div class="pro-panel" style="margin-top:12px"><h3 style="margin-top:0">📝 ملاحظة إلى المدرسة</h3><textarea id="monitorGeneralNote" rows="3" placeholder="اكتب ملاحظة أو رسالة للمدرسة، ولا علاقة لها بالحضور والغياب..." style="width:100%;resize:vertical"></textarea><div class="pro-toolbar" style="justify-content:flex-end;margin-top:8px"><button type="button" onclick="sendMonitorGeneralMessage()" style="background:var(--primary)">📨 إرسال للمدير</button></div></div><div id="monitorClassStudents"><div class="pro-empty" style="padding:25px;text-align:center">اختر الصف لعرض أسماء الطلاب المسجلين فيه.</div></div></div>`;
+        modal.innerHTML=`<div class="modal-content" style="width:min(1000px,98vw);max-height:94vh;overflow:auto;padding:18px"><div style="text-align:center;margin-bottom:14px"><h2 style="margin:0;color:#16a085">👁️ نظام صقر</h2><div style="font-size:12px;color:#6b7b88;margin-top:4px">اختر الصف ثم افتحه لجرد الطلاب وتسجيل الحضور والغياب</div><button type="button" onclick="logoutSystem()" style="margin-top:10px;background:var(--danger)">🚪 تسجيل الخروج</button></div><div class="pro-panel"><label style="font-weight:700">الصف</label><select id="monitorClassSelect" onchange="renderMonitorClassEntry()" style="width:100%;margin-top:7px"><option value="">-- اختر الصف --</option>${options}</select><label style="font-weight:700;display:block;margin-top:12px">تاريخ الجرد</label><input type="date" id="monitorAttendanceDate" value="${today}" onchange="renderMonitorSelectedClass()" style="width:100%;margin-top:7px"></div><div class="pro-panel" style="margin-top:12px"><h3 style="margin-top:0">📝 ملاحظة إلى المدرسة</h3><textarea id="monitorGeneralNote" rows="3" placeholder="اكتب ملاحظة أو رسالة للمدرسة، ولا علاقة لها بالحضور والغياب..." style="width:100%;resize:vertical"></textarea><div class="pro-toolbar" style="justify-content:flex-end;margin-top:8px"><button type="button" onclick="sendMonitorGeneralMessage()" style="background:var(--primary)">📨 إرسال للمدير</button></div></div><div id="monitorClassStudents"><div class="pro-empty" style="padding:25px;text-align:center">اختر الصف لعرض أسماء الطلاب المسجلين فيه.</div></div></div>`;
         document.body.appendChild(modal);
+        renderMonitorClassEntry();
+    }
+    function renderMonitorClassEntry(){
+        const box=document.getElementById('monitorClassStudents');
+        const select=document.getElementById('monitorClassSelect');
+        if(!box||!select)return;
+        const idx=select.value;
+        if(idx===''){
+            box.innerHTML='<div class="pro-empty" style="padding:25px;text-align:center">اختر الصف من القائمة أعلاه.</div>';
+            return;
+        }
+        const cls=getMonitorClasses()[Number(idx)];
+        if(!cls){box.innerHTML='<div class="pro-empty">تعذر العثور على الصف.</div>';return;}
+        box.innerHTML=`<div class="pro-panel" style="text-align:center;padding:24px">
+            <div style="font-size:20px;font-weight:900;color:#243447;margin-bottom:8px">📚 ${escapeGlobalSearchHTML(cls.name||'الصف')}</div>
+            <div style="color:#687786;margin-bottom:16px">افتح الصف ثم ابدأ جرد الطلاب وتسجيل حالات الحضور.</div>
+            <button type="button" onclick="renderMonitorSelectedClass()" style="background:#c0398b;font-size:15px;padding:12px 20px">📋 سجل غيابات هذا الصف</button>
+        </div>`;
     }
     window.monitorAttendanceCheckboxChanged=async function(box,studentId,date){
         if(!box || !box.checked) return;
@@ -10753,7 +10771,7 @@ function updateCloudStatus(text, color) {
                     }
                 }
                 if(status==='absent') absent.push({studentId:student.student.id,name:student.student.name,status:'absent'});
-                reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',date,changedBy:'المراقب',changedByName:currentUser.name||'المراقب',changedAt:new Date().toISOString()});
+                reportStudents.push({studentId:student.student.id,name:student.student.name,status,lateTime:status==='late'?lateTime:'',lateReason:status==='late'?lateReason:'',date,changedBy:'صقر',changedByName:currentUser.name||'صقر',changedAt:new Date().toISOString()});
             });
             const report={
                 id:createStableId('minv'),
@@ -10786,7 +10804,7 @@ function updateCloudStatus(text, color) {
                     return;
                 }
             }
-            alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
+            alert(absent.length?`تم إرسال جرد الصف وأسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
         }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
     }
