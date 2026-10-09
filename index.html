@@ -1109,6 +1109,11 @@ button:focus-visible, .btn:focus-visible, input[type="button"]:focus-visible, in
 .seat.student-status-late .trip-status-label{background:#fff;color:#9a5b00;border:1px solid #d68910;}
 .seat.student-status-present .trip-status-label{background:#fff;color:#16803a;border:1px solid #27ae60;}
 .seat.student-status-present{background:linear-gradient(135deg,#dff8e8,#8ee0ae)!important;color:#145a32!important;box-shadow:0 0 0 2px rgba(39,174,96,.18),0 0 12px rgba(39,174,96,.30),inset 0 1px 2px rgba(255,255,255,.45)!important;}
+/* لون مقعد الطالب حسب الجنس ثابت في كل الحالات: وردي للمؤنث وأزرق للمذكر؛ نص الحالة يوضح الحضور. */
+.seat.student-status-seat.trip-gender-female{background:linear-gradient(135deg,#ffe0ed,#f7a8cb)!important;color:#7b1744!important;border:2px solid #e91e63!important;}
+.seat.student-status-seat.trip-gender-male{background:linear-gradient(135deg,#d9ecff,#8fc8ff)!important;color:#124c7a!important;border:2px solid #2980b9!important;}
+.seat.student-status-seat.trip-gender-female .trip-status-label{border-color:#e91e63!important;}
+.seat.student-status-seat.trip-gender-male .trip-status-label{border-color:#2980b9!important;}
 
 @keyframes tripAbsentGlow{0%,100%{filter:brightness(1);box-shadow:0 0 0 2px rgba(231,76,60,.22),0 0 12px rgba(231,76,60,.55)!important}50%{filter:brightness(1.12);box-shadow:0 0 0 3px rgba(231,76,60,.3),0 0 25px rgba(231,76,60,.9)!important}}
 @keyframes tripLeaveGlow{0%,100%{filter:brightness(1);box-shadow:0 0 0 2px rgba(243,156,18,.22),0 0 12px rgba(243,156,18,.55)!important}50%{filter:brightness(1.1);box-shadow:0 0 0 3px rgba(243,156,18,.3),0 0 25px rgba(243,156,18,.9)!important}}
@@ -7618,8 +7623,9 @@ function updateCloudStatus(text, color) {
         status = ['present','absent','late','leave'].includes(String(status)) ? String(status) : 'present';
         const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : (status === 'late' ? 'student-status-late' : 'student-status-present'));
         const label = status === 'absent' ? '<span class="trip-status-label">غائب ❌</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز 🏖️</span>' : (status === 'late' ? '<span class="trip-status-label">متأخر ⏰</span>' : '<span class="trip-status-label">حاضر ✔️</span>'));
-        const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
-        return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
+        const normalizedGender=String(gender||'').trim().toLowerCase();
+        const genderClass=['female','f','أنثى','مؤنث','بنت'].includes(normalizedGender) ? 'trip-gender-female' : (['male','m','ذكر','مذكر','ولد'].includes(normalizedGender) ? 'trip-gender-male' : '');
+        return `<div class="seat seat-full student-status-seat ${statusClass} ${genderClass} ${extraClass}">${label}<span class="trip-student-name">${name}</span></div>`;
     }
 
     function renderDesks() {
@@ -9504,7 +9510,7 @@ function updateCloudStatus(text, color) {
                     <option value="present" ${status === 'present' ? 'selected' : ''}>حاضر ✔️</option>
                     <option value="late" ${status === 'late' ? 'selected' : ''}>متأخر ⏰</option>
                     <option value="absent" ${status === 'absent' ? 'selected' : ''}>غائب ❌</option>
-                    ${currentUser.role === 'admin' ? `<option value="leave" ${status === 'leave' ? 'selected' : ''}>مجاز 🏖️</option>` : ''}
+                    ${(currentUser.role === 'admin' || currentUser.role === 'monitor' || currentUser.isAssistant || currentUser.role === 'teacher') ? `<option value="leave" ${status === 'leave' ? 'selected' : ''}>مجاز 🏖️</option>` : ''}
                 </select>`;
         } else {
             const label = status === 'absent' ? 'غائب ❌' : (status === 'leave' ? 'مجاز 🏖️' : (status === 'late' ? 'متأخر ⏰' : 'حاضر ✔️'));
@@ -9523,7 +9529,7 @@ function updateCloudStatus(text, color) {
 
     
 /* =========================================================
-   الحضور السريع داخل الصف — المدير
+   الحضور السريع داخل الصف — الحالة الموحدة
    يستخدم نفس نظام الغيابات الموجود ولا ينشئ سجلاً منفصلاً.
    ========================================================= */
 function openClassQuickAttendance(){
@@ -9591,11 +9597,17 @@ function getQuickAttendanceStudents(cls){
 }
 
 function getQuickAttendanceStatus(cls,dateStr,row){
+    // جميع الواجهات تقرأ الحالة من سجل الطالب الموحد أولاً.
+    const unified=(window.ProfessionalModules?.attendanceData||[]).find(r=>
+        String(r?.studentId||'').trim()===String(row.key||'').trim() && String(r?.date||'')===String(dateStr)
+    );
+    if(unified && ['present','absent','late','leave'].includes(String(unified.status))) return String(unified.status);
     const rec=(cls?.absenceRecords&&typeof cls.absenceRecords==='object') ? (cls.absenceRecords[dateStr]||{}) : {};
     const legacy=`${row.deskNumber}_${row.slot===1?'يمين':'يسار'}_${row.name}`;
     for(const k of [row.key,legacy,row.name].filter(Boolean)){
-        const v=String(rec[k]||'').trim();
-        if(v==='absent'||v==='late'||v==='leave') return v;
+        const v=rec[k];
+        if(v===true) return 'absent';
+        if(['present','absent','late','leave'].includes(String(v))) return String(v);
     }
     return 'present';
 }
@@ -9666,8 +9678,8 @@ function changeClassQuickAttendance(selectEl){
 
 function updateStudentAbsence(dateStr, studentKey, statusVal) {
         const cls = schoolData[currentClassIndex];
-        if (statusVal === 'leave' && currentUser?.role !== 'admin') {
-            alert('تغيير الطالب إلى مجاز متاح للمدير أو المعاون أو مرشد الصف فقط.');
+        if (statusVal === 'leave' && !(currentUser?.role === 'admin' || currentUser?.role === 'monitor' || currentUser?.isAssistant || currentUser?.role === 'teacher')) {
+            alert('لا تملك صلاحية تغيير حالة الطالب إلى مجاز.');
             renderAbsenceTable();
             return;
         }
