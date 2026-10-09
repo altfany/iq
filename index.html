@@ -2301,6 +2301,8 @@ header > div:first-child{
             <button onclick="openTransferSeparationModal()" id="btnTransferNav" style="background:#7d3c98;display:none;">🔄  نقل وفصل وتعليق</button>
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
+            
+            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقب</button>
             <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none;">📊 ملخص الحضور الشهري</button>
             <button onclick="openAddModal()" id="btnAddClassNav">+ إضافة صف جديد</button>
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
@@ -2345,6 +2347,7 @@ header > div:first-child{
                 </div>
                 <div class="class-actions">
                     <button class="btn-supervisor" id="currentClassSupervisorBtn" onclick="openClassSupervisorModal()">👨‍🏫 مرشد الصف: غير محدد</button>
+                    <button type="button" onclick="openClassAbsenceRegister()" style="background:#c0398b;font-weight:900">📋 سجل غيابات هذا الصف</button>
                     <div class="class-management-group" id="classManagementGroup">
                         <button type="button" class="class-management-toggle" onclick="toggleClassActionGroup('classManagementActions',this)">⚙️ إدارة الصف <span>⌄</span></button>
                         <div class="class-management-items" id="classManagementActions" style="display:none">
@@ -2519,8 +2522,8 @@ header > div:first-child{
 <div class="modal" id="teachersModal">
     <div class="modal-content large">
         <div class="pro-modal-head">
-            <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين والمراقبين</h3>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openMonitorsModal()" style="background:#16a085;color:#fff;font-weight:900;">👁️ إدارة المراقبين</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -2793,6 +2796,7 @@ header > div:first-child{
         
         <div id="globalSearchExtraActions" style="display: none; margin-top: 10px; gap: 8px; justify-content: center; flex-wrap: wrap;">
             <button type="button" onclick="showSearchedStudentLevel(); return false;" style="background: var(--indigo); font-size: 12px; padding: 6px 12px;">📈 عرض المستوى الدراسي</button>
+            <button onclick="showSearchedStudentAbsence()" id="btnGlobalSearchAbsence" style="background: var(--pink); font-size: 12px; padding: 6px 12px;">📌 سجل الغيابات</button>
             <button onclick="printGlobalSearchedStudentA4()" id="btnGlobalSearchStudentPrint" style="background:var(--indigo);font-size:12px;padding:6px 12px;">🖨️ طباعة ملف الطالب A4</button>
         </div>
 
@@ -5186,10 +5190,12 @@ function updateCloudStatus(text, color) {
         let btnAdminManagementNav = document.getElementById('btnAdminManagementNav');
         let btnSystemGradesNav = document.getElementById('btnSystemGradesNav');
         let btnMonitorsNav = document.getElementById('btnMonitorsNav');
+        let btnGlobalSearchAbsence = document.getElementById('btnGlobalSearchAbsence');
         let globalSearchWrapper = document.getElementById('globalSearchWrapper');
 
         if (!currentUser) return;
         const staffAdminBarInit=document.getElementById('staffAdminBar'); if(staffAdminBarInit) staffAdminBarInit.style.display='none';
+        const insideInventoryInit=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryInit) insideInventoryInit.style.display='none';
 
         // صندوق الشكاوى: يظهر للمدير فقط، ويُعاد ضبطه صراحةً عند كل تسجيل دخول
         // حتى لا يبقى مخفياً بسبب صلاحيات الحساب السابق.
@@ -5226,6 +5232,7 @@ function updateCloudStatus(text, color) {
             if(btnDailySchoolStudentReportNav){ btnDailySchoolStudentReportNav.style.display='inline-block'; btnDailySchoolStudentReportNav.style.visibility='visible'; btnDailySchoolStudentReportNav.style.opacity='1'; }
             if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='block';
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='block';
+            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='inline-block';
             const staffAdminManagementButton=document.getElementById('staffAdminManagementButton'); if(staffAdminManagementButton) staffAdminManagementButton.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             if(btnTeachers) btnTeachers.style.display='none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display='none';
@@ -5237,13 +5244,16 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNav=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav) btnSystemResetNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
+            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
+            if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'flex';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'monitor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
+            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             // المراقب له واجهة مستقلة: الصفوف والطلاب + الحضور/الغياب + ملاحظات للمدير فقط.
             badge.innerText = `الصلاحية: مراقب 👁️ (${currentUser.name})`;
@@ -5268,7 +5278,9 @@ function updateCloudStatus(text, color) {
             const btnTeacherComplaintsNavMonitor=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavMonitor) btnTeacherComplaintsNavMonitor.style.display='none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display='none';
+            if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display='none';
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
+            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav');
             if(announcementsBtn) announcementsBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
@@ -5282,12 +5294,14 @@ function updateCloudStatus(text, color) {
             if(classContent) classContent.style.display='none';
         } else if (currentUser.role === 'guestSupervisor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
+            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
-            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav].forEach(el=>{if(el)el.style.display='none';});
+            [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
             const professionalQuickMenu=document.getElementById('professionalQuickMenu'); if(professionalQuickMenu) professionalQuickMenu.style.display='none';
+            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav'); if(announcementsBtn) announcementsBtn.style.display='none';
             document.querySelectorAll('.header-actions > button').forEach(btn=>{ if(!btn.matches('[onclick*="logoutSystem"]')) btn.style.display='none'; });
             const classesNav=document.getElementById('classesNav'); if(classesNav) classesNav.style.display='none';
@@ -5311,6 +5325,7 @@ function updateCloudStatus(text, color) {
             const isAssignedSupervisor = isClassSupervisor(currentClsForTeacher);
             if(btnAbsenceTab) btnAbsenceTab.style.display = isAssignedSupervisor ? 'inline-block' : 'none';
             if(btnLogNavTab) btnLogNavTab.style.display = 'inline-block';
+            if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display = 'none';
             const btnComplaintsNavTeacher=document.getElementById('btnComplaintsNav'); if(btnComplaintsNavTeacher) btnComplaintsNavTeacher.style.display='none';
             const btnTeacherComplaintsNav=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNav) btnTeacherComplaintsNav.style.display='inline-block';
@@ -5326,6 +5341,7 @@ function updateCloudStatus(text, color) {
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'none';
+            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'parent') {
@@ -5349,6 +5365,7 @@ function updateCloudStatus(text, color) {
             const btnTeacherComplaintsNavParent=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavParent) btnTeacherComplaintsNavParent.style.display='none';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'none';
             if(btnAdminManagementNav) btnAdminManagementNav.style.display = 'none';
+            if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'none';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = 'none';
@@ -6973,7 +6990,204 @@ function updateCloudStatus(text, color) {
         }
     }
 
-    
+    function showSearchedStudentAbsence() {
+        if (!lastFoundSearchResult) {
+            alert('يرجى البحث عن الطالب أولاً.');
+            return false;
+        }
+
+        const result = lastFoundSearchResult;
+        const cls = result.classObj;
+        const detailBox = document.getElementById('globalSearchDetailBox');
+        if (!detailBox || !cls) return false;
+
+        try {
+            const studentName = String(result.name || '').trim();
+            const deskNumber = String(result.deskNumber ?? '').trim();
+
+            // البحث في نظام الغياب القديم.
+            // مهم: نتيجة البحث العام تستخدم مفتاحاً مثل:
+            // 1_المقعد الأول (يمين)_اسم الطالب
+            // بينما سجلات الغياب تحفظ المفتاح:
+            // 1_يمين_اسم الطالب
+            // لذلك كان الطالب يظهر "حضور تام" رغم تسجيل غيابه.
+            const oldAbsentDates = [];
+            const oldLeaveDates = [];
+            const oldLateDates = [];
+
+            const absenceRecords = cls.absenceRecords && typeof cls.absenceRecords === 'object'
+                ? cls.absenceRecords
+                : {};
+
+            const keyVariants = new Set();
+            if (result.itemKey) keyVariants.add(String(result.itemKey));
+
+            if (deskNumber && studentName) {
+                const isRight = String(result.seat || '').includes('يمين');
+                const isLeft = String(result.seat || '').includes('يسار');
+
+                if (isRight) {
+                    keyVariants.add(`${deskNumber}_يمين_${studentName}`);
+                    keyVariants.add(`${deskNumber}_المقعد الأول (يمين)_${studentName}`);
+                }
+                if (isLeft) {
+                    keyVariants.add(`${deskNumber}_يسار_${studentName}`);
+                    keyVariants.add(`${deskNumber}_المقعد الثاني (يسار)_${studentName}`);
+                }
+
+                // دعم أي صيغة قديمة أخرى للمفتاح.
+                keyVariants.add(`${deskNumber}_${studentName}`);
+            }
+
+            for (const date of Object.keys(absenceRecords)) {
+                const day = absenceRecords[date];
+                if (!day || typeof day !== 'object') continue;
+
+                let matched = false;
+                for (const key of keyVariants) {
+                    if (day[key] === true || day[key] === 'absent' || day[key] === 'غائب') {
+                        matched = true;
+                        break;
+                    }
+                }
+
+                // دعم البيانات التي يكون فيها اسم الطالب داخل المفتاح فقط.
+                if (!matched && studentName) {
+                    for (const [key, value] of Object.entries(day)) {
+                        if (value !== true && value !== 'absent' && value !== 'غائب' && value !== 'مجاز' && value !== 'leave') continue;
+                        const normalizedKey = String(key).trim();
+                        if (normalizedKey.includes(studentName) && (!deskNumber || normalizedKey.includes(deskNumber))) {
+                            if (value === 'مجاز' || value === 'leave') oldLeaveDates.push(date);
+                            else oldAbsentDates.push(date);
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (matched) {
+                    // إذا كانت القيمة مجازاً نحفظها منفصلة، وإلا غياب.
+                    let isLeave = false;
+                    for (const key of keyVariants) {
+                        if (day[key] === 'مجاز' || day[key] === 'leave') {
+                            isLeave = true;
+                            break;
+                        }
+                    }
+                    (isLeave ? oldLeaveDates : oldAbsentDates).push(date);
+                }
+            }
+
+            // إزالة التكرار.
+            const absentSet = new Set(oldAbsentDates);
+            const leaveSet = new Set(oldLeaveDates);
+            const lateSet = new Set(oldLateDates);
+            leaveSet.forEach(d => absentSet.delete(d));
+            lateSet.forEach(d => { absentSet.delete(d); leaveSet.delete(d); });
+
+            // البحث أيضاً في وحدة الحضور الاحترافية الجديدة، إن كانت مستخدمة.
+            // نستخرج studentId من الصف الحالي لأن البحث العام القديم لا يخزنه.
+            let studentId = null;
+            if (Array.isArray(cls.desks)) {
+                for (const desk of cls.desks) {
+                    if (!desk) continue;
+                    if (desk.student1 === studentName || desk.student2 === studentName) {
+                        studentId = desk.id || null;
+                        break;
+                    }
+                }
+            }
+
+            const professionalRecords = (window.ProfessionalModules &&
+                Array.isArray(window.ProfessionalModules.attendanceData))
+                ? window.ProfessionalModules.attendanceData
+                : [];
+
+            if (studentId) {
+                professionalRecords.forEach(rec => {
+                    if (!rec || String(rec.studentId) !== String(studentId) || !rec.date) return;
+                    if (rec.status === 'absent') absentSet.add(String(rec.date));
+                    else if (rec.status === 'leave' || rec.status === 'مجاز') leaveSet.add(String(rec.date));
+                    else if (rec.status === 'late' || rec.status === 'متأخر') lateSet.add(String(rec.date));
+                });
+            }
+
+            // سجل جرد المراقب هو مصدر إضافي مهم، خصوصاً للتأخير مع وقت الدخول والسبب.
+            // نقرأ students و absentStudents حتى تشمل التقارير القديمة والجديدة.
+            (monitorInventoryReportsData || []).forEach(report => {
+                if (!report || !report.date) return;
+                const list = Array.isArray(report.students)
+                    ? report.students
+                    : (Array.isArray(report.absentStudents) ? report.absentStudents : []);
+                list.forEach(item => {
+                    const sameId = studentId && String(item?.studentId || '') === String(studentId);
+                    const sameName = String(item?.name || '').trim() === studentName;
+                    if (!sameId && !sameName) return;
+                    const st = String(item?.status || '').trim();
+                    if (st === 'absent' || st === 'غائب') absentSet.add(String(report.date));
+                    else if (st === 'leave' || st === 'مجاز') leaveSet.add(String(report.date));
+                    else if (st === 'late' || st === 'متأخر') lateSet.add(String(report.date));
+                });
+            });
+
+            // التأخير له أولوية على الغياب/المجاز في اليوم نفسه.
+            lateSet.forEach(d => { absentSet.delete(d); leaveSet.delete(d); });
+            leaveSet.forEach(d => absentSet.delete(d));
+
+            const absentDates = Array.from(absentSet).sort().reverse();
+            const leaveDates = Array.from(leaveSet).sort().reverse();
+            const lateDates = Array.from(lateSet).sort().reverse();
+
+            let html = `<div style="font-weight:bold;color:var(--pink);margin-bottom:7px;">📌 سجل الغيابات للطالب</div>`;
+
+            if (absentDates.length === 0 && leaveDates.length === 0 && lateDates.length === 0) {
+                html += `<div style="color:var(--success);font-weight:bold;">الطالب حضور تام ✔️</div>`;
+            } else {
+                if (absentDates.length) {
+                    html += `<div style="color:var(--danger);font-weight:bold;margin-bottom:4px;">❌ أيام الغياب: ${absentDates.length}</div>`;
+                    html += `<ul style="margin:4px 15px 8px 0;padding-right:18px;">` +
+                        absentDates.map(d => `<li>غائب بتاريخ: ${escapeGlobalSearchHTML(d)}</li>`).join('') +
+                        `</ul>`;
+                }
+
+                if (leaveDates.length) {
+                    html += `<div style="color:#d35400;font-weight:bold;margin-bottom:4px;">🏖️ أيام المجاز: ${leaveDates.length}</div>`;
+                    html += `<ul style="margin:4px 15px 0 0;padding-right:18px;">` +
+                        leaveDates.map(d => `<li>مجاز بتاريخ: ${escapeGlobalSearchHTML(d)}</li>`).join('') +
+                        `</ul>`;
+                }
+
+                if (lateDates.length) {
+                    html += `<div style="color:#b26a00;font-weight:bold;margin-bottom:4px;">⏰ أيام التأخير: ${lateDates.length}</div>`;
+                    html += `<ul style="margin:4px 15px 0 0;padding-right:18px;">` +
+                        lateDates.map(d => {
+                            const rec = professionalRecords.find(r => String(r.studentId)===String(studentId) && String(r.date)===String(d) && (r.status==='late' || r.status==='متأخر'));
+                            let reportRec = null;
+                            (monitorInventoryReportsData || []).some(report => {
+                                if(String(report?.date||'') !== String(d)) return false;
+                                const list = Array.isArray(report?.students) ? report.students : (Array.isArray(report?.absentStudents) ? report.absentStudents : []);
+                                reportRec = list.find(item => (studentId && String(item?.studentId||'')===String(studentId)) || String(item?.name||'').trim()===studentName) || null;
+                                return !!reportRec;
+                            });
+                            const extra = rec?.lateTime || reportRec?.lateTime ? ` — وقت الدخول: ${escapeGlobalSearchHTML(rec?.lateTime || reportRec?.lateTime)}` : '';
+                            const reason = rec?.lateReason || rec?.note || reportRec?.lateReason || reportRec?.note || '';
+                            return `<li>متأخر بتاريخ: ${escapeGlobalSearchHTML(d)}${extra}${reason ? ` — السبب: ${escapeGlobalSearchHTML(reason)}` : ''}</li>`;
+                        }).join('') +
+                        `</ul>`;
+                }
+            }
+
+            detailBox.innerHTML = html;
+            detailBox.style.display = 'block';
+            return false;
+
+        } catch (error) {
+            console.error('showSearchedStudentAbsence error:', error);
+            detailBox.innerHTML = `<div style="color:var(--danger);font-weight:bold;">تعذر قراءة سجل غيابات الطالب.</div>`;
+            detailBox.style.display = 'block';
+            return false;
+        }
+    }
 
     function openAddModal() {
         if(currentUser.role !== 'admin') return;
@@ -10338,10 +10552,23 @@ function updateCloudStatus(text, color) {
     }
     function openRoleDashboard(){ if(!currentUser)return; if(currentUser.role==='admin')return ProfessionalModules.openDashboard(); if(currentUser.role==='teacher')return openTeacherDashboard(); if(currentUser.role==='parent')return openStudentDashboard(); if(currentUser.role==='guestSupervisor')return openGuestSupervisorView(); }
 
-    
-    
-    
-    
+    function generateMonitorCode(){
+        let c; do { c=String(Math.floor(100000+Math.random()*900000)); } while(monitorsData.some(m=>String(m.code)===c) || c===String(adminCredentials.password));
+        return c;
+    }
+    function openMonitorsModal(){
+        if(!isPrimaryAdminUser()) return;
+        const old=document.getElementById('monitorsModal'); if(old)old.remove();
+        const modal=document.createElement('div'); modal.id='monitorsModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100009;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
+        const rows=monitorsData.map((m,i)=>`<tr><td>${escapeGlobalSearchHTML(m.name)}</td><td><b>${escapeGlobalSearchHTML(m.code)}</b></td><td>${m.active===false?'موقوف':'فعال'}</td><td><button onclick="deleteMonitor(${i})" style="background:var(--danger)">حذف</button></td></tr>`).join('');
+        modal.innerHTML=`<div class="modal-content" style="width:min(900px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#16a085">👁️ إدارة المراقبين</h2><button onclick="document.getElementById('monitorsModal')?.remove()">✕</button></div><div class="pro-panel"><h3>➕ إضافة مراقب</h3><input id="monitorNameInput" placeholder="اسم المراقب"><div class="pro-toolbar" style="justify-content:flex-end;margin-top:10px"><button onclick="saveNewMonitor()" style="background:var(--success)">إضافة وتوليد الكود</button></div></div><div class="pro-panel"><h3>المراقبون</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الاسم</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا يوجد مراقبون.</td></tr>'}</tbody></table></div></div></div>`;
+        document.body.appendChild(modal);
+    }
+    function saveNewMonitor(){
+        if(!isPrimaryAdminUser())return; const name=String(document.getElementById('monitorNameInput')?.value||'').trim(); if(!name){alert('اكتب اسم المراقب.');return;}
+        const code=generateMonitorCode(); monitorsData.push({id:createStableId('monitor'),name,code,active:true,createdAt:new Date().toISOString()}); saveData(); openMonitorsModal(); alert(`تم إضافة المراقب ${name}.\nكود الدخول: ${code}`);
+    }
+    function deleteMonitor(index){ if(!isPrimaryAdminUser())return; if(!confirm('حذف هذا المراقب؟'))return; monitorsData.splice(index,1); saveData(); openMonitorsModal(); }
     function getMonitorClasses(){
         return Array.isArray(schoolData) ? schoolData.filter(Boolean) : [];
     }
@@ -10689,172 +10916,42 @@ function updateCloudStatus(text, color) {
         return true;
     }
 
-    
+    window.onload = async function() {
+        currentUser = null;
+        cloudOnlyStorage.removeItem('currentUser');
+        document.getElementById('loginOverlay').style.display = 'flex';
+        const btn = document.getElementById('loginButton');
+        // تسجيل الدخول لا ينتظر Firebase؛ الاتصال السحابي يعمل في الخلفية.
+        if (btn) btn.disabled = false;
+        initializeCloudData().catch(err => {
+            console.error('Background Firebase initialization failed:', err);
+            cloudReady = true;
+            if (btn) btn.disabled = false;
+            toggleLoginFields();
+        });
+        toggleLoginFields();
+    };
 
-    function openStudentDailyReset(){
-        if(!isPrimaryAdminUser()) return;
-        const parent=document.getElementById('dailyInventoryResetModal'); if(parent) parent.remove();
-        const old=document.getElementById('studentDailyResetModal'); if(old) old.remove();
-        const modal=document.createElement('div');
-        modal.id='studentDailyResetModal'; modal.className='modal';
-        modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100021;background:rgba(0,0,0,.62);padding:12px;align-items:center;justify-content:center;';
-        modal.innerHTML=`<div class="modal-content" style="width:min(650px,96vw);max-height:94vh;overflow:auto;padding:20px">
-          <div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0">👤 ترسيت محفوظات طالب</h2><button type="button" onclick="document.getElementById('studentDailyResetModal')?.remove()">✕</button></div>
-          <p style="color:#667;line-height:1.7">ابحث عن الطالب المحفوظ داخل النظام، ثم اختره لتنفيذ الترسيت على سجلات الحضور والغياب والمجاز الخاصة به فقط.</p>
-          <input id="studentResetSearchInput" type="text" placeholder="🔎 اكتب اسم الطالب للبحث..." oninput="renderStudentResetSearch()" style="width:100%;min-height:46px;padding:10px;border:1px solid #ccd6df;border-radius:10px;box-sizing:border-box">
-          <div id="studentResetSearchResults" style="margin-top:12px"></div>
-        </div>`;
-        document.body.appendChild(modal);
-        renderStudentResetSearch();
-    }
+    // عند عودة الإنترنت، نعيد محاولة Firebase تلقائياً بدون إعادة تحميل الصفحة.
+    window.addEventListener('online', function(){
+        clearTimeout(firebaseRetryTimer);
+        initializeCloudData().catch(err => console.error('Firebase online retry failed:', err));
+    });
 
-    function renderStudentResetSearch(){
-        const box=document.getElementById('studentResetSearchResults'); if(!box) return;
-        const q=String(document.getElementById('studentResetSearchInput')?.value||'').trim().toLocaleLowerCase('ar');
-        const students=[];
-        (schoolData||[]).forEach((cls,ci)=>(cls.desks||[]).forEach((desk,di)=>[1,2].forEach(slot=>{
-            const name=String(desk?.['student'+slot]||'').trim(); if(!name) return;
-            const id=String(desk?.['student'+slot+'Id']||desk?.id||`${ci}_${di}_${slot}`);
-            if(!q || name.toLocaleLowerCase('ar').includes(q)) students.push({id,name,className:cls.name||'صف غير محدد',classIndex:ci,deskIndex:di,slot});
-        })));
-        const unique=[]; const seen=new Set();
-        students.forEach(s=>{if(!seen.has(s.id)){seen.add(s.id);unique.push(s);}});
-        const shown=unique.slice(0,50);
-        box.innerHTML=shown.length?shown.map(s=>{const safeId=String(s.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid #e3e9ef;border-radius:10px;margin-bottom:8px;background:#fff"><div><b>${escapeGlobalSearchHTML(s.name)}</b><div style="font-size:12px;color:#667">${escapeGlobalSearchHTML(s.className)}</div></div><button type="button" onclick="confirmStudentDailyReset('${safeId}')" style="background:var(--danger)">ترسيت</button></div>`;}).join(''):'<div class="pro-empty">لم يتم العثور على طالب بهذا الاسم.</div>';
-        if(unique.length>50) box.innerHTML+=`<div style="text-align:center;color:#667;font-size:12px">تظهر أول 50 نتيجة، اكتب اسمًا أكثر تحديدًا.</div>`;
-    }
 
-    async function confirmStudentDailyReset(studentId){
-        if(!verifyResetAdminPassword()) return;
-        const found=getStudentById(String(studentId));
-        if(!found){
-            alert('تعذر العثور على الطالب. افتح الترسيت من جديد ثم ابحث عن الطالب المحفوظ داخل النظام.');
-            return;
-        }
-        const sid=String(found.student.id||found.classObj?.desks?.[found.deskIndex]?.[`student${found.slot}Id`]||found.classObj?.desks?.[found.deskIndex]?.id||`${found.classIndex}_${found.deskIndex}_${found.slot}`).trim();
-        const name=String(found.student.name||'').trim();
-        if(!sid || !name){ alert('بيانات الطالب غير مكتملة، لم يتم تنفيذ الترسيت.'); return; }
-        if(!confirm(`⚠️ سيتم حذف محفوظات الحضور والغياب والمجاز وجرد الغياب والملاحظات الخاصة بالطالب:\n\n${name}\n\nلن يتم حذف اسم الطالب من قائمة الطلاب.\n\nهل تريد المتابعة؟`)) return;
+// حماية إضافية: تسجيل أخطاء الواجهة دون إيقاف البرنامج بالكامل.
+document.addEventListener('input', function(e){ if(e.target && e.target.id==='announcementMessageInput'){ const h=document.getElementById('announcementCountHint'); if(h) h.textContent=`${e.target.value.length} / 500`; }});
 
-        const isTargetRecord=(r)=>{
-            if(!r || typeof r!=='object') return false;
-            const rid=String(r.studentId||r.id||'').trim();
-            const rn=String(r.name||r.studentName||'').trim();
-            return rid===sid || rn===name;
-        };
-        const isTargetKey=(key)=>{
-            const k=String(key||'');
-            return k===sid || k===name || k.includes(name);
-        };
-        const cleanAbsenceContainer=(container)=>{
-            if(!container || typeof container!=='object') return;
-            Object.keys(container).forEach(date=>{
-                const rec=container[date];
-                if(Array.isArray(rec)){
-                    container[date]=rec.filter(x=>!isTargetRecord(x) && !isTargetKey(x?.studentId) && !isTargetKey(x?.name));
-                    if(!container[date].length) delete container[date];
-                    return;
-                }
-                if(!rec || typeof rec!=='object') return;
-                Object.keys(rec).forEach(k=>{
-                    const value=rec[k];
-                    if(isTargetKey(k) || isTargetRecord(value)) delete rec[k];
-                });
-                if(!Object.keys(rec).length) delete container[date];
-            });
-        };
-        const cleanReportList=(list)=>Array.isArray(list)?list.map(r=>{
-            if(!r || typeof r!=='object') return r;
-            // التقارير الحديثة تحفظ جميع الطلاب داخل students، والقديمة تستخدم absentStudents.
-            // يجب تنظيف القائمتين حتى لا يعود سجل الطالب بعد إعادة فتح النظام.
-            const cleaned={...r};
-            if(Array.isArray(cleaned.students)){
-                cleaned.students=cleaned.students.filter(x=>!isTargetRecord(x));
-            }
-            if(Array.isArray(cleaned.absentStudents)){
-                cleaned.absentStudents=cleaned.absentStudents.filter(x=>!isTargetRecord(x));
-            }
-            return cleaned;
-        }).filter(Boolean):[];
+window.addEventListener('error', function (event) {
+  console.error('خطأ في واجهة النظام:', event.error || event.message);
+});
 
-        try{
-            // 1) حذف سجل الطالب من وحدة الحضور المهنية، بالمعرّف والاسم لضمان تنظيف البيانات القديمة.
-            const currentAttendance=Array.isArray(window.ProfessionalModules?.attendanceData)?window.ProfessionalModules.attendanceData:[];
-            const cleanedAttendance=currentAttendance.filter(r=>!isTargetRecord(r));
-            if(typeof window.__loadProfessionalAttendanceFromCloud==='function'){
-                window.__loadProfessionalAttendanceFromCloud(cleanedAttendance);
-            }
+window.addEventListener('unhandledrejection', function (event) {
+  console.error('خطأ غير معالج في عملية النظام:', event.reason);
+});
 
-            // 2) حذف سجلات الغياب القديمة من جميع الصفوف، بما فيها المفاتيح القديمة التي كانت تحتوي اسم الطالب.
-            (schoolData||[]).forEach(cls=>cleanAbsenceContainer(cls?.absenceRecords));
 
-            // 3) حذف ظهور الطالب من جرد الصفوف وملاحظات المراقبين.
-            monitorInventoryReportsData=cleanReportList(monitorInventoryReportsData);
-            monitorNotesData=Array.isArray(monitorNotesData)
-                ? monitorNotesData.filter(n=>!isTargetRecord(n))
-                : [];
-
-            // 4) حفظ الحالة المنظفة محلياً.
-            saveData();
-
-            // 5) تنظيف كل النسخ الاحتياطية السحابية، وليس فقط نسخة واحدة.
-            if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.loadBackups==='function' && typeof window.FirebaseCloud.saveBackup==='function'){
-                const backups=await window.FirebaseCloud.loadBackups();
-                for(const [key,b] of Object.entries(backups||{})){
-                    if(!b || typeof b!=='object') continue;
-                    if(Array.isArray(b.attendanceData)) b.attendanceData=b.attendanceData.filter(r=>!isTargetRecord(r));
-                    if(Array.isArray(b.monitorInventoryReportsData)) b.monitorInventoryReportsData=cleanReportList(b.monitorInventoryReportsData);
-                    if(Array.isArray(b.monitorNotesData)) b.monitorNotesData=b.monitorNotesData.filter(n=>!isTargetRecord(n));
-                    if(Array.isArray(b.schoolData)) b.schoolData.forEach(cls=>cleanAbsenceContainer(cls?.absenceRecords));
-                    await window.FirebaseCloud.saveBackup(key,b);
-                }
-            }
-
-            // 6) تحديث النسخة المحلية التلقائية بعد التنظيف.
-            try{ cloudOnlyStorage.setItem('schoolAutoBackupLatest',JSON.stringify(makeBackupPayload())); }catch(_e){}
-            cloudOnlyStorage.removeItem('schoolAutoBackupLastCloud');
-
-            // 7) حفظ الحالة المنظفة مباشرة في Firebase الرئيسية حتى لا تعود الأسماء القديمة عند المزامنة.
-            if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.save==='function'){
-                await saveCurrentCloudPayload();
-            }
-
-            document.getElementById('studentDailyResetModal')?.remove();
-            
-            saveData();
-            
-            alert(`✅ تم ترسيت محفوظات الطالب «${name}» بنجاح.\n\nتم حذف سجلات الحضور والغياب والمجاز والجرد والملاحظات والنسخ الاحتياطية الخاصة به، مع إبقاء اسم الطالب في قائمة الطلاب.`);
-        }catch(e){
-            console.error('Student daily reset failed:',e);
-            alert('حدث خطأ أثناء ترسيت محفوظات الطالب. لم تكتمل العملية بالكامل، تحقق من الاتصال بالسحابة ثم حاول مرة أخرى.');
-        }
-    }
-
-    async function resetAllDailyAttendance(){
-        if(!verifyResetAdminPassword()) return;
-        if(!confirm('⚠️ تحذير: سيتم حذف جميع سجلات الحضور والغياب والمجاز وجرد الغياب من النظام السحابي والمحلي. لن يتم حذف بيانات الطلاب أو الصفوف أو الحسابات.\n\nهل أنت متأكد؟')) return;
-        const second=prompt('🔐 للتأكيد النهائي، أدخل كود المدير مرة أخرى:');
-        if(second===null || String(second).trim()!==String(adminCredentials.password||'').trim()){
-            alert('❌ كود المدير غير صحيح. تم إلغاء الترسيت.'); return;
-        }
-        try{
-            (schoolData||[]).forEach(cls=>{ if(cls && cls.absenceRecords) cls.absenceRecords={}; });
-            monitorInventoryReportsData=[];
-            monitorNotesData=[];
-            if(typeof window.__loadProfessionalAttendanceFromCloud==='function') window.__loadProfessionalAttendanceFromCloud([]);
-            if(typeof window.__loadProfessionalAuditFromCloud==='function') window.__loadProfessionalAuditFromCloud([]);
-            saveData();
-            if(window.FirebaseCloud?.enabled && typeof window.FirebaseCloud.deleteAllBackups==='function') await window.FirebaseCloud.deleteAllBackups();
-            cloudOnlyStorage.removeItem('schoolAutoBackupLatest');
-            cloudOnlyStorage.removeItem('schoolAutoBackupLastCloud');
-            
-            document.getElementById('studentDailyResetModal')?.remove();
-            alert('✅ تم ترسيت جميع محفوظات الحضور والغياب والمجاز وجرد الغياب بنجاح.');
-            renderMonitorDailyInventory();
-        }catch(e){console.error(e);alert('حدث خطأ أثناء الترسيت. يرجى المحاولة مرة أخرى.');}
-    }
-
-    /* =========================================================
+/* =========================================================
    PROFESSIONAL MODULES 4-7
    4) Unified student profile
    5) Dashboard & statistics
@@ -11083,7 +11180,6 @@ function updateCloudStatus(text, color) {
       try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]===cls) renderAbsenceTable(); }catch(_e){}
       // تحديث شكل الرحلات فوراً من الحالة الموحدة، بما فيها حاضر/غائب/متأخر/مجاز.
       try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]===cls) renderDesks(); }catch(_e){}
-      
       try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
     }catch(e){
       console.error('Unified attendance sync failed:',e);
@@ -12311,7 +12407,11 @@ body.parent-only-mode header { display:none !important; }
   window.printDailyStatsCategory=function(status){const d=window.__dailyStatsData;if(!d)return;const rows=d.all.filter(r=>getDailySchoolStudentStatus(r,d.date)===status);printTable(`إحصاء ${d.labels[status]} — ${d.date}`,rows,[['الطالب','name'],['الصف','className'],['الرحلة/المقعد','seat'],['كود الطالب','code'],['هاتف ولي الأمر','phone']]);};
   window.printDailyAttendanceStats=function(){const d=window.__dailyStatsData;if(!d)return;const rows=d.all.map(r=>({...r,status:getDailySchoolStudentStatus(r,d.date)}));printTable('الإحصاء اليومي للحضور والغياب — '+d.date,rows,[['الطالب','name'],['الصف','className'],['المقعد','seat'],['الحالة','status'],['هاتف ولي الأمر','phone']]);};
   function printTable(title,rows,cols){const w=window.open('','_blank');if(!w){alert('يرجى السماح بالنوافذ المنبثقة للطباعة.');return;}w.document.write(`<html dir="rtl"><head><meta charset="utf-8"><title>${esc(title)}</title><style>@page{size:A4;margin:12mm}body{font-family:Tahoma,Arial;padding:8px;color:#172b3a}h2{text-align:center;color:#0f7c8c}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #9aa;padding:7px;text-align:center}th{background:#e6f3f5}</style></head><body><h2>${esc(title)}</h2><p>عدد الطلاب: ${rows.length}</p><table><thead><tr>${cols.map(c=>`<th>${esc(c[0])}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(c[1]==='status'?(({present:'حاضر',absent:'غائب',leave:'مجاز',late:'متأخر'})[r.status]||r.status):c[1]==='seat'?`${r.deskNumber||''} — ${r.seat||''}`:r[c[1]]||'—')}</td>`).join('')}</tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
-  
+  window.openClassAbsenceRegister=function(){
+    if(!adminOnly())return;const idx=Number(currentClassIndex);const data=(typeof schoolData!=='undefined'&&Array.isArray(schoolData))?schoolData:[];const cls=data[idx];if(!Number.isInteger(idx)||!cls){alert('تعذر تحديد الصف الحالي. ارجع إلى قائمة الصفوف وافتح الصف المطلوب من جديد.');return;}window.__classAbsenceClassIndex=idx;
+    const name=String(cls.name||`الصف ${idx+1}`);document.getElementById('classAbsenceRegisterModal')?.remove();const m=document.createElement('div');m.id='classAbsenceRegisterModal';m.className='modal';m.style.cssText='display:flex;position:fixed;inset:0;z-index:100170;background:#0009;padding:10px;align-items:center;justify-content:center;direction:rtl';
+    m.innerHTML=`<div class="modal-content" style="width:min(1100px,98vw);max-height:94vh;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2>📋 سجل الغيابات — ${esc(name)}</h2><button onclick="printClassAbsenceRegister()" style="background:#198754">🖨️ طباعة A4</button><button onclick="document.getElementById('classAbsenceRegisterModal')?.remove()" style="background:#c0392b">إغلاق</button></div><label>📅 التاريخ <input id="classAbsenceRegisterDate" type="date" value="${typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10)}" onchange="renderClassAbsenceRegister()"></label><div id="classAbsenceRegisterBody"></div></div>`;document.body.appendChild(m);window.renderClassAbsenceRegister();
+  };
   window.changeClassAbsenceStatus=function(select){
     if(typeof currentUser==='undefined'||!currentUser||currentUser.role!=='admin'){
       alert('تغيير الحالة متاح للمدير فقط.');
@@ -12336,7 +12436,7 @@ body.parent-only-mode header { display:none !important; }
     body.innerHTML=`<div style="margin:8px 0;padding:10px;border-radius:9px;background:#eef7ff;border:1px solid #c9e2fa;font-weight:700">${isAdmin?'✏️ يمكنك تغيير حالة أي طالب مباشرة من حقل الحالة أدناه.':'عرض فقط — تغيير الحالة متاح للمدير.'}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0">${Object.keys(stat).map(s=>`<div style="padding:10px;border-radius:10px;background:#f3f7fa;border:1px solid #dce5ec"><b>${stat[s]}</b><div style="font-size:23px;font-weight:900">${rows.filter(r=>getDailySchoolStudentStatus(r,date)===s).length}</div></div>`).join('')}</div><div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الرحلة/المقعد</th><th>الكود</th><th>الحالة المسجلة</th><th>الهاتف</th></tr></thead><tbody>${rows.map(r=>{const s=getDailySchoolStudentStatus(r,date);const statusCell=isAdmin?`<select aria-label="تغيير حالة ${esc(r.name)}" data-student-id="${esc(r.id)}" onchange="changeClassAbsenceStatus(this)" style="min-width:110px;padding:7px;border-radius:8px;font-weight:800;background:${s==='absent'?'#fce8e6':s==='leave'?'#fff4cc':s==='late'?'#fff0df':'#e4f7ec'}">${Object.keys(stat).map(k=>`<option value="${k}" ${s===k?'selected':''}>${stat[k]}</option>`).join('')}</select>`:(stat[s]||'غير مسجل');return `<tr><td>${esc(r.name)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${statusCell}</td><td>${esc(r.phone||'—')}</td></tr>`}).join('')||'<tr><td colspan="5">لا يوجد طلاب مسجلون في هذا الصف.</td></tr>'}</tbody></table></div>`;
     window.__classAbsencePrint={rows,date,name:cls?.name||''};
   };
-  
+  window.printClassAbsenceRegister=function(){const d=window.__classAbsencePrint;if(d)printTable(`سجل الغيابات — ${d.name} — ${d.date}`,d.rows.map(r=>({...r,status:getDailySchoolStudentStatus(r,d.date)})),[['الطالب','name'],['الرحلة/المقعد','seat'],['الكود','code'],['الحالة','status'],['الهاتف','phone']]);};
 })();
 </script>
 </body>
