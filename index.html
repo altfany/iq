@@ -4133,7 +4133,8 @@ function updateCloudStatus(text, color) {
         cloudReady = false;
         firebaseOnline = false;
         const loginBtn = document.getElementById('loginButton');
-        if (loginBtn) loginBtn.disabled = true;
+        // لا نعطّل تسجيل الدخول أثناء محاولة الاتصال؛ حتى لا يبقى المستخدم محجوباً إذا تعذر الاتصال بالسحابة.
+        if (loginBtn) loginBtn.disabled = false;
         updateCloudStatus('جاري الاتصال ...',  '#FF0000');
 	
         try {
@@ -4204,9 +4205,10 @@ function updateCloudStatus(text, color) {
             cloudReady = false;
             firebaseOnline = false;
             const btn = document.getElementById('loginButton');
-            if (btn) btn.disabled = true;
+            // إبقاء زر الدخول قابلاً للضغط عند فشل الاتصال بدلاً من تعطيله إلى الأبد.
+            if (btn) btn.disabled = false;
             toggleLoginFields();
-            updateCloudStatus('تعذر الاتصال بـ Firebase — لا يمكن استخدام النظام بدون السحابة.', '#b42318');
+            updateCloudStatus('تعذر الاتصال بـ Firebase — تحقق من الإنترنت ثم أعد المحاولة.', '#b42318');
             console.error('Cloud-only initialization failed:', e);
             clearTimeout(firebaseRetryTimer);
             firebaseRetryTimer = setTimeout(() => initializeCloudData().catch(()=>{}), 10000);
