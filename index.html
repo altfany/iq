@@ -12444,7 +12444,18 @@ body.parent-only-mode header { display:none !important; }
   const canEditClass=cls=>!!(currentUser&&cls&&(currentUser.role==='admin'||currentUser.role==='monitor'||(currentUser.role==='teacher'&&typeof isClassSupervisor==='function'&&isClassSupervisor(cls))));
   const statusLabels={present:'حاضر',absent:'غائب',late:'متأخر',leave:'مجاز'};
   function getRowsForClass(cls){return (typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).filter(r=>r.cls===cls);}
-  function getAttRecord(studentId,date){return (window.ProfessionalModules?.attendanceData||[]).find(x=>String(x.studentId)===String(studentId)&&String(x.date)===String(date))||null;}
+  function getAttRecord(studentId,date){
+    const found=(window.ProfessionalModules?.attendanceData||[]).find(x=>String(x.studentId)===String(studentId)&&String(x.date)===String(date));
+    if(found)return found;
+    // Read legacy class records too, so late time/reason remain visible across every system view.
+    const row=(typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).find(r=>String(r.id)===String(studentId));
+    if(!row)return null;
+    const legacy=row.cls?.absenceRecords?.[date]||{};
+    const key=row.legacyKey;
+    const status=legacy[key]??legacy[studentId];
+    if(status==null)return null;
+    return {studentId:String(studentId),date:String(date),status:status===true?'absent':String(status),lateTime:String(legacy[key+'_lateTime']||legacy[String(studentId)+'_lateTime']||''),lateReason:String(legacy[key+'_lateReason']||legacy[String(studentId)+'_lateReason']||''),note:String(legacy[key+'_lateReason']||legacy[String(studentId)+'_lateReason']||'')};
+  }
   function addLateFieldsToRow(tr,status,record){const wrap=tr.querySelector('.shared-late-fields');if(!wrap)return;wrap.style.display=status==='late'?'flex':'none';const time=wrap.querySelector('.shared-late-time'),reason=wrap.querySelector('.shared-late-reason');if(time&&record?.lateTime)time.value=record.lateTime;if(reason&&(record?.lateReason||record?.note))reason.value=record.lateReason||record.note||'';}
 
   window.openClassAbsenceRegister=function(){
@@ -12490,7 +12501,21 @@ body.parent-only-mode header { display:none !important; }
     const status=tr.querySelector('.shared-status')?.value||'present';if(status==='leave'&&currentUser?.role!=='admin'){alert('حالة مجاز متاحة للمدير فقط.');return;}
     const time=tr.querySelector('.shared-late-time')?.value||'',reason=tr.querySelector('.shared-late-reason')?.value?.trim()||'';
     if(status==='late'&&!time){alert('يرجى تحديد ساعة التأخر.');return;}if(status==='late'&&!reason){alert('يرجى كتابة سبب التأخر.');return;}
-    const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`سبب التأخر: ${reason}`:'',status==='late'?time:'',status==='late'?reason:'');
+    const ok=window.ProfessionalModules?.recordAttendance?.(studentId,status,date,status==='late'?`ساعة التأخر: ${time} — سبب التأخر: ${reason}`:'',status==='late'?time:'',status==='late'?reason:'');
+    // Mirror the saved status and late details into the class record as well; this is
+    // synchronized with the rest of schoolData and supports legacy/system-wide views.
+    const matchingRow=getRowsForClass(cls).find(r=>String(r.id)===String(studentId));
+    if(matchingRow){
+      if(!cls.absenceRecords||typeof cls.absenceRecords!=='object')cls.absenceRecords={};
+      if(!cls.absenceRecords[date]||typeof cls.absenceRecords[date]!=='object')cls.absenceRecords[date]={};
+      cls.absenceRecords[date][matchingRow.legacyKey]=status;
+      cls.absenceRecords[date][String(studentId)]=status;
+      for(const key of [matchingRow.legacyKey,String(studentId)]){
+        if(status==='late'){cls.absenceRecords[date][key+'_lateTime']=time;cls.absenceRecords[date][key+'_lateReason']=reason;}
+        else {delete cls.absenceRecords[date][key+'_lateTime'];delete cls.absenceRecords[date][key+'_lateReason'];}
+      }
+      try{if(typeof saveData==='function')saveData();}catch(_e){}
+    }
     if(!ok){
       // Fallback for older school data where the unified student index does not
       // resolve the displayed student ID: preserve the entry in the class legacy
