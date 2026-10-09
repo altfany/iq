@@ -2291,7 +2291,8 @@ header > div:first-child{
                 <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم / هاتف / كود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
-            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
+            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون 
+				</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
@@ -2321,7 +2322,7 @@ header > div:first-child{
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);">📋 سجل غياب معلم</button>
-          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون ومراقب</button>
+          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون</button>
           <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
           <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
         </div>
