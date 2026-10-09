@@ -9861,6 +9861,75 @@ function updateCloudStatus(text, color) {
         }
         return currentUser.code ? findStudentBySecretCode(currentUser.code) : null;
     }
+    // مشاركة موقع المنزل اختيارية، ولا يُطلب الموقع إلا بعد موافقة ولي الأمر بتفعيل المربع.
+    function getParentHomeLocationTarget(){
+        if(!currentUser || currentUser.role!=='parent') return null;
+        const code=String(currentUser.code||'').trim();
+        const sid=String(currentUser.studentId||currentUser.studentSnapshot?.id||'').trim();
+        const f=currentStudentForDashboard();
+        for(let ci=0;ci<(schoolData||[]).length;ci++){
+            const cls=schoolData[ci];
+            for(let di=0;di<(cls.desks||[]).length;di++){
+                const desk=cls.desks[di];
+                for(const slot of [1,2]){
+                    const studentName=String(desk?.['student'+slot]||'').trim();
+                    if(!studentName) continue;
+                    const studentCode=String(desk?.['code'+slot]||'').trim();
+                    const studentId=String(desk?.['student'+slot+'Id']||desk?.id||'').trim();
+                    const codeMatch=code && studentCode===code;
+                    const idMatch=sid && studentId===sid;
+                    const snapshotMatch=!code && !sid && f && Number(f.classIndex)===ci && Number(f.deskIndex)===di && String(f.student?.name||'')===studentName && Number(f.student?.slot||0)===slot;
+                    if(codeMatch||idMatch||snapshotMatch) return {desk,slot,classObj:cls,classIndex:ci,deskIndex:di,studentName,location:desk['parentHomeLocation'+slot]||null};
+                }
+            }
+        }
+        return null;
+    }
+    function renderParentHomeLocationControl(){
+        const card=document.getElementById('parentHomeLocationCard');
+        const checkbox=document.getElementById('parentHomeLocationConsent');
+        const status=document.getElementById('parentHomeLocationStatus');
+        if(!card||!checkbox||currentUser?.role!=='parent') return;
+        const target=getParentHomeLocationTarget();
+        if(!target){checkbox.checked=false;checkbox.disabled=true;if(status)status.textContent='تعذر ربط الموقع بسجل الطالب؛ يرجى تسجيل الدخول مجدداً.';return;}
+        const loc=target.location;
+        checkbox.checked=!!(loc&&Number.isFinite(Number(loc.lat))&&Number.isFinite(Number(loc.lng)));
+        checkbox.disabled=false;
+        if(status){
+            status.innerHTML=checkbox.checked
+                ? `تم تفعيل مشاركة الموقع آخر مرة: ${escapeGlobalSearchHTML(loc.updatedAt?new Date(loc.updatedAt).toLocaleString('ar-IQ'):'غير معروف')} — <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q=${encodeURIComponent(Number(loc.lat)+','+Number(loc.lng))}">عرض الموقع على Google Maps</a>. عند إلغاء الصح يُحذف الموقع من سجل الطالب.`
+                : 'الموقع غير مشارك حالياً. عند وضع الصح سيُحدَّد موقع الجهاز الحالي مرة واحدة ويظهر للمدير عند البحث عن الطالب.';
+        }
+    }
+    async function updateParentHomeLocationConsent(checked){
+        if(currentUser?.role!=='parent') return;
+        const checkbox=document.getElementById('parentHomeLocationConsent');
+        const status=document.getElementById('parentHomeLocationStatus');
+        const target=getParentHomeLocationTarget();
+        if(!target){if(checkbox)checkbox.checked=false;if(status)status.textContent='تعذر العثور على سجل الطالب. أعد تسجيل الدخول وحاول مرة أخرى.';return;}
+        if(!checked){
+            delete target.desk['parentHomeLocation'+target.slot];
+            saveData();
+            if(status)status.textContent='تم إيقاف مشاركة الموقع وحذف الموقع المحفوظ من سجل الطالب.';
+            return;
+        }
+        if(!navigator.geolocation){if(checkbox)checkbox.checked=false;if(status)status.textContent='هذا المتصفح لا يدعم تحديد الموقع. جرّب فتح النظام عبر HTTPS والسماح للموقع بالوصول إلى موقعك.';return;}
+        if(checkbox)checkbox.disabled=true;
+        if(status)status.textContent='جارٍ تحديد موقع الجهاز الحالي… وافق على طلب الموقع الذي يظهر من المتصفح.';
+        navigator.geolocation.getCurrentPosition(async position=>{
+            const lat=Number(position.coords.latitude),lng=Number(position.coords.longitude);
+            if(!Number.isFinite(lat)||!Number.isFinite(lng)){if(checkbox){checkbox.checked=false;checkbox.disabled=false;}if(status)status.textContent='تعذر قراءة الإحداثيات. حاول مرة أخرى.';return;}
+            target.desk['parentHomeLocation'+target.slot]={lat,lng,accuracy:Number(position.coords.accuracy)||null,updatedAt:new Date().toISOString(),sharedBy:String(currentUser.name||'ولي الأمر'),consent:true};
+            saveData();
+            if(checkbox){checkbox.checked=true;checkbox.disabled=false;}
+            if(status)status.innerHTML=`تم تحديث الموقع الحالي وحفظه. سيظهر للمدير في نتائج البحث عن الطالب. <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q=${encodeURIComponent(lat+','+lng)}">عرض الموقع على Google Maps</a>. هذا تحديث لمرة واحدة وليس تتبعاً مستمراً.`;
+        },error=>{
+            if(checkbox){checkbox.checked=false;checkbox.disabled=false;}
+            const msg=error?.code===1?'لم تسمح بالوصول للموقع. فعّل إذن الموقع من إعدادات المتصفح ثم حاول مجدداً.':error?.code===2?'تعذر تحديد الموقع الحالي. تأكد من تشغيل خدمات الموقع.':'انتهت مهلة تحديد الموقع. حاول مرة أخرى.';
+            if(status)status.textContent=msg;
+        },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+    }
+    window.updateParentHomeLocationConsent=updateParentHomeLocationConsent;
     function getParentNewActivityNotifications(f, liveClass, studentId, studentName){
         const todayKey=(typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10));
         const todayStart=new Date(todayKey+'T00:00:00').getTime();
@@ -10561,8 +10630,9 @@ function updateCloudStatus(text, color) {
         const scheduleHead=scheduleDays.map(d=>`<th class="parent-schedule-day ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}"><span>${d.name}</span>${d.index===todayIndex?'<small>اليوم</small>':''}${d.index===tomorrowIndex?'<small>غداً</small>':''}</th>`).join('');
         const scheduleBody=Array.from({length:lessons},(_,l)=>`<tr><th class="parent-schedule-lesson">الحصة ${l+1}</th>${scheduleDays.map(d=>{const e=d.enabled?getScheduleEntryData(liveClass,`${d.index}_${l}`):{subject:'',teacherName:'',emergency:false};const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');return `<td class="parent-schedule-cell ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}">${e.subject?`<b>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</b><small>${escapeGlobalSearchHTML(t||'-')}</small>`:'<span class="schedule-empty">—</span>'}</td>`;}).join('')}</tr>`).join('');
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" id="parentActionAbsence" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" id="parentActionGrades" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" id="parentActionBehavior" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" id="parentActionHomework" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" id="parentActionTeacherMessage" onclick="openParentTeacherMessagePage()" style="background:#1976d2!important;color:#fff">💬 رسالة إلى معلم</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" id="parentActionAbsence" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" id="parentActionGrades" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" id="parentActionBehavior" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" id="parentActionHomework" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" id="parentActionTeacherMessage" onclick="openParentTeacherMessagePage()" style="background:#1976d2!important;color:#fff">💬 رسالة إلى معلم</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><section id="parentHomeLocationCard" style="margin:14px 16px 4px;padding:15px;border:1px solid #b8d9ee;border-radius:16px;background:linear-gradient(135deg,#f1f9ff,#fff);box-shadow:0 5px 16px rgba(25,85,125,.08);"><label for="parentHomeLocationConsent" style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;font-weight:900;color:#174b70;line-height:1.8"><input id="parentHomeLocationConsent" type="checkbox" onchange="updateParentHomeLocationConsent(this.checked)" style="width:24px;height:24px;flex:0 0 24px;margin-top:3px;accent-color:#16834a"><span>📍 يجب وضع صح لتحديد موقعكم عند حدوث أمر طارئ في المدرسة لنعلم أين موقعكم.</span></label><div style="font-size:12px;color:#586c7a;line-height:1.8;margin:8px 0 0 36px">عند وضع الصح سيطلب المتصفح إذن تحديد الموقع، ويُحفظ الموقع الحالي ليظهر لمدير المدرسة عند البحث عن اسم الطالب. إذا انتقلتم إلى المنزل أو أردتم تحديث الموقع، ألغوا الصح ثم ضعوه مرة أخرى. إلغاء الصح يحذف الموقع المحفوظ. الموقع لا يتحدّث تلقائياً ولا يتتبّع تحركاتكم.</div><div id="parentHomeLocationStatus" style="font-size:12px;line-height:1.8;margin:8px 0 0 36px;color:#24536d"></div></section><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
         document.body.appendChild(modal);
+        renderParentHomeLocationControl();
         startParentActivityPulse();
         startParentTeacherMessageIndicatorPulse();
     }
@@ -11897,7 +11967,7 @@ function d5students(){
   const out=[];
   (schoolData||[]).forEach((c,ci)=>(c.desks||[]).forEach((d,di)=>[1,2].forEach(slot=>{
     const name=String(d?.['student'+slot]||'').trim(); if(!name)return;
-    out.push({id:String(d['student'+slot+'Id']||d.id||ci+'_'+di+'_'+slot),name,code:String(d['code'+slot]||''),phone:String(d['phone'+slot]||''),address:String(d['address'+slot]||''),className:String(c.name||''),classIndex:ci,deskIndex:di,slot,deskNumber:d.deskNumber||di+1,key:di+':'+slot});
+    out.push({id:String(d['student'+slot+'Id']||d.id||ci+'_'+di+'_'+slot),name,code:String(d['code'+slot]||''),phone:String(d['phone'+slot]||''),address:String(d['address'+slot]||''),homeLocation:d['parentHomeLocation'+slot]||null,className:String(c.name||''),classIndex:ci,deskIndex:di,slot,deskNumber:d.deskNumber||di+1,key:di+':'+slot});
   })));
   return out;
 }
@@ -11939,7 +12009,7 @@ function d5open(title,html,id){
 }
 
 function d5studentActions(st){return '<div class="dev5-actions"><button type="button" onclick="openProfessionalStudentProfile(&quot;'+d5esc(st.id)+'&quot;)">👤 البيانات</button><button type="button" onclick="window.Dev5.openStudentGrades(&quot;'+d5esc(st.id)+'&quot;)">📝 الدرجات</button><button type="button" onclick="window.Dev5.openStudentReport(&quot;'+d5esc(st.id)+'&quot;)">🖨️ تقرير</button></div>'; }
-function openDev5StudentSearch(){rebuildD5Index();let m=d5open('🔎 البحث الموحد عن الطالب','<div class="dev5-toolbar"><input id="dev5StudentQ" placeholder="ابحث باسم الطالب أو رقم الهاتف أو كود الطالب أو الصف..." autocomplete="off"><select id="dev5ClassFilter"><option value="">كل الصفوف</option>'+[...new Set(dev5StudentIndex.map(s=>s.className).filter(Boolean))].map(x=>'<option>'+d5esc(x)+'</option>').join('')+'</select></div><div id="dev5StudentResults"></div>');const q=m.querySelector('#dev5StudentQ');const f=m.querySelector('#dev5ClassFilter');function render(){const term=q.value.trim().toLocaleLowerCase('ar');const cls=f.value;const rows=dev5StudentIndex.filter(s=>(!cls||s.className===cls)&&(!term||[s.name,s.code,s.phone,s.address,s.className].join(' ').toLocaleLowerCase('ar').includes(term))).slice(0,200);m.querySelector('#dev5StudentResults').innerHTML=rows.length?rows.map(s=>'<div class="dev5-search-result"><div><b>'+d5esc(s.name)+'</b><div class="dev5-muted">'+d5esc(s.className)+' • المقعد '+d5esc(s.deskNumber)+' • الكود '+d5esc(s.code||'-')+'</div></div>'+d5studentActions(s)+'</div>').join(''):'<div class="pro-empty">لا يوجد طالب مطابق.</div>';}
+function openDev5StudentSearch(){rebuildD5Index();let m=d5open('🔎 البحث الموحد عن الطالب','<div class="dev5-toolbar"><input id="dev5StudentQ" placeholder="ابحث باسم الطالب أو رقم الهاتف أو كود الطالب أو الصف..." autocomplete="off"><select id="dev5ClassFilter"><option value="">كل الصفوف</option>'+[...new Set(dev5StudentIndex.map(s=>s.className).filter(Boolean))].map(x=>'<option>'+d5esc(x)+'</option>').join('')+'</select></div><div id="dev5StudentResults"></div>');const q=m.querySelector('#dev5StudentQ');const f=m.querySelector('#dev5ClassFilter');function render(){const term=q.value.trim().toLocaleLowerCase('ar');const cls=f.value;const rows=dev5StudentIndex.filter(s=>(!cls||s.className===cls)&&(!term||[s.name,s.code,s.phone,s.address,s.className].join(' ').toLocaleLowerCase('ar').includes(term))).slice(0,200);m.querySelector('#dev5StudentResults').innerHTML=rows.length?rows.map(s=>{const loc=currentUser?.role!=='admin'?'<div class="dev5-muted" style="margin-top:7px">📍 بيانات الموقع متاحة للمدير فقط.</div>':(s.homeLocation&&Number.isFinite(Number(s.homeLocation.lat))&&Number.isFinite(Number(s.homeLocation.lng))?'<div class="dev5-muted" style="margin-top:7px;color:#176b45;font-weight:800">📍 موقع ولي الأمر: <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q='+encodeURIComponent(Number(s.homeLocation.lat)+','+Number(s.homeLocation.lng))+'" style="color:#176b45;text-decoration:underline">عرض الموقع على Google Maps</a><div style="font-weight:500">آخر تحديث: '+d5esc(s.homeLocation.updatedAt?new Date(s.homeLocation.updatedAt).toLocaleString('ar-IQ'):'غير معروف')+'</div></div>':'<div class="dev5-muted" style="margin-top:7px">📍 لم يشارك ولي الأمر موقعاً حالياً.</div>');return '<div class="dev5-search-result"><div><b>'+d5esc(s.name)+'</b><div class="dev5-muted">'+d5esc(s.className)+' • المقعد '+d5esc(s.deskNumber)+' • الكود '+d5esc(s.code||'-')+'</div>'+loc+'</div>'+d5studentActions(s)+'</div>';}).join(''):'<div class="pro-empty">لا يوجد طالب مطابق.</div>';}
 q.oninput=()=>{clearTimeout(dev5SearchTimer);dev5SearchTimer=setTimeout(render,80)};f.onchange=render;render();}
 function openDev5GradeCenter(){if(!currentUser||!['admin','teacher'].includes(currentUser.role)){alert('هذه الخاصية متاحة للمدير والمعلم.');return;}rebuildD5Index();dev5GradePage=0;const classes=schoolData||[];const subjects=[...new Set((subjectsData||[]).map(x=>String(x.name||'').trim()).filter(Boolean))];const html='<div class="dev5-toolbar"><select id="d5gClass">'+classes.map((c,i)=>'<option value="'+i+'">'+d5esc(c.name||('صف '+(i+1)))+'</option>').join('')+'</select><select id="d5gSubject">'+subjects.map(x=>'<option>'+d5esc(x)+'</option>').join('')+'</select><select id="d5gType"><option value="daily">امتحان يومي</option><option value="monthly">امتحان شهري</option><option value="midyear">نصف السنة</option><option value="finalyear">آخر السنة</option></select><input id="d5gPeriod" type="date"><input id="d5gMax" type="number" min="1" value="10" placeholder="الدرجة الكاملة"><input id="d5gFilter" placeholder="بحث داخل الطلاب"></div><div id="d5gTable"></div><div class="dev5-actions"><button id="d5gSave" style="background:var(--success)">💾 حفظ درجات المجموعة</button><button id="d5gPrint" style="background:var(--indigo)">🖨️ طباعة الجدول</button></div>';
 const m=d5open('⚡ مركز إدخال الدرجات السريع',html,'dev5GradeModal');const c=m.querySelector('#d5gClass');const sub=m.querySelector('#d5gSubject');const typ=m.querySelector('#d5gType');const per=m.querySelector('#d5gPeriod');const filt=m.querySelector('#d5gFilter');const max=m.querySelector('#d5gMax');if(currentUser.role==='teacher'){const t=getCurrentTeacher?.();const allowed=getTeacherSpecialties(t||{});const allowedClasses=getTeacherAssignedClassIdsForRecord?getTeacherAssignedClassIdsForRecord(t||{}):[];c.innerHTML=classes.map((x,i)=>({x,i})).filter(o=>!allowedClasses.length||allowedClasses.map(String).includes(String(o.x.id))).map(o=>'<option value="'+o.i+'">'+d5esc(o.x.name)+'</option>').join('');const mySubs=subjects.filter(x=>allowed.includes(x));sub.innerHTML=mySubs.map(x=>'<option>'+d5esc(x)+'</option>').join('');}
