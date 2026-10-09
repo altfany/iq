@@ -13079,7 +13079,30 @@ body.parent-only-mode header { display:none !important; }
     const name=String(cls.name||`الصف ${idx+1}`);document.getElementById('classAbsenceRegisterModal')?.remove();const m=document.createElement('div');m.id='classAbsenceRegisterModal';m.className='modal';m.style.cssText='display:flex;position:fixed;inset:0;z-index:100170;background:#0009;padding:10px;align-items:center;justify-content:center;direction:rtl';
     m.innerHTML=`<div class="modal-content" style="width:min(1100px,98vw);max-height:94vh;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2>📋 سجل الغيابات — ${esc(name)}</h2><button onclick="printClassAbsenceRegister()" style="background:#198754">🖨️ طباعة A4</button><button onclick="document.getElementById('classAbsenceRegisterModal')?.remove()" style="background:#c0392b">إغلاق</button></div><label>📅 التاريخ <input id="classAbsenceRegisterDate" type="date" value="${typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10)}" onchange="renderClassAbsenceRegister()"></label><div id="classAbsenceRegisterBody"></div></div>`;document.body.appendChild(m);window.renderClassAbsenceRegister();
   };
-  window.renderClassAbsenceRegister=function(){const body=document.getElementById('classAbsenceRegisterBody');if(!body)return;const idx=Number(window.__classAbsenceClassIndex ?? currentClassIndex),data=(typeof schoolData!=='undefined'&&Array.isArray(schoolData))?schoolData:[],cls=data[idx],date=document.getElementById('classAbsenceRegisterDate')?.value;if(!cls){body.innerHTML='<p style="color:#b42318;font-weight:800">تعذر تحديد الصف. أغلق السجل وافتحه من داخل الصف المطلوب.</p>';return;}const rows=(typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).filter(r=>r.cls===cls);const stat={present:'حاضر',absent:'غائب',leave:'مجاز',late:'متأخر'};body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0">${Object.keys(stat).map(s=>`<div style="padding:10px;border-radius:10px;background:#f3f7fa;border:1px solid #dce5ec"><b>${stat[s]}</b><div style="font-size:23px;font-weight:900">${rows.filter(r=>getDailySchoolStudentStatus(r,date)===s).length}</div></div>`).join('')}</div><div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الرحلة/المقعد</th><th>الكود</th><th>الحالة المسجلة</th><th>الهاتف</th></tr></thead><tbody>${rows.map(r=>{const s=getDailySchoolStudentStatus(r,date);return `<tr><td>${esc(r.name)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${stat[s]||'غير مسجل'}</td><td>${esc(r.phone||'—')}</td></tr>`}).join('')||'<tr><td colspan="5">لا يوجد طلاب مسجلون في هذا الصف.</td></tr>'}</tbody></table></div>`;window.__classAbsencePrint={rows,date,name:cls?.name||''};};
+  window.changeClassAbsenceStatus=function(select){
+    if(typeof currentUser==='undefined'||!currentUser||currentUser.role!=='admin'){
+      alert('تغيير الحالة متاح للمدير فقط.');
+      window.renderClassAbsenceRegister();
+      return;
+    }
+    const date=document.getElementById('classAbsenceRegisterDate')?.value;
+    const studentId=select?.dataset?.studentId;
+    if(!date||!studentId){alert('تعذر تحديد الطالب أو التاريخ.');window.renderClassAbsenceRegister();return;}
+    updateStudentAbsence(date,studentId,select.value);
+    window.renderClassAbsenceRegister();
+  };
+  window.renderClassAbsenceRegister=function(){
+    const body=document.getElementById('classAbsenceRegisterBody');if(!body)return;
+    const idx=Number(window.__classAbsenceClassIndex ?? currentClassIndex);
+    const data=(typeof schoolData!=='undefined'&&Array.isArray(schoolData))?schoolData:[];
+    const cls=data[idx],date=document.getElementById('classAbsenceRegisterDate')?.value;
+    if(!cls){body.innerHTML='<p style="color:#b42318;font-weight:800">تعذر تحديد الصف. أغلق السجل وافتحه من داخل الصف المطلوب.</p>';return;}
+    const rows=(typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[]).filter(r=>r.cls===cls);
+    const stat={present:'حاضر',absent:'غائب',leave:'مجاز',late:'متأخر'};
+    const isAdmin=typeof currentUser!=='undefined'&&currentUser&&currentUser.role==='admin';
+    body.innerHTML=`<div style="margin:8px 0;padding:10px;border-radius:9px;background:#eef7ff;border:1px solid #c9e2fa;font-weight:700">${isAdmin?'✏️ يمكنك تغيير حالة أي طالب مباشرة من حقل الحالة أدناه.':'عرض فقط — تغيير الحالة متاح للمدير.'}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0">${Object.keys(stat).map(s=>`<div style="padding:10px;border-radius:10px;background:#f3f7fa;border:1px solid #dce5ec"><b>${stat[s]}</b><div style="font-size:23px;font-weight:900">${rows.filter(r=>getDailySchoolStudentStatus(r,date)===s).length}</div></div>`).join('')}</div><div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الرحلة/المقعد</th><th>الكود</th><th>الحالة المسجلة</th><th>الهاتف</th></tr></thead><tbody>${rows.map(r=>{const s=getDailySchoolStudentStatus(r,date);const statusCell=isAdmin?`<select aria-label="تغيير حالة ${esc(r.name)}" data-student-id="${esc(r.id)}" onchange="changeClassAbsenceStatus(this)" style="min-width:110px;padding:7px;border-radius:8px;font-weight:800;background:${s==='absent'?'#fce8e6':s==='leave'?'#fff4cc':s==='late'?'#fff0df':'#e4f7ec'}">${Object.keys(stat).map(k=>`<option value="${k}" ${s===k?'selected':''}>${stat[k]}</option>`).join('')}</select>`:(stat[s]||'غير مسجل');return `<tr><td>${esc(r.name)}</td><td>${esc(r.deskNumber)} — ${esc(r.seat)}</td><td>${esc(r.code||'—')}</td><td>${statusCell}</td><td>${esc(r.phone||'—')}</td></tr>`}).join('')||'<tr><td colspan="5">لا يوجد طلاب مسجلون في هذا الصف.</td></tr>'}</tbody></table></div>`;
+    window.__classAbsencePrint={rows,date,name:cls?.name||''};
+  };
   window.printClassAbsenceRegister=function(){const d=window.__classAbsencePrint;if(d)printTable(`سجل الغيابات — ${d.name} — ${d.date}`,d.rows.map(r=>({...r,status:getDailySchoolStudentStatus(r,d.date)})),[['الطالب','name'],['الرحلة/المقعد','seat'],['الكود','code'],['الحالة','status'],['الهاتف','phone']]);};
 })();
 </script>
