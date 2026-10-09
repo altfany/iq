@@ -9491,10 +9491,19 @@ function updateCloudStatus(text, color) {
         if (currentUser.role === 'parent' && studentName !== currentUser.name) return;
 
         let status = getStoredAttendanceStatus(cls, dateStr, studentKey);
-        // زر الحضور والغياب يجب أن يستخدم نفس المعرّف القياسي في القراءة والحفظ.
-        const deskForRow = (Array.isArray(cls?.desks) ? cls.desks : []).find(x => x && String(x.deskNumber)===String(deskNum));
+        // استخدم المعرّف القياسي الممرر من الصف نفسه أولاً؛ لا تستنتج الطالب من رقم المقعد فقط،
+        // لأن أرقام المقاعد قد تتكرر أو تختلف عن ترتيبها، وهذا كان يسبب اختلاف الحالة بين الشاشات.
+        const desksForRow = Array.isArray(cls?.desks) ? cls.desks : [];
         const slotForRow = seatPos==='يمين' ? 1 : 2;
-        const studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,(cls.desks||[]).indexOf(deskForRow),slotForRow) : '';
+        let studentIdForRow = '';
+        for(let di=0; di<desksForRow.length; di++){
+            const candidate=canonicalStudentId(cls,currentClassIndex,desksForRow[di],di,slotForRow);
+            if(String(candidate)===String(studentKey||'')) { studentIdForRow=candidate; break; }
+        }
+        if(!studentIdForRow){
+            const deskForRow = desksForRow.find(x => x && String(x.deskNumber)===String(deskNum));
+            studentIdForRow = deskForRow ? canonicalStudentId(cls,currentClassIndex,deskForRow,desksForRow.indexOf(deskForRow),slotForRow) : String(studentKey||'');
+        }
         const professionalRow = getUnifiedAttendanceRecord ? getUnifiedAttendanceRecord(studentIdForRow,dateStr) : (window.ProfessionalModules?.attendanceData||[]).find(r => String(r.studentId||'').trim()===String(studentIdForRow||'').trim() && String(r.date||'')===String(dateStr));
         if (professionalRow?.status) status = professionalRow.status;
         const canEdit = canManageStudentAttendance(cls);
@@ -10938,7 +10947,10 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 const lateReason=String(checkedControl?.dataset?.lateReason||oldRec?.lateReason||oldRec?.note||'').trim();
                 const note=status==='late' ? `وقت الدخول: ${lateTime||'-'} — السبب: ${lateReason||'-'}` : '';
                 const saved = window.ProfessionalModules?.recordAttendance ? window.ProfessionalModules.recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : (typeof recordAttendance==='function' ? recordAttendance(student.student.id,status,date,note,lateTime,lateReason) : false);
-                // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور والغياب» في كارت الصف.
+                if(saved===false){
+                    throw new Error(`تعذر حفظ الحالة الموحدة للطالب: ${student.student.name||student.student.id}`);
+                }
+                // مزامنة سجل الحضور القديم حتى يظهر غياب المراقب مباشرة داخل زر «الحضور» و«فتح الكشف» والرحلات.
                 if (student.classObj) {
                     if (!student.classObj.absenceRecords) student.classObj.absenceRecords = {};
                     if (!student.classObj.absenceRecords[date]) student.classObj.absenceRecords[date] = {};
@@ -10988,6 +11000,12 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                     return;
                 }
             }
+            // إعادة رسم الواجهات المفتوحة من السجل الموحد بعد إتمام إرسال المراقب.
+            try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('dailyInventoryReports')) renderMonitorDailyInventory(); }catch(_e){}
+            try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderAbsenceTable(); }catch(_e){}
+            try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
+            try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
+            try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
             alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
         }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
@@ -12087,6 +12105,11 @@ window.addEventListener('unhandledrejection', function (event) {
     syncUnifiedAttendanceEverywhere(found,record);
     persistModules();
     try{ if(typeof saveData==='function') saveData(); }catch(_e){}
+    // تحديث كل الواجهات المفتوحة من المصدر الموحد، دون تغيير وظائف الأزرار أو صلاحياتها.
+    try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
+    try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
+    try{ if(typeof renderMonitorDailyInventory==='function' && document.getElementById('dailyInventoryReports')) renderMonitorDailyInventory(); }catch(_e){}
+    try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
     addAudit('تسجيل حضور/غياب',`${found.student.name} - ${record.status} - ${day}`);
     return true;
   }
