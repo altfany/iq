@@ -2291,7 +2291,6 @@ header > div:first-child{
                 <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم / هاتف / كود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
-            <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 سجل الغيابات</button>
             <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
@@ -2315,7 +2314,6 @@ header > div:first-child{
         <div><div style="font-size:18px;font-weight:900;">📋 كشف طلاب المدرسة اليومي</div><div style="font-size:12px;opacity:.92;margin-top:4px;">الحضور والغياب والتأخر والطلاب الذين تجاوز غيابهم 5 أيام في الشهر الحالي</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <button type="button" onclick="openDailyAttendanceStats()" style="background:#fff;color:#0f7c8c;border:0;border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📊 الاحصاء اليومي</button>
-          <button type="button" id="btnDailyInventoryInsideReport" onclick="openMonitorDailyInventory()" style="background:#16a085;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📋 سجل الغيابات</button>
         </div>
       </div>
     </div>
@@ -5197,7 +5195,6 @@ function updateCloudStatus(text, color) {
 
         if (!currentUser) return;
         const staffAdminBarInit=document.getElementById('staffAdminBar'); if(staffAdminBarInit) staffAdminBarInit.style.display='none';
-        const insideInventoryInit=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryInit) insideInventoryInit.style.display='none';
 
         // صندوق الشكاوى: يظهر للمدير فقط، ويُعاد ضبطه صراحةً عند كل تسجيل دخول
         // حتى لا يبقى مخفياً بسبب صلاحيات الحساب السابق.
@@ -5234,7 +5231,6 @@ function updateCloudStatus(text, color) {
             if(btnDailySchoolStudentReportNav){ btnDailySchoolStudentReportNav.style.display='inline-block'; btnDailySchoolStudentReportNav.style.visibility='visible'; btnDailySchoolStudentReportNav.style.opacity='1'; }
             if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='block';
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='block';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='inline-block';
             const staffAdminManagementButton=document.getElementById('staffAdminManagementButton'); if(staffAdminManagementButton) staffAdminManagementButton.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             if(btnTeachers) btnTeachers.style.display='none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display='none';
@@ -5246,7 +5242,6 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNav=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav) btnSystemResetNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
@@ -5255,7 +5250,6 @@ function updateCloudStatus(text, color) {
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'monitor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             // المراقب له واجهة مستقلة: الصفوف والطلاب + الحضور/الغياب + ملاحظات للمدير فقط.
             badge.innerText = `الصلاحية: مراقب 👁️ (${currentUser.name})`;
@@ -5282,7 +5276,6 @@ function updateCloudStatus(text, color) {
             if(btnMonitorsNav) btnMonitorsNav.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display='none';
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav');
             if(announcementsBtn) announcementsBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
@@ -5296,14 +5289,12 @@ function updateCloudStatus(text, color) {
             if(classContent) classContent.style.display='none';
         } else if (currentUser.role === 'guestSupervisor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
             [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
             const professionalQuickMenu=document.getElementById('professionalQuickMenu'); if(professionalQuickMenu) professionalQuickMenu.style.display='none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav'); if(announcementsBtn) announcementsBtn.style.display='none';
             document.querySelectorAll('.header-actions > button').forEach(btn=>{ if(!btn.matches('[onclick*="logoutSystem"]')) btn.style.display='none'; });
             const classesNav=document.getElementById('classesNav'); if(classesNav) classesNav.style.display='none';
@@ -5343,7 +5334,6 @@ function updateCloudStatus(text, color) {
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'parent') {
@@ -10629,14 +10619,14 @@ function updateCloudStatus(text, color) {
             const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const safeId=escAttr(f.student.id);
             // «مجاز» حالة مقروءة من السجل الموحد؛ صلاحية تغييرها تبقى للمدير.
-            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
+            const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰']];
             return `<tr>
                 <td>${i+1}</td>
                 <td>${escapeGlobalSearchHTML(f.student.name)}</td>
                 <td>
                   <div class="monitor-status-checks" data-current-status="${status}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                     ${checks.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;cursor:pointer;font-weight:800;font-size:12px">
-                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='leave'?'disabled title="حالة المجاز تسجل من المدير"':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
+                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
                         onchange="monitorAttendanceCheckboxChanged(this,'${safeId}','${escapeGlobalSearchHTML(date)}')"
                         style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer">
                       <span>${icon} ${label}</span>
@@ -10721,13 +10711,16 @@ function updateCloudStatus(text, color) {
                 const row=rows.find(tr=>tr.querySelector(`input[data-monitor-student="${CSS.escape(String(student.student.id))}"]`));
                 if(!row) return null;
                 const checked=row.querySelector('input[data-monitor-status]:checked');
-                return {student,row,status:checked?.dataset?.monitorStatus||'present'};
+                const priorStatus=row.querySelector('.monitor-status-checks')?.dataset?.currentStatus||'present';
+                return {student,row,status:checked?.dataset?.monitorStatus||(priorStatus==='leave'?'leave':'present'),selected:!!checked};
             }).filter(Boolean);
             if(controls.length!==students.length){alert('تعذر قراءة حالات الطلاب. أعد اختيار الصف ثم حاول مرة أخرى.');return;}
             const absent=[];
             const reportStudents=[];
             controls.forEach(item=>{
                 const student=item.student;
+                // لا يملك المراقب تغيير حالة «مجاز»؛ إذا كانت محددة من المدير ولم يختر المراقب حالة أخرى، نحافظ عليها كما هي.
+                if(item.status==='leave' && !item.selected) return;
                 const status=['late','absent','present'].includes(item.status) ? item.status : 'present';
                 const lateInfo=student.classObj?.absenceRecords?.[date] || {};
                 const oldRec=window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(student.student.id,date) : (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
@@ -10786,6 +10779,10 @@ function updateCloudStatus(text, color) {
                     return;
                 }
             }
+            try{ if(typeof renderDailyAttendanceStats==='function' && document.getElementById('dailyAttendanceStatsModal')) renderDailyAttendanceStats(); }catch(_e){}
+            try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
+            try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderAbsenceTable(); }catch(_e){}
+            try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
             alert(absent.length?`تم إرسال أسماء ${absent.length} غائب/غائبين إلى المدير.`:'تم إرسال الجرد إلى المدير، ولا يوجد غائبون.');
             renderMonitorSelectedClass();
         }catch(err){console.error(err);alert('حدث خطأ أثناء حفظ الغياب وإرساله للمدير. حاول مرة أخرى.');}
@@ -13036,7 +13033,7 @@ body.parent-only-mode header { display:none !important; }
     <button type="button" onclick="closeStudentSuspensionOverlay()" style="margin-top:16px;background:#34495e;">العودة إلى شاشة الدخول</button>
   </div>
 </div>
-<script id="daily-attendance-statistics-and-class-register">
+<script id="daily-attendance-statistics-and-class-register-retained">
 (function(){
   const esc=v=>typeof escapeGlobalSearchHTML==='function'?escapeGlobalSearchHTML(String(v??'—')):String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function adminOnly(){if(typeof currentUser==='undefined'||!currentUser||currentUser.role!=='admin'){alert('هذه الخاصية متاحة للمدير فقط.');return false;}return true;}
