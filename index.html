@@ -13031,7 +13031,7 @@ body.parent-only-mode header { display:none !important; }
 <script id="daily-attendance-statistics-and-class-register">
 (function(){
   const esc=v=>typeof escapeGlobalSearchHTML==='function'?escapeGlobalSearchHTML(String(v??'—')):String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function adminOnly(){if(!window.currentUser||currentUser.role!=='admin'){alert('هذه الخاصية متاحة للمدير فقط.');return false;}return true;}
+  function adminOnly(){if(typeof currentUser==='undefined'||!currentUser||currentUser.role!=='admin'){alert('هذه الخاصية متاحة للمدير فقط.');return false;}return true;}
   window.openDailyAttendanceStats=function(){
     if(!adminOnly())return;
     document.getElementById('dailyAttendanceStatsModal')?.remove();
