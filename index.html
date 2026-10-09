@@ -12591,7 +12591,12 @@ body.parent-only-mode header { display:none !important; }
         if(status==='late'){
           cls.absenceRecords[date][fallbackRow.legacyKey+'_lateTime']=time;
           cls.absenceRecords[date][fallbackRow.legacyKey+'_lateReason']=reason;
+        } else {
+          delete cls.absenceRecords[date][fallbackRow.legacyKey+'_lateTime'];
+          delete cls.absenceRecords[date][fallbackRow.legacyKey+'_lateReason'];
         }
+        cls.absenceRecords[date][fallbackRow.legacyKey+'_changedByName']=String(currentUser?.name||'مستخدم النظام');
+        cls.absenceRecords[date][fallbackRow.legacyKey+'_changedByRole']=String(currentUser?.isAssistant?'معاون':(currentUser?.role||''));
         try{if(typeof saveData==='function')saveData();}catch(_e){}
         try{if(typeof renderDesks==='function')renderDesks();}catch(_e){}
         btn.textContent='✓ تم الحفظ';btn.style.background='#16803c';
@@ -12648,7 +12653,17 @@ body.parent-only-mode header { display:none !important; }
   window.searchDailyStatsStudent=function(){
     const input=document.getElementById('dailyStatsStudentSearch'),out=document.getElementById('dailyStatsStudentResults');if(!input||!out)return;const q=input.value.trim().toLocaleLowerCase('ar');if(!q){out.innerHTML='';window.__dailyStudentSearchPrint=null;return;}
     const all=typeof getDailySchoolStudentRows==='function'?getDailySchoolStudentRows():[],dates=new Set();(window.ProfessionalModules?.attendanceData||[]).forEach(r=>{if(r?.date)dates.add(String(r.date));});(schoolData||[]).forEach(c=>Object.keys(c?.absenceRecords||{}).forEach(d=>dates.add(d)));
-    const matched=all.filter(r=>String(r.name||'').toLocaleLowerCase('ar').includes(q)),records=[];matched.forEach(r=>[...dates].sort().reverse().forEach(date=>{const status=getDailySchoolStudentStatus(r,date);const rec=getAttRecord(r.id,date);const legacy=r.cls?.absenceRecords?.[date]||{};const hasLegacy=Object.prototype.hasOwnProperty.call(legacy,r.id)||Object.prototype.hasOwnProperty.call(legacy,r.legacyKey);if(rec||hasLegacy)records.push({r,date,status,lateTime:rec?.lateTime||'',lateReason:rec?.lateReason||'',changedByName:rec?.changedByName||'',changedByRole:rec?.changedByRole||''});}));
+    const matched=all.filter(r=>String(r.name||'').toLocaleLowerCase('ar').includes(q)),records=[];
+    matched.forEach(r=>[...dates].sort().reverse().forEach(date=>{
+      const status=getDailySchoolStudentStatus(r,date),rec=getAttRecord(r.id,date);
+      const legacy=r.cls?.absenceRecords?.[date]||{},key=String(r.legacyKey||r.id||'');
+      const legacyStatus=legacy[key]??legacy[r.id];
+      const hasLegacy=legacyStatus!==undefined;
+      if(rec||hasLegacy){
+        const legacyValue=(suffix)=>legacy[key+suffix]??legacy[String(r.id)+suffix]??'';
+        records.push({r,date,status:status||legacyStatus||'',lateTime:rec?.lateTime||legacyValue('_lateTime'),lateReason:rec?.lateReason||rec?.note||legacyValue('_lateReason'),changedByName:rec?.changedByName||legacyValue('_changedByName'),changedByRole:rec?.changedByRole||legacyValue('_changedByRole')});
+      }
+    }));
     const sorted=records.sort((a,b)=>b.date.localeCompare(a.date));out.innerHTML=`<div style="margin:10px 0;padding:12px;border:1px solid #cbd8e3;border-radius:12px;background:#f8fbfd"><h3>نتائج البحث (${matched.length} طالب مطابق، ${sorted.length} سجل)</h3>${matched.length?`<div style="overflow:auto"><table class="pro-table"><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سُجل بواسطة</th></tr></thead><tbody>${sorted.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')||'<tr><td colspan="7">لا توجد حالات مسجلة لهذا الطالب.</td></tr>'}</tbody></table></div><button onclick="printDailyStudentSearch()" style="background:#198754;margin-top:10px">🖨️ طباعة سجل الطالب A4</button>`:'لم يتم العثور على طالب بهذا الاسم.'}</div>`;
     window.__dailyStudentSearchPrint={q,records:sorted};
   };
