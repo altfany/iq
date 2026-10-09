@@ -2291,8 +2291,7 @@ header > div:first-child{
                 <input type="text" id="globalStudentSearchInput" placeholder="🔍 اسم / هاتف / كود" style="padding: 5px 8px; border-radius: 4px; border: none; font-size: 12px; width: 180px;" onkeydown="if(event.key==='Enter') globalSearchStudent()">
                 <button onclick="globalSearchStudent()" style="background: #27ae60;">بحث </button>
             </div>
-            <button onclick="openMonitorDailyInventory()" id="btnMonitorDailyInventoryTop" style="background:#16a085;display:none;">📋 سجل الغيابات</button>
-            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون ومراقب</button>
+            <button onclick="openTeachersModal()" id="btnTeachersNav" style="background: var(--blue);display:none;">👨‍🏫 المعلمون</button>
             <button onclick="openTeachersAbsenceModal()" id="btnTeachersAbsenceNav" style="background: var(--indigo);display:none;">📋 سجل غياب معلم</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
@@ -2303,7 +2302,6 @@ header > div:first-child{
             <button onclick="openManagerNotesModal()" id="btnManagerNotesNav" style="background:#6c5ce7;display:none;">🗒️ ملاحظات</button>
             <button onclick="openSystemResetModal()" id="btnSystemResetNav" style="background:#c0392b;display:none;">⚠️ ترسيت النظام</button>
             
-            <button onclick="openMonitorsModal()" id="btnMonitorsNav" style="background:#16a085;display:none;">👁️ المراقب</button>
             <button onclick="openTeacherMonthlyReportModal()" id="btnTeacherMonthlyReportNav" style="background: var(--teal); display:none;">📊 ملخص الحضور الشهري</button>
             <button onclick="openAddModal()" id="btnAddClassNav">+ إضافة صف جديد</button>
             <button onclick="logoutSystem()" style="background: var(--danger);">🚪 تسجيل خروج</button>
@@ -2315,7 +2313,6 @@ header > div:first-child{
         <div><div style="font-size:18px;font-weight:900;">📋 كشف طلاب المدرسة اليومي</div><div style="font-size:12px;opacity:.92;margin-top:4px;">الحضور والغياب والتأخر والطلاب الذين تجاوز غيابهم 5 أيام في الشهر الحالي</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <button type="button" onclick="openDailyAttendanceStats()" style="background:#fff;color:#0f7c8c;border:0;border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📊 الاحصاء اليومي</button>
-          <button type="button" id="btnDailyInventoryInsideReport" onclick="openMonitorDailyInventory()" style="background:#16a085;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:11px;padding:10px 18px;font-weight:900;font-size:14px;cursor:pointer;">📋 سجل الغيابات</button>
         </div>
       </div>
     </div>
@@ -2325,7 +2322,7 @@ header > div:first-child{
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo);">📋 سجل غياب معلم</button>
-          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون ومراقب</button>
+          <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون</button>
           <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
           <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
         </div>
@@ -2524,8 +2521,8 @@ header > div:first-child{
 <div class="modal" id="teachersModal">
     <div class="modal-content large">
         <div class="pro-modal-head">
-            <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين والمراقبين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openMonitorsModal()" style="background:#16a085;color:#fff;font-weight:900;">👁️ إدارة المراقبين</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>المعلمون</h3>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -5191,13 +5188,11 @@ function updateCloudStatus(text, color) {
         let btnDailySchoolStudentReportNav = document.getElementById('btnDailySchoolStudentReportNav');
         let btnAdminManagementNav = document.getElementById('btnAdminManagementNav');
         let btnSystemGradesNav = document.getElementById('btnSystemGradesNav');
-        let btnMonitorsNav = document.getElementById('btnMonitorsNav');
         let btnGlobalSearchAbsence = document.getElementById('btnGlobalSearchAbsence');
         let globalSearchWrapper = document.getElementById('globalSearchWrapper');
 
         if (!currentUser) return;
         const staffAdminBarInit=document.getElementById('staffAdminBar'); if(staffAdminBarInit) staffAdminBarInit.style.display='none';
-        const insideInventoryInit=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryInit) insideInventoryInit.style.display='none';
 
         // صندوق الشكاوى: يظهر للمدير فقط، ويُعاد ضبطه صراحةً عند كل تسجيل دخول
         // حتى لا يبقى مخفياً بسبب صلاحيات الحساب السابق.
@@ -5234,7 +5229,6 @@ function updateCloudStatus(text, color) {
             if(btnDailySchoolStudentReportNav){ btnDailySchoolStudentReportNav.style.display='inline-block'; btnDailySchoolStudentReportNav.style.visibility='visible'; btnDailySchoolStudentReportNav.style.opacity='1'; }
             if(adminDailySchoolReportBox) adminDailySchoolReportBox.style.display='block';
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='block';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='inline-block';
             const staffAdminManagementButton=document.getElementById('staffAdminManagementButton'); if(staffAdminManagementButton) staffAdminManagementButton.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
             if(btnTeachers) btnTeachers.style.display='none';
             if(btnTeachersAbsenceNav) btnTeachersAbsenceNav.style.display='none';
@@ -5246,7 +5240,6 @@ function updateCloudStatus(text, color) {
             const btnSystemResetNav=document.getElementById('btnSystemResetNav'); if(btnSystemResetNav) btnSystemResetNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             if(btnSystemGradesNav) btnSystemGradesNav.style.display = currentUser.isPrimaryAdmin ? 'inline-block' : 'none';
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display=currentUser.isPrimaryAdmin?'inline-block':'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             const btnTeacherComplaintsNavAdmin=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNavAdmin) btnTeacherComplaintsNavAdmin.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display = 'inline-block';
@@ -5255,7 +5248,6 @@ function updateCloudStatus(text, color) {
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'monitor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             // المراقب له واجهة مستقلة: الصفوف والطلاب + الحضور/الغياب + ملاحظات للمدير فقط.
             badge.innerText = `الصلاحية: مراقب 👁️ (${currentUser.name})`;
@@ -5282,7 +5274,6 @@ function updateCloudStatus(text, color) {
             if(btnMonitorsNav) btnMonitorsNav.style.display='none';
             if(btnGlobalSearchAbsence) btnGlobalSearchAbsence.style.display='none';
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav');
             if(announcementsBtn) announcementsBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
@@ -5296,14 +5287,12 @@ function updateCloudStatus(text, color) {
             if(classContent) classContent.style.display='none';
         } else if (currentUser.role === 'guestSupervisor') {
             const staffAdminBar=document.getElementById('staffAdminBar'); if(staffAdminBar) staffAdminBar.style.display='none';
-            const insideInventoryBtn=document.getElementById('btnDailyInventoryInsideReport'); if(insideInventoryBtn) insideInventoryBtn.style.display='none';
             if(complaintsNavBtn) complaintsNavBtn.style.display='none';
             const sb=document.getElementById('btnSubjectsQuick2'); if(sb) sb.style.display='none';
             badge.innerText = `الصلاحية: مشرف ضيف 👁️ (${currentUser.name})`;
             [btnAddClass,btnTeachers,btnEditClass,btnDeleteClass,btnSupervisor,addTeacherSection,btnClearSupervisor,btnScheduleSettings,btnParentTab,btnAbsenceTab,btnLogNavTab,btnTeachersAbsenceNav,btnHomeworkNav,btnTeacherParentMessagesNav,btnTeacherMonthlyReportNav,btnDailySchoolStudentReportNav,btnAdminManagementNav,btnSystemGradesNav,btnMonitorsNav,btnGlobalSearchAbsence].forEach(el=>{if(el)el.style.display='none';});
             if(globalSearchWrapper) globalSearchWrapper.style.display='none';
             const professionalQuickMenu=document.getElementById('professionalQuickMenu'); if(professionalQuickMenu) professionalQuickMenu.style.display='none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const announcementsBtn=document.getElementById('btnAnnouncementsNav'); if(announcementsBtn) announcementsBtn.style.display='none';
             document.querySelectorAll('.header-actions > button').forEach(btn=>{ if(!btn.matches('[onclick*="logoutSystem"]')) btn.style.display='none'; });
             const classesNav=document.getElementById('classesNav'); if(classesNav) classesNav.style.display='none';
@@ -5333,7 +5322,6 @@ function updateCloudStatus(text, color) {
             const btnTeacherComplaintsNav=document.getElementById('btnTeacherComplaintsNav'); if(btnTeacherComplaintsNav) btnTeacherComplaintsNav.style.display='inline-block';
             const btnManagerNotesNavTeacher=document.getElementById('btnManagerNotesNav'); if(btnManagerNotesNavTeacher) btnManagerNotesNavTeacher.style.display='none';
             const btnSystemResetNavTeacher=document.getElementById('btnSystemResetNav'); if(btnSystemResetNavTeacher) btnSystemResetNavTeacher.style.display='none';
-            const btnMonitorsNavTeacher=document.getElementById('btnMonitorsNav'); if(btnMonitorsNavTeacher) btnMonitorsNavTeacher.style.display='none';
             if(btnHomeworkNav) btnHomeworkNav.style.display = 'inline-block';
             if(btnTeacherParentMessagesNav) btnTeacherParentMessagesNav.style.display = 'inline-block';
             if(btnTeacherMonthlyReportNav) btnTeacherMonthlyReportNav.style.display = 'inline-block';
@@ -5343,7 +5331,6 @@ function updateCloudStatus(text, color) {
             const monitorNotesBtn=document.getElementById('btnMonitorNotesQuick'); if(monitorNotesBtn) monitorNotesBtn.style.display='none';
             if(btnMonitorsNav) btnMonitorsNav.style.display = 'none';
             if(globalSearchWrapper) globalSearchWrapper.style.display = 'none';
-            const monitorDailyBtn=document.getElementById('btnMonitorDailyInventoryTop'); if(monitorDailyBtn) monitorDailyBtn.style.display='none';
             const professionalQuickMenu = document.getElementById('professionalQuickMenu');
             if(professionalQuickMenu) professionalQuickMenu.style.display = '';
         } else if (currentUser.role === 'parent') {
@@ -10558,19 +10545,6 @@ function updateCloudStatus(text, color) {
         let c; do { c=String(Math.floor(100000+Math.random()*900000)); } while(monitorsData.some(m=>String(m.code)===c) || c===String(adminCredentials.password));
         return c;
     }
-    function openMonitorsModal(){
-        if(!isPrimaryAdminUser()) return;
-        const old=document.getElementById('monitorsModal'); if(old)old.remove();
-        const modal=document.createElement('div'); modal.id='monitorsModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100009;background:rgba(0,0,0,.55);padding:12px;align-items:center;justify-content:center;';
-        const rows=monitorsData.map((m,i)=>`<tr><td>${escapeGlobalSearchHTML(m.name)}</td><td><b>${escapeGlobalSearchHTML(m.code)}</b></td><td>${m.active===false?'موقوف':'فعال'}</td><td><button onclick="deleteMonitor(${i})" style="background:var(--danger)">حذف</button></td></tr>`).join('');
-        modal.innerHTML=`<div class="modal-content" style="width:min(900px,98vw);max-height:94vh;overflow:auto;padding:18px"><div class="pro-toolbar" style="justify-content:space-between"><h2 style="margin:0;color:#16a085">👁️ إدارة المراقبين</h2><button onclick="document.getElementById('monitorsModal')?.remove()">✕</button></div><div class="pro-panel"><h3>➕ إضافة مراقب</h3><input id="monitorNameInput" placeholder="اسم المراقب"><div class="pro-toolbar" style="justify-content:flex-end;margin-top:10px"><button onclick="saveNewMonitor()" style="background:var(--success)">إضافة وتوليد الكود</button></div></div><div class="pro-panel"><h3>المراقبون</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الاسم</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="pro-empty">لا يوجد مراقبون.</td></tr>'}</tbody></table></div></div></div>`;
-        document.body.appendChild(modal);
-    }
-    function saveNewMonitor(){
-        if(!isPrimaryAdminUser())return; const name=String(document.getElementById('monitorNameInput')?.value||'').trim(); if(!name){alert('اكتب اسم المراقب.');return;}
-        const code=generateMonitorCode(); monitorsData.push({id:createStableId('monitor'),name,code,active:true,createdAt:new Date().toISOString()}); saveData(); openMonitorsModal(); alert(`تم إضافة المراقب ${name}.\nكود الدخول: ${code}`);
-    }
-    function deleteMonitor(index){ if(!isPrimaryAdminUser())return; if(!confirm('حذف هذا المراقب؟'))return; monitorsData.splice(index,1); saveData(); openMonitorsModal(); }
     function getMonitorClasses(){
         return Array.isArray(schoolData) ? schoolData.filter(Boolean) : [];
     }
