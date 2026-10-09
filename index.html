@@ -10839,7 +10839,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const lateReason=String(rec?.lateReason||rec?.note||'').trim();
             const escAttr=v=>String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const safeId=escAttr(f.student.id);
-            // «مجاز» حالة مقروءة من السجل الموحد؛ صلاحية تغييرها تبقى للمدير.
+            // جميع الحالات قابلة للتسجيل من المراقب والمدير وتذهب إلى مركز السجلات.
             const checks=[['present','حاضر','✔️'],['absent','غائب','❌'],['late','متأخر','⏰'],['leave','مجاز','🏖️']];
             return `<tr>
                 <td>${i+1}</td>
@@ -10847,7 +10847,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                 <td>
                   <div class="monitor-status-checks" data-current-status="${status}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                     ${checks.map(([value,label,icon])=>`<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid #d8e0e8;border-radius:9px;background:#fff;cursor:pointer;font-weight:800;font-size:12px">
-                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='leave'?'disabled title="حالة المجاز تسجل من المدير"':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
+                      <input type="checkbox" data-monitor-student="${escapeGlobalSearchHTML(f.student.id)}" data-monitor-status="${value}" ${status===value?'checked':''} ${value==='late' && lateTime?`data-late-time="${escapeGlobalSearchHTML(lateTime)}" data-late-reason="${escapeGlobalSearchHTML(lateReason)}"`:''}
                         onchange="monitorAttendanceCheckboxChanged(this,'${safeId}','${escapeGlobalSearchHTML(date)}')"
                         style="width:17px;height:17px;accent-color:#176b9c;cursor:pointer">
                       <span>${icon} ${label}</span>
@@ -10939,7 +10939,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
             const reportStudents=[];
             controls.forEach(item=>{
                 const student=item.student;
-                const status=['late','absent','present'].includes(item.status) ? item.status : 'present';
+                const status=['late','absent','present','leave'].includes(item.status) ? item.status : 'present';
                 const lateInfo=student.classObj?.absenceRecords?.[date] || {};
                 const oldRec=window.ProfessionalModules?.getUnifiedAttendanceRecord ? window.ProfessionalModules.getUnifiedAttendanceRecord(student.student.id,date) : (window.ProfessionalModules?.attendanceData||[]).find(r=>String(r.studentId)===String(student.student.id)&&String(r.date)===String(date));
                 const checkedControl=item.row.querySelector('input[data-monitor-status]:checked');
@@ -10958,7 +10958,7 @@ function updateStudentAbsence(dateStr, studentKey, statusVal) {
                     const deskNo = Number(student.deskIndex) + 1;
                     const legacyKey = `${deskNo}_${seatPos}_${student.student.name}`;
                     const legacyKeyId = String(student.student.id);
-                    if (status === 'absent' || status === 'late') {
+                    if (status === 'absent' || status === 'late' || status === 'leave') {
                         student.classObj.absenceRecords[date][legacyKey] = status;
                         student.classObj.absenceRecords[date][legacyKeyId] = status;
                     } else {
@@ -11879,7 +11879,13 @@ window.addEventListener('unhandledrejection', function (event) {
   normalizeUnifiedAttendanceRecords();
   window.__professionalAttendanceDataForCloud = () => attendanceData;
   window.__professionalAuditLogForCloud = () => auditLog;
-  window.__loadProfessionalAttendanceFromCloud = (data) => { attendanceData = Array.isArray(data) ? data : []; normalizeUnifiedAttendanceRecords(); persistModulesLocalOnly(); };
+  window.__loadProfessionalAttendanceFromCloud = (data) => {
+    attendanceData = Array.isArray(data) ? data : [];
+    normalizeUnifiedAttendanceRecords();
+    persistModulesLocalOnly();
+    // مركز السجلات هو المرجع: عند وصول بيانات Firebase نعيد إسقاطها على سجلات الصف والجرد.
+    try { reconcileAttendanceCenterFromRecords(); } catch (e) { console.error('Attendance center reconcile failed:', e); }
+  };
   window.__loadProfessionalAuditFromCloud = (data) => { auditLog = Array.isArray(data) ? data : []; pruneAuditToCurrentMonth(); persistModulesLocalOnly(); };
   function persistModulesLocalOnly(){
     try{
@@ -11981,7 +11987,30 @@ window.addEventListener('unhandledrejection', function (event) {
     return getUnifiedAttendanceRecord(studentId,date)?.status || fallbackStatus;
   }
 
-  function syncUnifiedAttendanceEverywhere(found, record){
+  // مركز السجلات المخفي: سجل واحد لكل طالب/تاريخ، وكل واجهات النظام تُحدّث انطلاقاً منه.
+  function reconcileAttendanceCenterFromRecords(){
+    normalizeUnifiedAttendanceRecords();
+    const records=attendanceData.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.updatedAt||'').localeCompare(String(b.updatedAt||'')));
+    records.forEach(record=>{
+      const found=findStudent(String(record.studentId||''));
+      if(found) syncUnifiedAttendanceEverywhere(found,record,{reconcileOnly:true});
+    });
+    try{ if(typeof renderAbsenceTable==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderAbsenceTable(); }catch(_e){}
+    try{ if(typeof renderDesks==='function' && Number.isInteger(currentClassIndex) && schoolData[currentClassIndex]) renderDesks(); }catch(_e){}
+    try{ if(typeof renderClassQuickAttendance==='function' && document.getElementById('quickAttendanceList')) renderClassQuickAttendance(); }catch(_e){}
+    try{ if(typeof renderMonitorSelectedClass==='function' && document.getElementById('monitorClassStudents')) renderMonitorSelectedClass(); }catch(_e){}
+    try{ if(typeof renderMonitorDailyInventory==='function' && (document.getElementById('monitorDailyInventoryModal') || document.getElementById('dailyInventoryReports'))) renderMonitorDailyInventory(); }catch(_e){}
+    try{ if(typeof renderDailySchoolStudentReport==='function' && document.getElementById('dailySchoolReportBody')) renderDailySchoolStudentReport(); }catch(_e){}
+  }
+
+  window.AttendanceRecordsCenter = Object.freeze({
+    get: (studentId,date) => getUnifiedAttendanceRecord(studentId,date),
+    list: () => attendanceData.slice(),
+    set: (studentId,status,date,note='',lateTime='',lateReason='') => recordAttendance(studentId,status,date,note,lateTime,lateReason),
+    reconcile: () => reconcileAttendanceCenterFromRecords()
+  });
+
+  function syncUnifiedAttendanceEverywhere(found, record, options={}){
     // هذا هو المصدر الموحد: أي تغيير في سجل الحضور الاحترافي ينعكس
     // على سجل الصف القديم، وجرد المراقب، وجميع الشاشات التي تقرأ هذه البيانات.
     try{
@@ -12007,15 +12036,18 @@ window.addEventListener('unhandledrejection', function (event) {
         else cls.absenceRecords[day][key]=status;
       });
 
-      // 2) مزامنة جرد الصفوف/تقارير المراقب الموجودة في نفس الصف واليوم.
-      // لا ننشئ تقرير مراقب وهمياً هنا؛ شاشة «جرد الصفوف» تنشئ عرضاً افتراضياً
-      // مباشرة من attendanceData إذا لم يوجد تقرير مراقب.
-      (monitorInventoryReportsData||[]).forEach(report=>{
-        if(String(report?.date||'')!==day) return;
-        const sameClass=!report?.classId ||
-          String(report.classId)===String(cls.id||'') ||
-          String(report.className||'')===String(cls.name||'');
-        if(!sameClass) return;
+      // 2) مركز السجلات يحدّث تقرير الجرد المطابق، وينشئ سجلاً داخلياً عند الحاجة.
+      let targetReports=(monitorInventoryReportsData||[]).filter(report=>{
+        if(String(report?.date||'')!==day) return false;
+        return !report?.classId || String(report.classId)===String(cls.id||'') || String(report.className||'')===String(cls.name||'');
+      });
+      if(!targetReports.length && status!=='present' && !options.reconcileOnly){
+        const synthetic={id:createStableId('attendance-center'),monitorId:'',monitorName:'مركز السجلات',classId:cls.id||'',className:cls.name||'',date:day,students:[],absentStudents:[],sentAt:record.updatedAt||new Date().toISOString(),completedAt:record.updatedAt||new Date().toISOString(),changedBy:'مركز السجلات',changedByName:record.changedByName||actorName(),changedAt:record.updatedAt||new Date().toISOString(),source:'attendance-center'};
+        monitorInventoryReportsData.unshift(synthetic);
+        if(monitorInventoryReportsData.length>500) monitorInventoryReportsData.length=500;
+        targetReports=[synthetic];
+      }
+      targetReports.forEach(report=>{
 
         if(!Array.isArray(report.students)) report.students=[];
         if(!Array.isArray(report.absentStudents)) report.absentStudents=[];
@@ -12074,8 +12106,8 @@ window.addEventListener('unhandledrejection', function (event) {
   }
 
   function recordAttendance(studentId,status,date,note='',lateTime='',lateReason=''){
-    // المراقب مسموح له فقط بحاضر/غائب/متأخر؛ خيار مجاز يبقى للمدير فقط.
-    if(currentUser?.role==='monitor' && !['present','absent','late'].includes(status)) return false;
+    // المراقب والمدير يرسلان كل حالات الطالب إلى مركز السجلات نفسه.
+    if(currentUser?.role==='monitor' && !['present','absent','late','leave'].includes(status)) return false;
     const found=findStudent(studentId);
     if(!found) return false;
     const day=String(date||todayISO());
