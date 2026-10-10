@@ -2595,7 +2595,7 @@ header > div:first-child{
     <div class="modal-content large">
         <div class="pro-modal-head">
             <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo)">📋 سجل غياب معلم</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo)">📋 سجل غياب معلم</button><button type="button" onclick="openTeacherWorkActivityModal()" style="background:linear-gradient(135deg,#0f766e,#14b8a6);font-weight:900">📊 أكثر المعلمين عملاً</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -12942,6 +12942,62 @@ body.parent-only-mode header { display:none !important; }
     persist();openTeacherAttendanceInbox();
     try{if(typeof renderTeachersAbsenceTable==='function')renderTeachersAbsenceTable()}catch(_){}
     alert(`تم تسجيل ${req.teacherName}: ${choice} في سجل غياب المعلمين.`);
+  };
+  window.openTeacherWorkActivityModal=function(){
+    if(!currentUser||currentUser.role!=='admin'){alert('هذه التقارير متاحة للمدير فقط.');return;}
+    document.getElementById('teacherWorkActivityModal')?.remove();
+    const now=new Date(), monthDefault=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const modal=document.createElement('div');modal.id='teacherWorkActivityModal';modal.className='modal';modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100320;background:#0009;padding:12px;align-items:center;justify-content:center;direction:rtl';
+    modal.innerHTML=`<div class="modal-content" style="width:min(1150px,98vw);max-height:94vh;overflow:auto;padding:18px;border-radius:16px;background:var(--card-bg,#fff)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0;color:#0f766e">📊 أكثر المعلمين عملاً</h2><button type="button" onclick="document.getElementById('teacherWorkActivityModal')?.remove()" style="background:#64748b">إغلاق ✕</button></div>
+      <p style="color:#64748b;font-size:13px;line-height:1.8">يعرض النشاط المسجل في النظام من وقت إنشاء الواجب أو إدخال/تعديل الدرجة أو تسجيل تفاعل الرسائل. هذه الإحصائية تقيس النشاط المسجل فقط ولا تثبت وحدها مدة وجود المعلم داخل المدرسة.</p>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0"><label style="display:grid;gap:5px;font-weight:800">اختر الشهر للإحصائية الشهرية<input id="teacherWorkActivityMonth" type="month" value="${monthDefault}" style="padding:9px;border:1px solid #cbd5e1;border-radius:9px"></label><button type="button" id="teacherWorkActivityRefresh" style="background:#0f766e">🔄 تحديث التقرير</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button type="button" data-work-tab="monthly" style="background:#0f766e">🏆 النشاط الشهري</button><button type="button" data-work-tab="daily" style="background:#334155">🕒 نشاط اليوم بالتوقيت</button></div>
+      <section id="teacherWorkMonthlyPane"><div id="teacherWorkMonthlyBody"></div></section>
+      <section id="teacherWorkDailyPane" style="display:none"><div style="font-weight:900;margin:6px 0 10px">نشاط المعلمين المسجل اليوم: ${now.toLocaleDateString('ar-IQ')}</div><div id="teacherWorkDailyBody"></div></section>
+    </div>`;
+    document.body.appendChild(modal);
+    const monthInput=modal.querySelector('#teacherWorkActivityMonth'),monthlyPane=modal.querySelector('#teacherWorkMonthlyPane'),dailyPane=modal.querySelector('#teacherWorkDailyPane');
+    const fmtTime=v=>{const d=new Date(v||'');return Number.isFinite(d.getTime())?d.toLocaleString('ar-IQ',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'وقت غير مسجل';};
+    const esc=v=>typeof escapeGlobalSearchHTML==='function'?escapeGlobalSearchHTML(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const validTs=v=>{const t=Date.parse(v||'');return Number.isFinite(t)?t:null;};
+    function collectActivities(){
+      const out=[];
+      (schoolData||[]).forEach((cls,ci)=>{
+        (Array.isArray(cls?.studentGrades)?cls.studentGrades:[]).forEach(g=>{
+          const stamp=g.updatedAt||g.createdAt; if(!stamp)return;
+          out.push({type:'grade',label:'أضاف/عدّل درجات للطلاب',teacherId:String(g.teacherId||''),teacherName:String(g.teacherName||'معلم غير محدد'),className:String(cls.name||g.className||('صف '+(ci+1))),subject:String(g.subject||''),detail:`الطالب: ${g.studentName||'غير محدد'} — المادة: ${g.subject||'غير محددة'} — الدرجة: ${g.score??'-'} / ${g.maxScore??'-'}`,stamp,ts:validTs(stamp)});
+        });
+      });
+      (Array.isArray(homeworkData)?homeworkData:[]).forEach(h=>{
+        const stamp=h.createdAt||h.sentAt; if(!stamp)return;
+        out.push({type:'homework',label:'أعطى واجباً للطلاب',teacherId:String(h.teacherId||''),teacherName:String(h.teacherName||'معلم غير محدد'),className:String(h.className||((Number.isInteger(Number(h.classIndex))&&schoolData[Number(h.classIndex)])?schoolData[Number(h.classIndex)].name:'صف غير محدد')),subject:String(h.subject||''),detail:`الواجب: ${h.title||'واجب'}${h.description?' — '+h.description:''}`,stamp,ts:validTs(stamp)});
+      });
+      (Array.isArray(parentTeacherMessagesData)?parentTeacherMessagesData:[]).forEach(m=>{
+        const tname=String(m.teacherName||'معلم غير محدد'),tid=String(m.teacherId||m.teacherKey||'');
+        if(m.createdAt)out.push({type:'message',label:'تفاعل برسالة من ولي أمر',teacherId:tid,teacherName:tname,className:String(m.className||'صف غير محدد'),subject:'',detail:`ولي الأمر: ${m.parentName||'غير محدد'} — الطالب: ${m.studentName||'غير محدد'}`,stamp:m.createdAt,ts:validTs(m.createdAt)});
+        if(m.responseAt)out.push({type:'message',label:'ردّ على رسالة ولي أمر',teacherId:tid,teacherName:tname,className:String(m.className||'صف غير محدد'),subject:'',detail:`رد على رسالة ولي الأمر — الطالب: ${m.studentName||'غير محدد'}`,stamp:m.responseAt,ts:validTs(m.responseAt)});
+      });
+      return out.filter(x=>x.ts!==null);
+    }
+    function sameTeacher(a,b){return (a.teacherId&&b.teacherId&&String(a.teacherId)===String(b.teacherId))||String(a.teacherName||'')===String(b.teacherName||'');}
+    function renderMonthly(){
+      const value=monthInput.value||monthDefault,[yy,mm]=value.split('-').map(Number);if(!yy||!mm)return;
+      const start=new Date(yy,mm-1,1).getTime(),end=new Date(yy,mm,1).getTime();
+      const all=collectActivities().filter(a=>a.ts>=start&&a.ts<end);
+      const teachers=(Array.isArray(teachersData)?teachersData:[]).map(t=>({teacherId:String(t.id||''),teacherName:String(t.name||'معلم غير محدد')}));
+      all.forEach(a=>{if(!teachers.some(t=>sameTeacher(t,a)))teachers.push({teacherId:a.teacherId,teacherName:a.teacherName});});
+      const rows=teachers.map(t=>{const acts=all.filter(a=>sameTeacher(t,a));return {...t,total:acts.length,grades:acts.filter(a=>a.type==='grade').length,homework:acts.filter(a=>a.type==='homework').length,messages:acts.filter(a=>a.type==='message').length};}).filter(t=>t.total>0).sort((a,b)=>b.total-a.total||b.grades-a.grades||a.teacherName.localeCompare(b.teacherName,'ar'));
+      modal.querySelector('#teacherWorkMonthlyBody').innerHTML=rows.length?`<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:650px"><thead><tr style="background:#ecfdf5"><th style="padding:10px;border:1px solid #d1fae5">الترتيب</th><th style="padding:10px;border:1px solid #d1fae5">المعلم</th><th style="padding:10px;border:1px solid #d1fae5">الدرجات</th><th style="padding:10px;border:1px solid #d1fae5">الواجبات</th><th style="padding:10px;border:1px solid #d1fae5">تفاعلات الرسائل</th><th style="padding:10px;border:1px solid #d1fae5">مجموع النشاط</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${i+1}</td><td style="padding:9px;border:1px solid #e2e8f0;font-weight:800">${esc(r.teacherName)}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${r.grades}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${r.homework}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${r.messages}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#0f766e">${r.total}</td></tr>`).join('')}</tbody></table></div><p style="font-size:12px;color:#64748b">عدد المعلمين الذين لديهم نشاط مسجل: ${rows.length} — الفترة: ${esc(value)}</p>`:'<div style="padding:20px;text-align:center;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b">لا توجد أنشطة مسجلة للمعلمين في الشهر المحدد.</div>';
+    }
+    function renderDaily(){
+      const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),end=start+86400000;
+      const all=collectActivities().filter(a=>a.ts>=start&&a.ts<end).sort((a,b)=>b.ts-a.ts);
+      modal.querySelector('#teacherWorkDailyBody').innerHTML=all.length?all.map(a=>`<article style="border:1px solid #dbe5ec;border-right:5px solid ${a.type==='grade'?'#2563eb':a.type==='homework'?'#d97706':'#7c3aed'};border-radius:12px;padding:12px;margin:8px 0;background:#fff"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>👨‍🏫 ${esc(a.teacherName)}</b><span style="font-size:12px;color:#475569">🕒 ${esc(fmtTime(a.stamp))}</span></div><div style="font-weight:900;margin:7px 0;color:#0f766e">${esc(a.label)}</div><div style="font-size:13px;line-height:1.8">🏫 الصف: ${esc(a.className)}${a.subject?' — المادة: '+esc(a.subject):''}<br>${esc(a.detail)}</div></article>`).join(''):'<div style="padding:20px;text-align:center;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b">لا توجد درجات أو واجبات أو تفاعلات رسائل مسجلة اليوم.</div>';
+    }
+    modal.querySelectorAll('[data-work-tab]').forEach(btn=>btn.addEventListener('click',()=>{const daily=btn.dataset.workTab==='daily';monthlyPane.style.display=daily?'none':'';dailyPane.style.display=daily?'':'none';modal.querySelectorAll('[data-work-tab]').forEach(b=>b.style.background=b===btn?'#0f766e':'#334155');if(daily)renderDaily();else renderMonthly();}));
+    monthInput.addEventListener('change',renderMonthly);modal.querySelector('#teacherWorkActivityRefresh').addEventListener('click',()=>{renderMonthly();renderDaily();});
+    renderMonthly();renderDaily();
   };
   function updatePendingCount(){const n=(teacherAttendanceRequestsData||[]).filter(r=>r.status==='pending').length;const b=document.getElementById('teacherAttendancePendingCount');if(b)b.textContent=String(n);const btn=document.getElementById('btnTeacherAttendanceInbox');if(btn)btn.style.display=currentUser?.role==='admin'?'inline-flex':'none';}
   window.teacherHomeShowClasses=function(){const nav=document.getElementById('classesNav');if(nav){nav.style.display='';nav.scrollIntoView({behavior:'smooth',block:'start'})}const c=document.getElementById('classContent');if(c)c.style.display='none';currentClassIndex=null;};
