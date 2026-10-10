@@ -3992,16 +3992,18 @@ function pruneExpiredAnnouncementsData() {
     });
 
     let changed = announcementsData.length !== before;
-    // حذف الواجبات ورسائل المراسلة بعد 48 ساعة من الإرسال لتقليل استهلاك Firebase.
-    const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    // حذف الواجبات (بما فيها الصور المرفقة) بعد 24 ساعة من الإرسال لتقليل استهلاك Firebase.
+    const homeworkCutoff = Date.now() - 24 * 60 * 60 * 1000;
     if (Array.isArray(homeworkData)) {
         const n = homeworkData.length;
         homeworkData = homeworkData.filter(x => {
             const t = Date.parse(x?.createdAt || x?.sentAt || '');
-            return !Number.isFinite(t) || t >= cutoff;
+            return !Number.isFinite(t) || t >= homeworkCutoff;
         });
         changed = changed || homeworkData.length !== n;
     }
+    // تبقى رسائل المراسلة على مدة الاحتفاظ السابقة (48 ساعة).
+    const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
     if (Array.isArray(parentTeacherMessagesData)) {
         const n = parentTeacherMessagesData.length;
         parentTeacherMessagesData = parentTeacherMessagesData.filter(x => {
@@ -4012,6 +4014,10 @@ function pruneExpiredAnnouncementsData() {
     }
     return changed;
 }
+window.pruneExpiredSchoolHomework=function(){
+    try { const changed=pruneExpiredAnnouncementsData(); if(changed && typeof saveData==='function') saveData(); return changed; }
+    catch(e){ console.warn('تعذر تنظيف الواجبات القديمة تلقائياً',e); return false; }
+};
 
 function getAnnouncementReaderKey() {
     if (!currentUser) return '';
@@ -10640,7 +10646,7 @@ function updateCloudStatus(text, color) {
         const parentLevelRows=levels.filter(x=>x&&x.level!=null).map(x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #e1e7ec;border-radius:9px;background:#fff;margin-bottom:7px"><b>${escapeGlobalSearchHTML(x.lesson||x.subject||'المادة')}</b><span>${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</span></div>`).join('')||'<div class="pro-empty">لا توجد تقييمات مستوى مسجلة حالياً.</div>';
         const parentClassId=String(liveClass.id||'');
         const parentHomework=homeworkData.filter(h=>{if(!h)return false;const sameStudent=h.targetCode&&String(h.targetCode)===String(currentUser.code);if(h.audience==='student')return !!sameStudent;if(h.audience!=='all')return false;const hc=String(h.classId||'');if(hc)return hc===parentClassId;if(h.classIndex!=null&&f.classIndex!=null)return Number(h.classIndex)===Number(f.classIndex);return true;}).sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||'')));
-        const parentHomeworkRows=parentHomework.map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div></td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة حالياً.</td></tr>';
+        const parentHomeworkRows=parentHomework.map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div>${renderHomeworkImagesHTML(h)}</td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة حالياً.</td></tr>';
         const lessons=Number(liveClass.scheduleLessons||6);
         const daysCount=Number(liveClass.scheduleDays||5);
         const tomorrowIndex=(todayIndex+1)%7;
@@ -10694,7 +10700,7 @@ function updateCloudStatus(text, color) {
         const parentLevelRows=levels.filter(x=>x&&x.level!=null).map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 10px;border:1px solid #e1e7ec;border-radius:8px;background:#fff;margin-bottom:6px"><b>${escapeGlobalSearchHTML(x.lesson||x.subject||'المادة')}</b><span>${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</span></div>`).join('')||'<div class="pro-empty">لا توجد تقييمات مستوى مسجلة حالياً.</div>';
         const parentClassId=String(liveClass.id||'');
         const parentHomework=homeworkData.filter(h=>{if(!h)return false;const sameStudent=h.targetCode&&String(h.targetCode)===String(currentUser.code);if(h.audience==='student')return !!sameStudent;if(h.audience!=='all')return false;const hc=String(h.classId||'');if(hc)return hc===parentClassId;if(h.classIndex!=null&&f.classIndex!=null)return Number(h.classIndex)===Number(f.classIndex);return true;});
-        const parentHomeworkRows=parentHomework.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||''))).map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div></td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة لـ'+escapeGlobalSearchHTML(childPossessive)+'.</td></tr>';
+        const parentHomeworkRows=parentHomework.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||''))).map(h=>`<tr><td><b>${escapeGlobalSearchHTML(h.title||'واجب')}</b><div style="white-space:pre-wrap;margin-top:4px;color:#667">${escapeGlobalSearchHTML(h.description||'')}</div>${renderHomeworkImagesHTML(h)}</td><td>${escapeGlobalSearchHTML(h.subject||'-')}</td><td>${escapeGlobalSearchHTML(h.teacherName||'-')}</td><td>${escapeGlobalSearchHTML(h.date||'-')}</td></tr>`).join('')||'<tr><td colspan="4" class="pro-empty">لا توجد واجبات مسجلة لـ'+escapeGlobalSearchHTML(childPossessive)+'.</td></tr>';
 
         // جدول أسبوعي كامل داخل مربع واحد: اليوم باللون الأحمر، وغداً بالأخضر، وبقية الأيام دون تمييز.
         const lessons=Number(liveClass.scheduleLessons||6);
@@ -10737,9 +10743,39 @@ function updateCloudStatus(text, color) {
         return out;
     }
 
+    // ضغط صور الواجب محلياً قبل حفظها مع سجل الواجب السحابي.
+    async function compressHomeworkImageFile(file){
+        if(!file || !String(file.type||'').startsWith('image/')) throw new Error('اختر ملف صورة صالحاً.');
+        const source=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('تعذر قراءة الصورة.'));r.readAsDataURL(file);});
+        const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('تعذر فتح الصورة.'));im.src=source;});
+        const maxSide=1100,scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+        const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));canvas.height=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+        const ctx=canvas.getContext('2d');if(!ctx)throw new Error('تعذر معالجة الصورة على هذا الجهاز.');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        let quality=.66,data=canvas.toDataURL('image/jpeg',quality);
+        while(data.length>150000 && quality>.36){quality-=.08;data=canvas.toDataURL('image/jpeg',quality);}
+        if(data.length>220000){const scale2=.78;canvas.width=Math.max(1,Math.round(canvas.width*scale2));canvas.height=Math.max(1,Math.round(canvas.height*scale2));ctx.drawImage(img,0,0,canvas.width,canvas.height);data=canvas.toDataURL('image/jpeg',.42);}
+        return {name:String(file.name||'homework.jpg').replace(/\.[^.]+$/,'')+'.jpg',type:'image/jpeg',data,size:data.length};
+    }
+    function renderHomeworkImagesHTML(h){
+        const imgs=Array.isArray(h?.images)?h.images:[];
+        if(!imgs.length)return '';
+        return `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">${imgs.map((im,i)=>im&&im.data?`<a href="${im.data}" target="_blank" rel="noopener" style="display:inline-block"><img src="${im.data}" alt="صورة واجب ${i+1}" loading="lazy" style="width:clamp(90px,22vw,160px);height:120px;object-fit:contain;border:1px solid #cbd5e1;border-radius:8px;background:#fff"></a>`:'').join('')}</div>`;
+    }
+    function updateTeacherWorkHomeworkNotice(){
+        const btn=document.getElementById('btnTeacherWorkActivity');if(!btn)return;
+        const cutoff=Date.now()-24*60*60*1000;
+        const fresh=(Array.isArray(homeworkData)?homeworkData:[]).some(h=>{const ts=Date.parse(h?.createdAt||h?.sentAt||'');return Number.isFinite(ts)&&ts>=cutoff;});
+        btn.classList.toggle('teacher-work-new-homework',fresh);
+        btn.title=fresh?'توجد واجبات جديدة أو صور واجبات أُرسلت خلال آخر 24 ساعة':'عرض نشاط المعلمين';
+        let badge=btn.querySelector('.teacher-work-homework-badge');
+        if(fresh&&!badge){badge=document.createElement('span');badge.className='teacher-work-homework-badge';badge.textContent='جديد';badge.style.cssText='display:inline-block;margin-inline-start:6px;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:11px;animation:teacherWorkBadgePulse 1.2s infinite';btn.appendChild(badge);}
+        if(!fresh&&badge)badge.remove();
+    }
+    window.updateTeacherWorkHomeworkNotice=updateTeacherWorkHomeworkNotice;
     function openHomeworkModal(){
         if(!currentUser || currentUser.role!=='teacher'){ alert('خاصية الواجبات متاحة للمعلم فقط.'); return; }
         const old=document.getElementById('homeworkModal'); if(old) old.remove();
+        window.__preparedHomeworkImages=[];
         const students=getTeacherHomeworkStudents();
         const t=getCurrentTeacher();
         const selectedClassIdForHomework = String(currentUser?.selectedClassId || '');
@@ -10759,10 +10795,24 @@ function updateCloudStatus(text, color) {
           <div><label>تاريخ إعطاء الواجب</label><input id="homeworkDateInput" type="date" value="${getFormattedDate()}"></div>
           <div><label>نوع الإرسال</label><select id="homeworkAudienceInput" onchange="toggleHomeworkStudentTarget()"><option value="all">إلى جميع أولياء الأمور</option><option value="student">لطالب محدد</option></select></div>
           <div id="homeworkStudentWrap" style="display:none;grid-column:1/-1"><label>اختر الطالب</label><select id="homeworkStudentInput"><option value="">اختر الطالب</option>${students.map((x,i)=>`<option value="${i}">${escapeGlobalSearchHTML(x.name)} — ${escapeGlobalSearchHTML(x.className)}</option>`).join('')}</select></div>
-          <div style="grid-column:1/-1"><label>نص الواجب</label><textarea id="homeworkDescriptionInput" rows="5" placeholder="اكتب تفاصيل الواجب هنا..."></textarea></div></div><div style="text-align:left;margin-top:10px"><button type="button" onclick="saveHomework()" style="background:#d35400">✓ نشر الواجب</button></div></div>
+          <div style="grid-column:1/-1"><label>نص الواجب</label><textarea id="homeworkDescriptionInput" rows="5" placeholder="اكتب تفاصيل الواجب هنا..."></textarea></div>
+          <div style="grid-column:1/-1;border:1px dashed #94a3b8;border-radius:12px;padding:12px;background:#f8fafc"><label for="homeworkImagesInput" style="font-weight:900;display:block;margin-bottom:6px">📷 إرفاق صور الواجب (اختياري — حتى 4 صور)</label><input id="homeworkImagesInput" type="file" accept="image/*" multiple capture="environment" onchange="prepareHomeworkImages(this)" style="max-width:100%"><div style="font-size:12px;color:#64748b;margin-top:5px">يمكن اختيار صور من الجهاز أو التقاطها بالكاميرا. تُضغط الصور تلقائياً قبل الإرسال وتُحذف مع الواجب بعد 24 ساعة.</div><div id="homeworkImagesStatus" aria-live="polite" style="font-size:13px;font-weight:800;margin-top:8px">لم تُرفق صور.</div><div id="homeworkImagesPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div></div></div><div style="text-align:left;margin-top:10px"><button type="button" onclick="saveHomework()" style="background:#d35400">✓ نشر الواجب</button></div></div>
           <div class="pro-panel"><h3>🗂️ الواجبات القديمة</h3><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>الواجب</th><th>المادة</th><th>المستهدف</th><th>تاريخ الإعطاء</th><th>إجراء</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
         document.body.appendChild(modal);
     }
+    window.prepareHomeworkImages=async function(input){
+        const files=Array.from(input?.files||[]);const status=document.getElementById('homeworkImagesStatus'),preview=document.getElementById('homeworkImagesPreview');
+        window.__preparedHomeworkImages=[];if(preview)preview.innerHTML='';
+        if(files.length>4){if(status)status.textContent='يمكن إرفاق 4 صور كحد أقصى. اختر الصور من جديد.';input.value='';return;}
+        if(!files.length){if(status)status.textContent='لم تُرفق صور.';return;}
+        if(status)status.textContent='جارٍ ضغط الصور وتجهيزها...';input.disabled=true;
+        try{
+            for(const file of files){const im=await compressHomeworkImageFile(file);window.__preparedHomeworkImages.push(im);if(preview){const img=document.createElement('img');img.src=im.data;img.alt='معاينة صورة واجب';img.style.cssText='width:88px;height:78px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1';preview.appendChild(img);}}
+            const kb=window.__preparedHomeworkImages.reduce((n,x)=>n+x.size,0)/1024;
+            if(status)status.textContent=`تم ضغط ${window.__preparedHomeworkImages.length} صورة — الحجم الإجمالي التقريبي ${kb.toFixed(0)} KB.`;
+        }catch(e){window.__preparedHomeworkImages=[];if(status)status.textContent=e?.message||'تعذر تجهيز الصور.';alert(e?.message||'تعذر تجهيز الصور.');}
+        finally{input.disabled=false;}
+    };
     function toggleHomeworkStudentTarget(){ const wrap=document.getElementById('homeworkStudentWrap'); const audience=document.getElementById('homeworkAudienceInput')?.value; if(wrap) wrap.style.display=audience==='student'?'block':'none'; }
     function saveHomework(){
         if(!currentUser || currentUser.role!=='teacher') return;
@@ -10788,8 +10838,9 @@ function updateCloudStatus(text, color) {
             return;
         }
         // لا نسمح بحفظ الواجب إلا للصف والمادة اللذين تم اختيارهما عند دخول المعلم.
-        homeworkData.push({id:createStableId('homework'),title,description,subject,date,audience,...target,classId:selectedClassId,classIndex:selectedClassIndex,className:selectedClassName,teacherId:t?.id||currentUser.teacherId||'',teacherName:t?.name||currentUser.name||'المعلم',createdAt:new Date().toISOString()});
-        saveData(); openHomeworkModal(); alert('تم نشر الواجب بنجاح.');
+        const createdAt=new Date().toISOString(); const attachedImages=(Array.isArray(window.__preparedHomeworkImages)?window.__preparedHomeworkImages:[]).map(im=>({name:im.name,type:im.type,data:im.data,size:im.size}));
+        homeworkData.push({id:createStableId('homework'),title,description,subject,date,audience,...target,classId:selectedClassId,classIndex:selectedClassIndex,className:selectedClassName,teacherId:t?.id||currentUser.teacherId||'',teacherName:t?.name||currentUser.name||'المعلم',createdAt,images:attachedImages,hasImages:attachedImages.length>0});
+        window.__preparedHomeworkImages=[]; saveData(); openHomeworkModal(); updateTeacherWorkHomeworkNotice(); alert(attachedImages.length?`تم نشر الواجب وإرسال ${attachedImages.length} صورة مضغوطة بنجاح.`:'تم نشر الواجب بنجاح.');
     }
     function deleteHomework(id){
         if(!currentUser || currentUser.role!=='teacher') return;
@@ -12978,7 +13029,7 @@ body.parent-only-mode header { display:none !important; }
       });
       (Array.isArray(homeworkData)?homeworkData:[]).forEach(h=>{
         const stamp=h.createdAt||h.sentAt; if(!stamp)return;
-        out.push({type:'homework',label:'أعطى واجباً للطلاب',teacherId:String(h.teacherId||''),teacherName:String(h.teacherName||'معلم غير محدد'),className:String(h.className||((Number.isInteger(Number(h.classIndex))&&schoolData[Number(h.classIndex)])?schoolData[Number(h.classIndex)].name:'صف غير محدد')),subject:String(h.subject||''),detail:`الواجب: ${h.title||'واجب'}${h.description?' — '+h.description:''}`,stamp,ts:validTs(stamp)});
+        out.push({type:'homework',label:'أعطى واجباً للطلاب',teacherId:String(h.teacherId||''),teacherName:String(h.teacherName||'معلم غير محدد'),className:String(h.className||((Number.isInteger(Number(h.classIndex))&&schoolData[Number(h.classIndex)])?schoolData[Number(h.classIndex)].name:'صف غير محدد')),subject:String(h.subject||''),detail:(Array.isArray(h.images)&&h.images.length?`قام بإرسال صورة واجب (${h.images.length} صورة)`: `الواجب: ${h.title||'واجب'}${h.description?' — '+h.description:''}`),stamp,ts:validTs(stamp)});
       });
       (Array.isArray(parentTeacherMessagesData)?parentTeacherMessagesData:[]).forEach(m=>{
         const tname=String(m.teacherName||'معلم غير محدد'),tid=String(m.teacherId||m.teacherKey||'');
@@ -13034,7 +13085,7 @@ body.parent-only-mode header { display:none !important; }
   setInterval(updatePendingCount,5000);
 })();
 </script>
-</body>
+<style id="teacher-work-new-homework-style">@keyframes teacherWorkBadgePulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{transform:scale(1.05);box-shadow:0 0 0 7px rgba(239,68,68,0)}}#btnTeacherWorkActivity.teacher-work-new-homework{animation:teacherWorkBadgePulse 1.5s infinite;outline:3px solid #ef4444;outline-offset:2px;box-shadow:0 0 16px rgba(239,68,68,.5)!important}</style><script id="teacher-work-homework-notice-init">(function(){function update(){try{if(typeof window.updateTeacherWorkHomeworkNotice==='function')window.updateTeacherWorkHomeworkNotice();if(typeof window.pruneExpiredSchoolHomework==='function')window.pruneExpiredSchoolHomework();}catch(e){}}document.addEventListener('DOMContentLoaded',update);setInterval(update,60000);document.addEventListener('visibilitychange',update);})();</script></body>
 </html>
 
 
