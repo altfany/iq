@@ -2919,6 +2919,12 @@ header > div:first-child{
                 <label>جنس الطالب</label>
                 <select id="gender1Input"><option value="">اختر الجنس</option><option value="male">ذكر</option><option value="female">مؤنث</option></select>
             </div>
+            <div class="form-group" style="margin-top:7px">
+                <label>صورة الطالب (اختياري)</label>
+                <div style="display:flex;gap:5px;flex-wrap:wrap"><button type="button" onclick="selectStudentPhoto(1,'camera')" style="font-size:11px;padding:5px 8px;background:#2874a6">📷 التقاط صورة</button><button type="button" onclick="selectStudentPhoto(1,'upload')" style="font-size:11px;padding:5px 8px;background:#536879">📁 تحميل صورة</button><button type="button" onclick="clearStudentPhotoDraft(1)" style="font-size:11px;padding:5px 8px;background:#b94a48">✕ إزالة</button></div>
+                <input id="studentPhoto1Camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleStudentPhotoSelected(1,this)"><input id="studentPhoto1Upload" type="file" accept="image/*" style="display:none" onchange="handleStudentPhotoSelected(1,this)">
+                <div id="studentPhoto1Preview" style="margin-top:6px;font-size:10px;color:#607080">لا توجد صورة</div>
+            </div>
             <div class="form-group">
                 <label>العمر</label>
                 <input type="number" id="age1Input" min="1" max="30" inputmode="numeric">
@@ -2954,6 +2960,12 @@ header > div:first-child{
             <div class="form-group">
                 <label>جنس الطالب</label>
                 <select id="gender2Input"><option value="">اختر الجنس</option><option value="male">ذكر</option><option value="female">مؤنث</option></select>
+            </div>
+            <div class="form-group" style="margin-top:7px">
+                <label>صورة الطالب (اختياري)</label>
+                <div style="display:flex;gap:5px;flex-wrap:wrap"><button type="button" onclick="selectStudentPhoto(2,'camera')" style="font-size:11px;padding:5px 8px;background:#2874a6">📷 التقاط صورة</button><button type="button" onclick="selectStudentPhoto(2,'upload')" style="font-size:11px;padding:5px 8px;background:#536879">📁 تحميل صورة</button><button type="button" onclick="clearStudentPhotoDraft(2)" style="font-size:11px;padding:5px 8px;background:#b94a48">✕ إزالة</button></div>
+                <input id="studentPhoto2Camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleStudentPhotoSelected(2,this)"><input id="studentPhoto2Upload" type="file" accept="image/*" style="display:none" onchange="handleStudentPhotoSelected(2,this)">
+                <div id="studentPhoto2Preview" style="margin-top:6px;font-size:10px;color:#607080">لا توجد صورة</div>
             </div>
             <div class="form-group">
                 <label>العمر</label>
@@ -3507,6 +3519,8 @@ header > div:first-child{
 
     let currentClassIndex = null;
     let currentDeskIndex = null;
+    const tripPhotoViewState = Object.create(null);
+    window.__studentPhotoDraft1 = null; window.__studentPhotoDraft2 = null;
     let isEditingClass = false;
     let currentSelectedStudentKey = null;
     let currentEditingDayIdx = null;
@@ -6826,7 +6840,7 @@ function updateCloudStatus(text, color) {
             const parentHomeLocation=student['parentHomeLocation'+slotN]||null;
             const parentHomeLocationHtml=currentUser?.role==='admin'?(parentHomeLocation&&Number.isFinite(Number(parentHomeLocation.lat))&&Number.isFinite(Number(parentHomeLocation.lng))?`<div style="background:#effaf3;border:1px solid #b8e2c7;border-radius:9px;padding:9px;grid-column:1/-1"><small style="color:#176b45;display:block;font-weight:800">📍 موقع منزل ولي الأمر (للطوارئ)</small><a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q=${encodeURIComponent(Number(parentHomeLocation.lat)+','+Number(parentHomeLocation.lng))}" style="display:inline-block;margin-top:4px;color:#176b45;font-weight:900;text-decoration:underline">فتح موقع المنزل على Google Maps</a><div style="font-size:12px;color:#526b5b;margin-top:3px">آخر تحديث: ${esc(parentHomeLocation.updatedAt?new Date(parentHomeLocation.updatedAt).toLocaleString('ar-IQ'):'غير معروف')}</div></div>`:`<div style="background:#f7f9fb;border:1px solid #e1e7ec;border-radius:9px;padding:9px;grid-column:1/-1"><small style="color:#71808e;display:block">📍 موقع منزل ولي الأمر (للطوارئ)</small><b>لم يشارك ولي الأمر موقعاً حالياً.</b></div>`):'';
             html+=`<div class="admin-student-a4-sheet"><div style="font-weight:900;font-size:18px;color:var(--primary);margin-bottom:10px;text-align:center">👨‍🎓 ملف الطالب الكامل</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px">${arabicStudentFields.map(x=>`<div style="background:#fff;border:1px solid #e1e7ec;border-radius:9px;padding:8px"><small style="color:#71808e;display:block">${esc(x[0])}</small><b>${esc(x[1])}</b></div>`).join('')}${extraHtml}${parentHomeLocationHtml}</div>`;
-            const photo=student.photoData||student.photo||student.imageData||student.image||'';
+            const photo=currentUser?.role==='admin'?(slotValue('photoData')||slotValue('photo')||slotValue('imageData')||slotValue('image')||''):'';
             if(photo)html+=`<div style="margin-top:10px;text-align:center"><img src="${esc(photo)}" alt="صورة الطالب" style="max-width:130px;max-height:130px;border-radius:14px;border:2px solid #dbe4eb;object-fit:cover"></div>`;
             html+=`<div class="admin-student-a4-preview" style="margin-top:10px"><div style="font-weight:900;font-size:16px;color:var(--primary);margin-bottom:8px">⭐ السلوك والمستوى</div><div style="margin-top:5px">${behavior&&typeof behavior==='object'?Object.entries(behavior).map(([k,v])=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(''):behavior?esc(behavior):'لا توجد بيانات سلوك.'}</div>${levels.length?levels.map(x=>`<div style="padding:6px;background:#fff;border:1px solid #e4e9ed;margin-top:4px;border-radius:7px"><b>${esc(x.lesson||x.subject||'المادة')}:</b> ${'⭐'.repeat(Math.max(1,Math.min(5,Number(x.level)||0)))}</div>`).join(''):''}</div>`;
             html+=`<div style="margin-top:10px"><b>📌 سجل الحضور والغياب</b><div class="pro-table-wrap"><table class="pro-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows.map(a=>`<tr><td>${esc(a.date||'-')}</td><td>${a.status==='absent'?'غائب':a.status==='leave'?'مجاز':a.status==='late'?'متأخر':'حاضر'}</td></tr>`).join('')||'<tr><td colspan="2">لا توجد سجلات احترافية.</td></tr>'}</tbody></table></div></div></div>`;
@@ -7732,13 +7746,46 @@ function updateCloudStatus(text, color) {
         return getStoredAttendanceStatus(cls, date, key);
     }
 
+    function selectStudentPhoto(slot, mode) {
+        if(!currentUser || currentUser.role!=='admin') return;
+        const input=document.getElementById(`studentPhoto${slot}${mode==='camera'?'Camera':'Upload'}`);
+        if(input){input.value='';input.click();}
+    }
+    async function compressStudentPhotoFile(file){
+        if(!file || !String(file.type||'').startsWith('image/')) throw new Error('اختر ملف صورة صالحاً.');
+        const source=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('تعذرت قراءة الصورة.'));r.readAsDataURL(file);});
+        const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('تعذر فتح الصورة.'));im.src=source;});
+        const maxSide=180, scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+        const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));canvas.height=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+        const ctx=canvas.getContext('2d');if(!ctx)throw new Error('تعذرت معالجة الصورة على هذا الجهاز.');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        let quality=.48,data=canvas.toDataURL('image/jpeg',quality);
+        while(data.length>18000 && quality>.2){quality-=.06;data=canvas.toDataURL('image/jpeg',quality);}
+        if(data.length>24000){const w=Math.max(1,Math.round(canvas.width*.75)),h=Math.max(1,Math.round(canvas.height*.75));const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(canvas,0,0,w,h);data=c.toDataURL('image/jpeg',.25);}
+        return data;
+    }
+    async function handleStudentPhotoSelected(slot,input){
+        const file=input?.files?.[0];if(!file)return;
+        const preview=document.getElementById(`studentPhoto${slot}Preview`);
+        if(preview)preview.textContent='جارٍ ضغط الصورة...';
+        try{const data=await compressStudentPhotoFile(file);window[`__studentPhotoDraft${slot}`]=data;if(preview)preview.innerHTML=`<img src="${data}" alt="معاينة صورة الطالب" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;vertical-align:middle"> <span>صورة مضغوطة (${Math.max(1,Math.round(data.length/1024))} KB تقريباً)</span>`;}
+        catch(e){if(preview)preview.textContent='تعذر تحميل الصورة.';alert(e.message||'تعذر ضغط الصورة.');}
+    }
+    function clearStudentPhotoDraft(slot){window[`__studentPhotoDraft${slot}`]='';const preview=document.getElementById(`studentPhoto${slot}Preview`);if(preview)preview.textContent='ستُحذف الصورة عند الحفظ.';}
+    function setStudentPhotoPreview(slot,data){const preview=document.getElementById(`studentPhoto${slot}Preview`);if(!preview)return;preview.innerHTML=data?`<img src="${data}" alt="معاينة صورة الطالب" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;vertical-align:middle"> <span>الصورة الحالية محفوظة</span>`:'لا توجد صورة';}
+
     function renderTripStudentSeat(name, hasStudent, status, extraClass='', gender='') {
         if (!hasStudent) return `<div class="seat seat-empty ${extraClass}">فارغ</div>`;
         status = ['present','absent','late','leave'].includes(String(status)) ? String(status) : 'present';
         const statusClass = status === 'absent' ? 'student-status-absent' : (status === 'leave' ? 'student-status-leave' : (status === 'late' ? 'student-status-late' : 'student-status-present'));
         const label = status === 'absent' ? '<span class="trip-status-label">غائب ❌</span>' : (status === 'leave' ? '<span class="trip-status-label">مجاز 🏖️</span>' : (status === 'late' ? '<span class="trip-status-label">متأخر ⏰</span>' : '<span class="trip-status-label">حاضر ✔️</span>'));
-        const genderStyle = gender === 'male' ? 'background:#d9ecff;border:2px solid #3498db;color:#145a86;' : (gender === 'female' ? 'background:#ffe0ed;border:2px solid #e91e63;color:#9c1749;' : '');
+        const genderStyle = gender === 'male' ? 'background:#d9ecff!important;border:2px solid #3498db!important;color:#145a86!important;' : (gender === 'female' ? 'background:#ffe0ed!important;border:2px solid #e91e63!important;color:#9c1749!important;' : '');
         return `<div class="seat seat-full student-status-seat ${statusClass} ${extraClass}" style="${genderStyle}">${label}<span class="trip-student-name">${name}</span></div>`;
+    }
+
+    function renderTripSeatOrPhoto(desk,slot,status,showPhotos){
+        const name=String(desk?.[`student${slot}`]||'').trim(),gender=String(desk?.[`gender${slot}`]||'');
+        if(showPhotos && name){const photo=String(desk?.[`photoData${slot}`]||desk?.[`photo${slot}`]||desk?.[`imageData${slot}`]||desk?.[`image${slot}`]||'');const tint=gender==='female'?'#ffe0ed':'#d9ecff';const border=gender==='female'?'#e91e63':'#3498db';return `<div class="seat seat-full" style="min-height:76px;display:flex;align-items:center;justify-content:center;flex-direction:column;background:${tint};border:2px solid ${border};color:#234"><div style="width:54px;height:54px;border-radius:50%;overflow:hidden;background:#fff;border:2px solid ${border};display:flex;align-items:center;justify-content:center">${photo?`<img src="${photo}" alt="صورة ${escapeGlobalSearchHTML(name)}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:9px">لا توجد صورة</span>'}</div><span style="font-size:9px;font-weight:800;margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeGlobalSearchHTML(name)}</span></div>`;}
+        return renderTripStudentSeat(name,!!name,status,'',gender);
     }
 
     function renderDesks() {
@@ -7786,18 +7833,21 @@ function updateCloudStatus(text, color) {
                 deskEl.style.cursor = 'default';
                 deskEl.onclick = null;
             } else {
+                const photoKey=String(deskData.id||`${currentClassIndex}_${index}`);
+                const showTripPhotos=!!tripPhotoViewState[photoKey];
                 deskEl.innerHTML = `
                     <div class="desk-header"><span>#${deskData.deskNumber}</span></div>
                     <div class="desk-seats">
                         <div class="${sep1 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student1 || '', hasS1, status1, '', deskData.gender1)}
+                          ${renderTripSeatOrPhoto(deskData,1,status1,showTripPhotos)}
                           ${sep1 && hasS1 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                         <div class="${sep2 ? 'desk-seated-separated' : ''}" style="position:relative;flex:1;">
-                          ${renderTripStudentSeat(deskData.student2 || '', hasS2, status2, '', deskData.gender2)}
+                          ${renderTripSeatOrPhoto(deskData,2,status2,showTripPhotos)}
                           ${sep2 && hasS2 ? '<div class="separated-student-label">مفصول</div>' : ''}
                         </div>
                     </div>
+                    ${currentUser.role==='admin'?`<button type="button" title="إظهار/إخفاء صور الطلاب" onclick="event.stopPropagation();toggleTripStudentPhotos('${String(deskData.id||`${currentClassIndex}_${index}`).replace(/'/g,"\\'")}')" style="display:block;margin:3px auto 0;padding:1px 5px;min-width:24px;font-size:9px;line-height:1.2;border-radius:5px;background:${showTripPhotos?'#64748b':'#e5edf5'};color:${showTripPhotos?'#fff':'#28445d'};border:1px solid #cbd5e1">${showTripPhotos?'↩':'📷'}</button>`:''}
                 `;
 
                 if(currentUser.role === 'admin') {
@@ -7811,6 +7861,8 @@ function updateCloudStatus(text, color) {
             else leftContainer.appendChild(deskEl);
         });
     }
+
+    function toggleTripStudentPhotos(key){if(!currentUser||currentUser.role!=='admin')return;tripPhotoViewState[String(key)]=!tripPhotoViewState[String(key)];renderDesks();}
 
     function openDeskModal(deskIdx) {
         if(currentUser.role !== 'admin') return;
@@ -7850,6 +7902,7 @@ function updateCloudStatus(text, color) {
         document.getElementById('phone1Input').value = desk.phone1 || '';
         const g1=document.getElementById('gender1Input'); if(g1) g1.value = desk.gender1 || '';
         document.getElementById('address1Input').value = desk.address1 || '';
+        window.__studentPhotoDraft1=desk.photoData1||desk.photo1||desk.imageData1||desk.image1||'';setStudentPhotoPreview(1,window.__studentPhotoDraft1);
         document.getElementById('student2Input').value = desk.student2 || '';
         document.getElementById('code2Input').value = desk.code2 || '';
         document.getElementById('age2Input').value = desk.age2 || '';
@@ -7858,6 +7911,7 @@ function updateCloudStatus(text, color) {
         document.getElementById('phone2Input').value = desk.phone2 || '';
         const g2=document.getElementById('gender2Input'); if(g2) g2.value = desk.gender2 || '';
         document.getElementById('address2Input').value = desk.address2 || '';
+        window.__studentPhotoDraft2=desk.photoData2||desk.photo2||desk.imageData2||desk.image2||'';setStudentPhotoPreview(2,window.__studentPhotoDraft2);
 
         document.getElementById('code1Input').readOnly = true;
         document.getElementById('code2Input').readOnly = true;
@@ -7888,6 +7942,10 @@ function updateCloudStatus(text, color) {
         const oldStudent2 = String(desk.student2 || '').trim();
         const newStudent1 = document.getElementById('student1Input').value.trim();
         const newStudent2 = document.getElementById('student2Input').value.trim();
+        const newGender1=String(document.getElementById('gender1Input')?.value||'');
+        const newGender2=String(document.getElementById('gender2Input')?.value||'');
+        if(newStudent1&&!newGender1){alert('اختيار جنس الطالب الأول إجباري قبل الحفظ.');document.getElementById('gender1Input')?.focus();return;}
+        if(newStudent2&&!newGender2){alert('اختيار جنس الطالب الثاني إجباري قبل الحفظ.');document.getElementById('gender2Input')?.focus();return;}
 
         // منع تسجيل الطالب نفسه مرتين، مع إظهار مكان التسجيل الحالي للمدير.
         const normalizeStudentNameForDuplicate = (value) => String(value || '')
@@ -7939,6 +7997,11 @@ function updateCloudStatus(text, color) {
         desk.phone2 = document.getElementById('phone2Input').value.trim();
         desk.gender2 = document.getElementById('gender2Input')?.value || '';
         desk.address2 = document.getElementById('address2Input').value.trim();
+        const photoDraft1=window.__studentPhotoDraft1, photoDraft2=window.__studentPhotoDraft2;
+        if(photoDraft1!==null&&photoDraft1!==undefined)desk.photoData1=photoDraft1;
+        if(photoDraft2!==null&&photoDraft2!==undefined)desk.photoData2=photoDraft2;
+        if(!newStudent1){desk.photoData1='';desk.photo1='';desk.imageData1='';desk.image1='';}
+        if(!newStudent2){desk.photoData2='';desk.photo2='';desk.imageData2='';desk.image2='';}
         if (newStudent1 && newStudent1 !== oldStudent1) desk.student1Id = createStableId('student');
         if (newStudent2 && newStudent2 !== oldStudent2) desk.student2Id = createStableId('student');
         if (!newStudent1) desk.student1Id = '';
