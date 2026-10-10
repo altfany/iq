@@ -6806,17 +6806,9 @@ function updateCloudStatus(text, color) {
             const behaviorKey=`${r.deskNumber}_${r.slot===1?'يمين':'يسار'}_${r.name}`;
             const behavior=r.classObj?.behaviorNotes?.[behaviorKey];
             const levels=Array.isArray(r.classObj?.studentLevels?.[behaviorKey])?r.classObj.studentLevels[behaviorKey]:[];
-            const studentId=String(r.studentId||student.id||'');
-            const resultDesk=r.classObj?.desks?.[Number(r.deskIndex)];
-            const resultKeys=new Set([`${Number(r.deskIndex)}:${Number(r.slot||1)}`,`${resultDesk?.id||r.deskIndex}_${Number(r.slot||1)}`,`${resultDesk?.id||r.deskIndex}:${Number(r.slot||1)}`]);
-            if(studentId) resultKeys.add(studentId);
-            const sameNameCount=(r.classObj?.desks||[]).reduce((n,d)=>n+[1,2].filter(sl=>String(d?.[`student${sl}`]||'').trim()===String(r.name||'').trim()).length,0);
-            const grades=ensureStudentGrades(r.classObj).filter(g=>{
-                if(String(g.studentId||'').trim()) return String(g.studentId)===studentId;
-                if(resultKeys.has(String(g.studentKey||''))) return true;
-                return sameNameCount===1 && String(g.studentName||'').trim()===String(r.name||'').trim();
-            });
+            const grades=ensureStudentGrades(r.classObj).filter(g=>String(g.studentName||'').trim()===r.name.trim());
             const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
+            const studentId=String(r.studentId||student.id||'');
             const attRows=att.filter(a=>String(a.studentId)===studentId).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,30);
             // بيانات الطالب مخزنة داخل الرحلة بحسب المقعد (student1/2، age1/2 ...)،
             // لذلك يجب أن يقرأ البحث بيانات المقعد الصحيح وليس الحقول العامة فقط.
@@ -8171,15 +8163,26 @@ function updateCloudStatus(text, color) {
         // نقل الرحلات ينقل سجل الطالب كاملاً دائماً؛ لا يوجد خيار نقل أساسي فقط هنا.
         const occupant=String(targetDesk[`student${targetSlot}`]||'').trim();
         const cloneValue=v=>{try{return v===undefined?undefined:JSON.parse(JSON.stringify(v));}catch(_){return v;}};
-        const copySlotFields=(from,to,fromSlot,toSlot)=>copyStudentSlotFields(from,fromSlot,to,toSlot);
-        const clearSlotFields=(desk,slot)=>clearStudentSlotFields(desk,slot);
+        const copySlotFields=(from,to,fromSlot,toSlot)=>{
+            // انقل كل خصائص المقعد المرتبطة بالطالب، بما فيها الصور وأي حقول مستقبلية
+            // ينتهي اسمها برقم المقعد (1 أو 2)، وليس قائمة محدودة من الحقول فقط.
+            const suffix=new RegExp(String(fromSlot)+'$');
+            Object.keys(from||{}).filter(k=>suffix.test(k)).forEach(k=>{
+                const targetKey=k.replace(suffix,String(toSlot));
+                to[targetKey]=cloneValue(from[k]);
+            });
+        };
+        const clearSlotFields=(desk,slot)=>{
+            const suffix=new RegExp(String(slot)+'$');
+            Object.keys(desk||{}).filter(k=>suffix.test(k)).forEach(k=>{
+                desk[k]=/^separated\d+$/.test(k) || /^suspended\d+$/.test(k) ? false : '';
+            });
+        };
 
         const sourceOldKey=getStudentHistoryKey(classObj,source.di,source.slot,source.name,sourceDesk);
         const targetOldKey=occupant ? getStudentHistoryKey(classObj,targetDi,targetSlot,occupant,targetDesk) : null;
         const sourceGradeKey=`${source.di}:${source.slot}`;
         const targetGradeKey=`${targetDi}:${targetSlot}`;
-        const sourceStudentIdBefore=String(sourceDesk[`student${source.slot}Id`]||'');
-        const targetStudentIdBefore=String(targetDesk[`student${targetSlot}Id`]||'');
 
         if(occupant){
             if(!confirm(`الرحلة ${targetDesk.deskNumber??(targetDi+1)} / ${targetSlot===1?'يمين':'يسار'} مشغولة بالطالب «${occupant}».\n\nهل تريد استبداله بالطالب «${source.name}»؟ سيتم نقل جميع بيانات وسجلات الطالبين معهما.`)) return;
@@ -8197,35 +8200,12 @@ function updateCloudStatus(text, color) {
                 if(a!==undefined) classObj[field][targetOldKey]=a; else delete classObj[field][targetOldKey];
             });
 
-            // تبديل سجلات الحضور القديمة ومعلومات التأخر الخاصة بمفتاحي المقعدين.
-            const sourceLegacy={}; const targetLegacy={};
-            Object.entries(classObj.absenceRecords||{}).forEach(([date,map])=>{
-                if(!map || typeof map!=='object') return;
-                sourceLegacy[date]={}; targetLegacy[date]={};
-                Object.keys(map).forEach(k=>{
-                    if(k===sourceOldKey || k.startsWith(sourceOldKey+'_')) sourceLegacy[date][k.slice(sourceOldKey.length)]=cloneValue(map[k]);
-                    if(k===targetOldKey || k.startsWith(targetOldKey+'_')) targetLegacy[date][k.slice(targetOldKey.length)]=cloneValue(map[k]);
-                });
-            });
-            Object.entries(classObj.absenceRecords||{}).forEach(([date,map])=>{
-                if(!map || typeof map!=='object') return;
-                Object.keys(map).forEach(k=>{if(k===sourceOldKey||k.startsWith(sourceOldKey+'_')||k===targetOldKey||k.startsWith(targetOldKey+'_')) delete map[k];});
-                Object.entries(sourceLegacy[date]||{}).forEach(([suffix,v])=>map[targetOldKey+suffix]=v);
-                Object.entries(targetLegacy[date]||{}).forEach(([suffix,v])=>map[sourceOldKey+suffix]=v);
-            });
-
-            // تبديل درجات المقعدين باستخدام مفاتيح المواقع القديمة والجديدة ومعرّفات الطالب إن وجدت.
+            // تبديل درجات المقعدين دون حذف درجات أي من الطالبين.
             const grades=ensureStudentGrades(classObj);
-            const sourceId=sourceStudentIdBefore;
-            const targetId=targetStudentIdBefore;
-            const sourceKeys=new Set([sourceGradeKey,`${sourceDesk.id||source.di}_${source.slot}`,`${sourceDesk.id||source.di}:${source.slot}`,sourceId]);
-            const targetKeys=new Set([targetGradeKey,`${targetDesk.id||targetDi}_${targetSlot}`,`${targetDesk.id||targetDi}:${targetSlot}`,targetId]);
             classObj.studentGrades=grades.map(g=>{
-                const item=cloneValue(g), key=String(item.studentKey||'');
-                const isSource=sourceKeys.has(key)||(sourceId&&String(item.studentId||'')===sourceId);
-                const isTarget=targetKeys.has(key)||(targetId&&String(item.studentId||'')===targetId);
-                if(isSource){item.studentKey=targetGradeKey;item.studentName=source.name;item.studentId=sourceId;}
-                else if(isTarget){item.studentKey=sourceGradeKey;item.studentName=occupant;item.studentId=targetId;}
+                const item=cloneValue(g);
+                if(String(item.studentKey)===sourceGradeKey){item.studentKey=targetGradeKey;item.studentName=source.name;}
+                else if(String(item.studentKey)===targetGradeKey){item.studentKey=sourceGradeKey;item.studentName=occupant;}
                 return item;
             });
         }else{
@@ -8291,7 +8271,7 @@ function updateCloudStatus(text, color) {
             sourceClassIndex:fromIndex,
             sourceDeskIndex:x.di,
             sourceSlot:x.slot,
-            payload:Object.fromEntries(['student','code','phone','gender','address','studentId','photo','photoData','image','imageData','parentPhone','parentHomeLocation','separated','separationReason','separatedAt','separatedBy','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'].map(f=>[f,cloneStudentFieldValue(getStudentSlotField(x.desk,f,x.slot))]))
+            payload:Object.fromEntries(['student','code','phone','gender','address','studentId','photo','photoData','image','imageData','separated','separationReason','separatedAt','separatedBy','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'].map(f=>[f,x.desk[`${f}${x.slot}`]??'']))
         }));
         for(const item of payloads){
             const empty=toCls.desks.findIndex(d=>!String(d.student1||'').trim()||!String(d.student2||'').trim());
@@ -8303,13 +8283,11 @@ function updateCloudStatus(text, color) {
             const target=toCls.desks[targetDi];
             const targetSlot=!String(target.student1||'').trim()?1:2;
             const targetName=String(item.payload.student||item.source.name||'').trim();
-            Object.entries(item.payload).forEach(([f,v])=>setStudentSlotField(target,f,targetSlot,cloneStudentFieldValue(v)));
-            // النقل الجماعي هنا مخصص لمرحلة/سنة جديدة: لا نربط سجل الحضور القديم بالهوية الجديدة.
-            target[`student${targetSlot}Id`]=createStableId('student');
+            Object.entries(item.payload).forEach(([f,v])=>target[`${f}${targetSlot}`]=v);
             if(!Array.isArray(toCls.transfers))toCls.transfers=[];
             toCls.transfers.push({type:'wholeClassStudent',studentName:targetName,fromClass:fromCls.name,toClass:toCls.name,fromTrip:item.source.deskNumber,toTrip:target.deskNumber,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
             const src=item.source.desk, slot=item.source.slot;
-            clearStudentSlotFields(src,slot); src[`student${slot}Id`]='';
+            ['student','code','phone','gender','address','studentId','photo','photoData','image','imageData','separated','separationReason','separatedAt','separatedBy','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'].forEach(f=>src[`${f}${slot}`]=(f==='separated'||f==='suspended')?false:'');
         }
         toCls.desks.forEach((d,i)=>{if(d.deskNumber==null||d.deskNumber==='')d.deskNumber=i+1;});
         saveData(); renderDesks(); renderClassesNav(); openWholeClassTransferControls();
@@ -8359,49 +8337,23 @@ function updateCloudStatus(text, color) {
         if(sb)sb.style.display=type==='school'?'block':'none';
     }
 
-    // Helpers موحدة لقراءة/نسخ/إخلاء حقول الطالب مع المحافظة على student{slot}Id.
-    function getStudentSlotField(desk, base, slot){
-        if(base==='studentId') return desk?.[`student${slot}Id`] ?? '';
-        return desk?.[`${base}${slot}`] ?? '';
-    }
-    function setStudentSlotField(desk, base, slot, value){
-        if(base==='studentId') desk[`student${slot}Id`]=value ?? '';
-        else desk[`${base}${slot}`]=value ?? '';
-    }
-    function cloneStudentFieldValue(value){
-        try { return value===undefined ? undefined : JSON.parse(JSON.stringify(value)); }
-        catch(_) { return value; }
-    }
-    function copyStudentSlotFields(fromDesk, fromSlot, toDesk, toSlot, allowedBases=null){
-        if(!fromDesk || !toDesk) return;
-        const allowed=allowedBases ? new Set(allowedBases) : null;
-        const keys=Object.keys(fromDesk);
-        keys.forEach(key=>{
-            let base=null;
-            const idMatch=key.match(/^student([12])(Id|Code)$/);
-            if(idMatch && Number(idMatch[1])===Number(fromSlot)) base=idMatch[2]==='Id'?'studentId':'studentCode';
-            else if(key.endsWith(String(fromSlot))) base=key.slice(0,-1);
-            if(base===null || (allowed && !allowed.has(base))) return;
-            const targetKey=base==='studentId' ? `student${toSlot}Id` : base==='studentCode' ? `student${toSlot}Code` : `${base}${toSlot}`;
-            toDesk[targetKey]=cloneStudentFieldValue(fromDesk[key]);
-        });
-    }
-    function clearStudentSlotFields(desk, slot){
-        if(!desk) return;
-        Object.keys(desk).forEach(key=>{
-            const idMatch=key.match(/^student([12])(Id|Code)$/);
-            const isSlotField=(key.endsWith(String(slot)) && !/^deskNumber$/.test(key)) || (idMatch && Number(idMatch[1])===Number(slot));
-            if(!isSlotField) return;
-            desk[key]=/^separated\d+$/.test(key) || /^suspended\d+$/.test(key) ? false : '';
-        });
-    }
-
     function clearStudentFromDesk(student){
         const desk=student.desk, slot=student.slot;
         const oldName=desk[`student${slot}`];
-        clearStudentSlotFields(desk,slot);
-        // هذه الحقول لا تنتهي برقم المقعد، لكنها تتبع سجل الطالب/المقعد.
+        desk[`student${slot}`]='';
+        desk[`phone${slot}`]='';
+        desk[`gender${slot}`]='';
+        desk[`address${slot}`]='';
+        desk[`code${slot}`]='';
         desk[`student${slot}Id`]='';
+        desk[`separated${slot}`]=false;
+        desk[`separationReason${slot}`]='';
+        desk[`suspended${slot}`]=false;
+        desk[`suspensionMessage${slot}`]='';
+        desk[`suspendedAt${slot}`]='';
+        desk[`suspendedBy${slot}`]='';
+        desk[`suspensionLiftedAt${slot}`]='';
+        desk[`suspensionLiftedBy${slot}`]='';
         return oldName;
     }
 
@@ -8421,24 +8373,6 @@ function updateCloudStatus(text, color) {
         return `${deskNumber}_${slot===1?'يمين':'يسار'}_${name}`;
     }
 
-    function moveLegacyAttendanceKey(sourceCls, oldKey, targetCls, newKey, removeSource=true){
-        if(!sourceCls || !targetCls || !oldKey || !newKey) return;
-        if(!sourceCls.absenceRecords || typeof sourceCls.absenceRecords!=='object') sourceCls.absenceRecords={};
-        if(!targetCls.absenceRecords || typeof targetCls.absenceRecords!=='object') targetCls.absenceRecords={};
-        const suffixes=['','_lateTime','_lateReason','_changedByName','_changedByRole'];
-        Object.entries(sourceCls.absenceRecords).forEach(([date,map])=>{
-            if(!map || typeof map!=='object') return;
-            suffixes.forEach(suffix=>{
-                const from=String(oldKey)+suffix;
-                if(Object.prototype.hasOwnProperty.call(map,from)){
-                    if(!targetCls.absenceRecords[date] || typeof targetCls.absenceRecords[date]!=='object') targetCls.absenceRecords[date]={};
-                    targetCls.absenceRecords[date][String(newKey)+suffix]=cloneStudentFieldValue(map[from]);
-                    if(removeSource && (sourceCls!==targetCls || oldKey!==newKey)) delete map[from];
-                }
-            });
-        });
-    }
-
     function migrateStudentClassHistory(sourceCls, sourceDeskIndex, sourceSlot, sourceName, targetCls, targetDeskIndex, targetSlot, targetName, mode){
         if(mode!=='full') return;
         if(!sourceCls || !targetCls) return;
@@ -8449,9 +8383,6 @@ function updateCloudStatus(text, color) {
         const newKey=getStudentHistoryKey(targetCls,targetDeskIndex,targetSlot,targetName,targetDesk);
         const oldGradeKey=`${sourceDeskIndex}:${sourceSlot}`;
         const newGradeKey=`${targetDeskIndex}:${targetSlot}`;
-        const sourceStudentId=String(sourceDesk?.[`student${sourceSlot}Id`]||'').trim();
-        const oldGradeKeys=new Set([oldGradeKey, `${sourceDesk?.id||sourceDeskIndex}_${sourceSlot}`, `${sourceDesk?.id||sourceDeskIndex}:${sourceSlot}`]);
-        if(sourceStudentId) oldGradeKeys.add(sourceStudentId);
 
         // السلوك والمستوى: نقل السجل من مفتاح المكان القديم إلى المكان الجديد.
         ['behaviorNotes','studentLevels'].forEach(field=>{
@@ -8464,17 +8395,14 @@ function updateCloudStatus(text, color) {
                 if(sourceCls!==targetCls || oldKey!==newKey) delete src[oldKey];
             }
         });
-        // نقل سجلات الحضور القديمة التي كانت محفوظة بمفتاح الرحلة/الاسم.
-        moveLegacyAttendanceKey(sourceCls,oldKey,targetCls,newKey,true);
 
         // الدرجات: مفتاح الدرجة الحالي هو موقع المقعد (deskIndex:slot)، لذلك ننقله للموقع الجديد.
         const sourceGrades=ensureStudentGrades(sourceCls);
         if(sourceGrades.length){
             const targetGrades=ensureStudentGrades(targetCls);
-            const moving=sourceGrades.filter(g=>oldGradeKeys.has(String(g.studentKey||'')) || (sourceStudentId && String(g.studentId||'')===sourceStudentId));
+            const moving=sourceGrades.filter(g=>String(g.studentKey)===oldGradeKey);
             moving.forEach(g=>{
                 const clone=Object.assign({},g,{studentKey:newGradeKey,studentName:targetName});
-                if(sourceStudentId) clone.studentId=sourceStudentId;
                 if(sourceCls===targetCls){
                     const idx=sourceGrades.indexOf(g);
                     if(idx>=0) sourceGrades[idx]=clone;
@@ -8483,9 +8411,8 @@ function updateCloudStatus(text, color) {
                 }
             });
             if(sourceCls!==targetCls){
-                const movingSet=new Set(moving);
-                sourceCls.studentGrades=sourceGrades.filter(g=>!movingSet.has(g));
-            }else{
+                sourceCls.studentGrades=sourceGrades.filter(g=>String(g.studentKey)!==oldGradeKey);
+            }else if(oldGradeKey!==newGradeKey){
                 sourceCls.studentGrades=sourceGrades;
             }
         }
@@ -8515,9 +8442,6 @@ function updateCloudStatus(text, color) {
         if(type==='school'){
             const schoolName=String(document.getElementById('transferSchoolName')?.value||'').trim();
             if(!schoolName){alert('اكتب اسم المدرسة الجديدة.');return;}
-            // لا توجد قاعدة بيانات/وجهة مدرسة أخرى متصلة بهذا الملف. لا نحذف الطالب ولا ندّعي أن سجله أُرسل خارجياً.
-            alert(`لم يتم تنفيذ النقل إلى «${schoolName}». هذه المدرسة غير متصلة بقاعدة بيانات هذا النظام، لذلك لا يمكن إرسال ملف الطالب إليها فعلياً من هنا. بقي الطالب وسجلاته محفوظة في المدرسة الحالية لتجنب فقدان البيانات.`);
-            return;
             if(!confirm(`سيتم نقل الطالب «${student.name}» من «${student.className}» إلى «${schoolName}».\n\nنمط النقل: ${mode==='full'?'مع كل سجلاته وبياناته المرتبطة':'البيانات الأساسية فقط'}.\n\nهل أنت متأكد؟`))return;
             if(!Array.isArray(oldCls.transfers))oldCls.transfers=[];
             oldCls.transfers.push({studentName:student.name,studentId:desk[`student${student.slot}Id`]||'',fromClass:student.className,toSchool:schoolName,transferMode:mode,date:new Date().toISOString(),by:currentUser.name||'المدير'});
@@ -8540,12 +8464,10 @@ function updateCloudStatus(text, color) {
         }
         const targetDi=target.desks.indexOf(targetDesk);
         const slot2=!String(targetDesk.student1||'').trim()?1:2;
-        if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟\n\nنمط النقل: ${mode==='full'?'نقل كامل للسجل والدرجات والسلوك والحضور والصورة.':'البيانات الأساسية والصورة فقط، مع بدء هوية سجل جديدة للمرحلة.'}`))return;
+        if(!confirm(`نقل «${student.name}» من «${student.className}» إلى «${target.name||`الصف ${toIndex+1}`}»؟\n\nنمط النقل: البيانات الأساسية والصور فقط، دون سجلات المرحلة السابقة.`))return;
         const sourceSlot=student.slot;
-        const fields=['student','code','phone','gender','address','studentId','photo','photoData','image','imageData','parentPhone','parentHomeLocation','separated','separationReason','separatedAt','separatedBy','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'];
-        fields.forEach(f=>setStudentSlotField(targetDesk,f,slot2,cloneStudentFieldValue(getStudentSlotField(desk,f,sourceSlot))));
-        // النقل الأساسي إلى مرحلة/سنة جديدة يبدأ هوية سجل جديدة؛ تبقى سجلات المرحلة السابقة محفوظة بالأرشيف ولا تُعرض كسجل حالي.
-        if(mode==='basic') targetDesk[`student${slot2}Id`]=createStableId('student');
+        const fields=['student','code','phone','gender','address','studentId','photo','photoData','image','imageData','suspended','suspensionMessage','suspendedAt','suspendedBy','suspensionLiftedAt','suspensionLiftedBy'];
+        fields.forEach(f=>targetDesk[`${f}${slot2}`]=desk[`${f}${sourceSlot}`]||'');
         targetDesk[`separated${slot2}`]=false;
         targetDesk[`separationReason${slot2}`]='';
         if(targetDesk[`suspended${slot2}`]===undefined)targetDesk[`suspended${slot2}`]=false;
@@ -8630,7 +8552,7 @@ function updateCloudStatus(text, color) {
                 const name = String(desk && desk['student'+slot] || '').trim();
                 if (!name) return;
                 out.push({
-                    studentId: String(desk[`student${slot}Id`] || canonicalStudentId(cls,currentClassIndex,desk,deskIndex,slot)),
+                    studentId: String(desk.id || `${currentClassIndex}_${deskIndex}`) + '_' + slot,
                     deskIndex, slot, name,
                     code: String(desk['code'+slot] || '').trim()
                 });
@@ -8771,10 +8693,10 @@ function updateCloudStatus(text, color) {
         const teacherId=String((teacher && teacher.id) || currentUser.teacherId || currentUser.name || '');
         const stableStudentKey=`${student.deskIndex}:${student.slot}`;
         // الدرجة لنفس الطالب + المادة + المعلم + نوع النتيجة + الفترة: تعديل للسجل نفسه بدلاً من تكراره.
-        let rec=grades.find(g=>(String(g.studentId||'')===String(student.studentId) || (!g.studentId && String(g.studentKey)===stableStudentKey)) && String(g.teacherId)===teacherId && String(g.subject)===spec && String(g.periodType)===type && String(g.period)===String(period));
+        let rec=grades.find(g=>String(g.studentKey)===stableStudentKey && String(g.teacherId)===teacherId && String(g.subject)===spec && String(g.periodType)===type && String(g.period)===String(period));
         const oldScore=rec ? rec.score : null;
         const oldMax=rec ? rec.maxScore : null;
-        const payload={studentKey:stableStudentKey,studentId:String(student.studentId||''),studentName:student.name,teacherId,teacherName:String(currentUser.name||teacher.name||''),subject:spec,score,maxScore:max,periodType:type,period:String(period),notes,updatedAt:new Date().toISOString()};
+        const payload={studentKey:stableStudentKey,studentName:student.name,teacherId,teacherName:String(currentUser.name||teacher.name||''),subject:spec,score,maxScore:max,periodType:type,period:String(period),notes,updatedAt:new Date().toISOString()};
         if(rec){
             Object.assign(rec,payload);
             if(window.ProfessionalModules?.addAudit && (Number(oldScore)!==Number(score) || Number(oldMax)!==Number(max))){
@@ -8800,18 +8722,7 @@ function updateCloudStatus(text, color) {
             const spec=String(currentUser.teacherSubject||getCurrentTeacherSpec()||'').trim();
             grades=grades.filter(g=>String(g.teacherId)===String(currentUser.teacherId||'') && String(g.subject||'').trim()===spec);
         }
-        if(currentUser.role==='parent'){
-            const f=currentStudentForDashboard();
-            if(!f){grades=[];}else{
-                const pid=String(f.student.id||currentUser.studentId||'');
-                const pdesk=schoolData[f.classIndex]?.desks?.[Number(f.deskIndex)];
-                const pslot=Number(f.student.slot||1);
-                const pkeys=new Set([`${Number(f.deskIndex)}:${pslot}`,`${pdesk?.id||f.deskIndex}_${pslot}`,`${pdesk?.id||f.deskIndex}:${pslot}`]);
-                if(pid)pkeys.add(pid);
-                const nameCount=(schoolData[f.classIndex]?.desks||[]).reduce((n,d)=>n+[1,2].filter(sl=>String(d?.[`student${sl}`]||'').trim()===String(f.student.name||'').trim()).length,0);
-                grades=grades.filter(g=>String(g.studentId||'').trim()?String(g.studentId)===pid:(pkeys.has(String(g.studentKey||''))||(nameCount===1&&String(g.studentName||'').trim()===String(f.student.name||'').trim())));
-            }
-        }
+        if(currentUser.role==='parent') grades=grades.filter(g=>String(g.studentName||'').trim()===String(currentUser.name||'').trim());
         const q=String(document.getElementById('gradesSearchInput')?.value||'').trim().toLocaleLowerCase('ar');
         if(q) grades=grades.filter(g=>[g.studentName,g.subject,g.teacherName,g.notes,getGradePeriodLabel(g.periodType),g.period,`${g.score}/${g.maxScore}`].some(v=>String(v||'').toLocaleLowerCase('ar').includes(q)));
         grades.sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
@@ -10151,13 +10062,10 @@ function updateCloudStatus(text, color) {
     }
     function currentStudentForDashboard(){
         if(!currentUser || currentUser.role!=='parent') return null;
-        // ابحث في البيانات الحية أولاً؛ اللقطة المأخوذة وقت تسجيل الدخول قد تصبح قديمة بعد النقل.
-        const live=currentUser.code ? findStudentBySecretCode(currentUser.code) : null;
-        if(live) return live;
         if(currentUser.studentSnapshot && currentUser.classSnapshot){
             return {student:{...currentUser.studentSnapshot}, classObj:currentUser.classSnapshot, classIndex:Number(currentUser.classIndex), deskIndex:Number(currentUser.deskIndex||0)};
         }
-        return null;
+        return currentUser.code ? findStudentBySecretCode(currentUser.code) : null;
     }
     // مشاركة موقع المنزل اختيارية، ولا يُطلب الموقع إلا بعد موافقة ولي الأمر بتفعيل المربع.
     function getParentHomeLocationTarget(){
@@ -10237,17 +10145,7 @@ function updateCloudStatus(text, color) {
             const t=new Date(value||'').getTime();
             return Number.isFinite(t)&&t>=todayStart&&t<todayEnd;
         };
-        const notifyDesk=liveClass.desks?.[Number(f.deskIndex)];
-        const notifySlot=Number(f.student.slot||1);
-        const notifyId=String(f.student.id||currentUser.studentId||'');
-        const notifyKeys=new Set([`${Number(f.deskIndex)}:${notifySlot}`,`${notifyDesk?.id||f.deskIndex}_${notifySlot}`,`${notifyDesk?.id||f.deskIndex}:${notifySlot}`]);
-        if(notifyId) notifyKeys.add(notifyId);
-        const sameNameCount=(liveClass.desks||[]).reduce((n,d)=>n+[1,2].filter(sl=>String(d?.[`student${sl}`]||'').trim()===studentName.trim()).length,0);
-        const grades=ensureStudentGrades(liveClass).filter(g=>{
-            if(String(g.studentId||'').trim()) return String(g.studentId)===notifyId;
-            if(notifyKeys.has(String(g.studentKey||''))) return true;
-            return sameNameCount===1 && String(g.studentName||'').trim()===studentName;
-        });
+        const grades=ensureStudentGrades(liveClass).filter(g=>String(g.studentKey)===String(f.student.deskIndex+':'+f.student.slot)||String(g.studentName||'').trim()===studentName);
         grades.filter(g=>inToday(g.updatedAt||g.createdAt)).forEach(g=>{
             const edited=!!g.modifiedAt;
             out.push({time:g.updatedAt||g.createdAt,icon:'📝',title:edited?'تم تعديل درجة':'تمت إضافة درجة',text:`${g.subject||'مادة'}: ${g.score??'-'} / ${g.maxScore??'-'} — ${g.teacherName||'المعلم'}`});
@@ -10384,8 +10282,7 @@ function updateCloudStatus(text, color) {
     }
     function getParentActivityStudentKey(){
         if(!currentUser||currentUser.role!=='parent') return '';
-        const live=currentStudentForDashboard();
-        return String(live?.student?.id||currentUser.code||currentUser.studentId||currentUser.studentSnapshot?.id||currentUser.name||'').trim();
+        return String(currentUser.studentId||currentUser.code||currentUser.studentSnapshot?.id||currentUser.name||'').trim();
     }
     function parentActivityNowSignature(section){
         if(currentUser?.role!=='parent') return '';
@@ -10397,16 +10294,10 @@ function updateCloudStatus(text, color) {
         const cleanTime=v=>{const t=new Date(v||'').getTime();return Number.isFinite(t)?t:0;};
 
         if(section==='grades'){
-            const activityDesk=liveClass.desks?.[Number(f.deskIndex)];
-            const activitySlot=Number(f.student.slot||1);
-            const activityKeys=new Set([`${Number(f.deskIndex)}:${activitySlot}`,`${activityDesk?.id||f.deskIndex}_${activitySlot}`,`${activityDesk?.id||f.deskIndex}:${activitySlot}`]);
-            if(studentId) activityKeys.add(studentId);
-            const sameNameCount=(liveClass.desks||[]).reduce((n,d)=>n+[1,2].filter(sl=>String(d?.[`student${sl}`]||'').trim()===studentName).length,0);
-            const rows=ensureStudentGrades(liveClass).filter(g=>{
-                if(String(g.studentId||'').trim()) return String(g.studentId)===studentId;
-                if(activityKeys.has(String(g.studentKey||''))) return true;
-                return sameNameCount===1 && String(g.studentName||'').trim()===studentName;
-            });
+            const rows=ensureStudentGrades(liveClass).filter(g=>
+                String(g.studentName||'').trim()===studentName ||
+                String(g.studentKey||'')===String(f.student.deskIndex+':'+f.student.slot)
+            );
             return rows.map(g=>[String(g.id||g.studentKey||g.subject||''),cleanTime(g.updatedAt||g.modifiedAt||g.createdAt),String(g.score??''),String(g.maxScore??''),String(g.subject||'')].join('|')).sort().join('||');
         }
         if(section==='homework'){
@@ -10872,16 +10763,7 @@ function updateCloudStatus(text, color) {
         const portalTheme=isFemale?'female':'male';
         const todayIndex=new Date().getDay();
         const days=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-        const parentDesk=liveClass.desks?.[Number(f.deskIndex)];
-        const parentSlot=Number(f.student.slot||1);
-        const parentGradeKeys=new Set([`${Number(f.deskIndex)}:${parentSlot}`,`${parentDesk?.id||f.deskIndex}_${parentSlot}`,`${parentDesk?.id||f.deskIndex}:${parentSlot}`]);
-        if(studentId) parentGradeKeys.add(studentId);
-        const sameNameCount=(liveClass.desks||[]).reduce((n,d)=>n+[1,2].filter(sl=>String(d?.[`student${sl}`]||'').trim()===studentName.trim()).length,0);
-        const grades=ensureStudentGrades(liveClass).filter(g=>{
-            if(String(g.studentId||'').trim()) return String(g.studentId)===studentId;
-            if(parentGradeKeys.has(String(g.studentKey||''))) return true;
-            return sameNameCount===1 && String(g.studentName||'').trim()===studentName.trim();
-        });
+        const grades=ensureStudentGrades(liveClass).filter(g=>String(g.studentName||'').trim()===studentName.trim());
         const rows=grades.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,100).map(g=>`<tr><td>${escapeGlobalSearchHTML(g.subject||'-')}</td><td><b>${escapeGlobalSearchHTML(g.score)}</b> / ${escapeGlobalSearchHTML(g.maxScore)}</td><td>${escapeGlobalSearchHTML(getGradePeriodLabel(g.periodType))}</td><td>${escapeGlobalSearchHTML(g.period||'-')}</td><td>${escapeGlobalSearchHTML(g.teacherName||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="pro-empty">لا توجد درجات مسجلة حالياً.</td></tr>';
         const parentBehaviorKey=`${f.student.deskNumber}_${f.student.slot===1?'يمين':'يسار'}_${studentName}`;
         const behavior=liveClass.behaviorNotes?.[parentBehaviorKey];
@@ -10924,16 +10806,7 @@ function updateCloudStatus(text, color) {
         const childWord=isFemale?'ابنتي':'ابني';
         const childPossessive=isFemale?'ابنتك':'ابنك';
         const portalTheme=isFemale?'female':'male';
-        const parentDesk=liveClass.desks?.[Number(f.deskIndex)];
-        const parentSlot=Number(f.student.slot||1);
-        const parentGradeKeys=new Set([`${Number(f.deskIndex)}:${parentSlot}`,`${parentDesk?.id||f.deskIndex}_${parentSlot}`,`${parentDesk?.id||f.deskIndex}:${parentSlot}`]);
-        if(studentId) parentGradeKeys.add(studentId);
-        const sameNameCount=(liveClass.desks||[]).reduce((n,d)=>n+[1,2].filter(sl=>String(d?.[`student${sl}`]||'').trim()===studentName.trim()).length,0);
-        const grades=ensureStudentGrades(liveClass).filter(g=>{
-            if(String(g.studentId||'').trim()) return String(g.studentId)===studentId;
-            if(parentGradeKeys.has(String(g.studentKey||''))) return true;
-            return sameNameCount===1 && String(g.studentName||'').trim()===studentName.trim();
-        });
+        const grades=ensureStudentGrades(liveClass).filter(g=>String(g.studentName||'').trim()===studentName.trim());
         const att=(window.ProfessionalModules&&Array.isArray(window.ProfessionalModules.attendanceData))?window.ProfessionalModules.attendanceData:[];
         const myAtt=att.filter(r=>String(r.studentId)===studentId).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
         const today=getFormattedDate();
