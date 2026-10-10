@@ -2337,12 +2337,21 @@ header > div:first-child{
 
         <div id="loginCloudStatus" style="font-size:12px;text-align:center;color:#777;margin:8px 0 4px;">جاري الاتصال بالسحابة...</div>
         <button id="loginButton" onclick="performLogin()" disabled style="width: 100%; background: var(--success); padding: 10px; font-weight: bold; margin-top: 10px;">دخول للنظام</button>
-        <button type="button" id="showAdminEmailLoginButton" onclick="toggleAdminEmailLogin(true)" style="width:100%;background:#263b53;padding:10px;font-weight:bold;margin-top:8px;">👑 دخول المدير بالإيميل</button>
+        <button type="button" id="showAdminEmailLoginButton" onclick="toggleAdminEmailLogin(true)" style="width:100%;background:#263b53;padding:10px;font-weight:bold;margin-top:8px;">👑 دخول المدير </button>
+        <button type="button" id="showAlternateAdminLoginButton" onclick="toggleAlternateAdminLogin(true)" style="display:block;margin:4px auto 0;background:#d62828;color:#fff;border:0;border-radius:4px;padding:2px 7px;font-size:9px;line-height:1.2;min-height:16px;width:auto;cursor:pointer;">دخول بديل</button>
+        <div id="alternateAdminLoginPanel" style="display:none;text-align:right;margin-top:12px;padding:12px;border:1px solid #f0b8b8;border-radius:10px;background:#fff8f8;">
+          <div style="font-weight:900;color:#b91c1c;margin-bottom:8px;text-align:center;">دخول مدير معتمد</div>
+          <label for="alternateAdminEmailInput" style="display:block;font-size:12px;margin:7px 0 4px;">الإيميل المسجّل في Firebase Authentication</label>
+          <input type="email" id="alternateAdminEmailInput" autocomplete="username" placeholder="أدخل الإيميل" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') document.getElementById('alternateAdminPasswordInput')?.focus()">
+          <label for="alternateAdminPasswordInput" style="display:block;font-size:12px;margin:7px 0 4px;">كلمة المرور</label>
+          <input type="password" id="alternateAdminPasswordInput" autocomplete="current-password" placeholder="كلمة مرور حساب Authentication" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') performAlternateAdminLogin()">
+          <button type="button" id="alternateAdminLoginButton" onclick="performAlternateAdminLogin()" style="width:100%;background:#b91c1c;padding:10px;font-weight:bold;margin-top:10px;">دخول</button>
+          <button type="button" onclick="toggleAlternateAdminLogin(false)" style="width:100%;background:#667788;padding:7px;margin-top:6px;">رجوع</button>
+          <div style="font-size:11px;color:#6b7280;line-height:1.7;margin-top:8px;">يجب أن يكون الحساب مسجّلًا في Authentication ومضافًا UID الخاص به إلى systemControl/adminUIDs.</div>
+        </div>
         <div id="adminEmailLoginPanel" style="display:none;text-align:right;margin-top:12px;padding:12px;border:1px solid #d8e3e8;border-radius:10px;background:#f7fafc;">
           <div style="font-weight:900;color:#263b53;margin-bottom:8px;text-align:center;">دخول مدير النظام</div>
-          <label for="adminEmailInput" style="display:block;font-size:12px;margin:7px 0 4px;">البريد الإلكتروني</label>
-          <input type="email" id="adminEmailInput" autocomplete="username" placeholder="admin@example.com" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') performAdminEmailLogin()">
-          <label for="adminEmailPasswordInput" style="display:block;font-size:12px;margin:8px 0 4px;">كلمة المرور</label>
+          <label for="adminEmailPasswordInput" style="display:block;font-size:12px;margin:7px 0 4px;">كلمة المرور</label>
           <input type="password" id="adminEmailPasswordInput" autocomplete="current-password" placeholder="كلمة مرور حساب المدير" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') performAdminEmailLogin()">
           <button type="button" id="adminEmailLoginButton" onclick="performAdminEmailLogin()" style="width:100%;background:#16803c;padding:10px;font-weight:bold;margin-top:10px;">تسجيل دخول المدير</button>
           <button type="button" onclick="toggleAdminEmailLogin(false)" style="width:100%;background:#667788;padding:8px;margin-top:6px;">العودة إلى دخول الأكواد</button>
@@ -5103,15 +5112,80 @@ function updateCloudStatus(text, color) {
         if (showCode) showCode.style.display = show ? 'none' : 'flex';
         if (codeButton) codeButton.style.display = show ? 'none' : 'block';
         if (adminButton) adminButton.style.display = show ? 'none' : 'block';
-        if (show) setTimeout(() => document.getElementById('adminEmailInput')?.focus(), 50);
+        if (show) setTimeout(() => document.getElementById('adminEmailPasswordInput')?.focus(), 50);
         else setTimeout(() => codeInput?.focus(), 50);
     }
 
+    function toggleAlternateAdminLogin(show) {
+        const panel = document.getElementById('alternateAdminLoginPanel');
+        const codeInput = document.getElementById('loginCodeInput');
+        const codeButton = document.getElementById('loginButton');
+        const remember = document.getElementById('rememberLoginCode')?.closest('label');
+        const showCode = document.getElementById('showLoginCode')?.closest('label');
+        const fixedAdminButton = document.getElementById('showAdminEmailLoginButton');
+        const alternateButton = document.getElementById('showAlternateAdminLoginButton');
+        const fixedPanel = document.getElementById('adminEmailLoginPanel');
+        if (panel) panel.style.display = show ? 'block' : 'none';
+        if (fixedPanel) fixedPanel.style.display = 'none';
+        if (codeInput) codeInput.closest('.form-group')?.style && (codeInput.closest('.form-group').style.display = show ? 'none' : '');
+        if (remember) remember.style.display = show ? 'none' : 'flex';
+        if (showCode) showCode.style.display = show ? 'none' : 'flex';
+        if (codeButton) codeButton.style.display = show ? 'none' : 'block';
+        if (fixedAdminButton) fixedAdminButton.style.display = show ? 'none' : 'block';
+        if (alternateButton) alternateButton.style.display = show ? 'none' : 'block';
+        if (show) setTimeout(() => document.getElementById('alternateAdminEmailInput')?.focus(), 50);
+        else setTimeout(() => codeInput?.focus(), 50);
+    }
+
+    async function performAlternateAdminLogin() {
+        const email = String(document.getElementById('alternateAdminEmailInput')?.value || '').trim();
+        const password = String(document.getElementById('alternateAdminPasswordInput')?.value || '');
+        const button = document.getElementById('alternateAdminLoginButton');
+        if (!email || !password) { alert('أدخل الإيميل وكلمة المرور.'); return; }
+        if (!window.firebase?.auth) { alert('خدمة Firebase Authentication غير محمّلة. تحقق من الاتصال بالإنترنت.'); return; }
+        if (button) { button.disabled = true; button.textContent = 'جارٍ التحقق...'; }
+        try {
+            const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
+            const tokenResult = await credential.user.getIdTokenResult(true);
+            const hasTrustedAdminClaim = tokenResult?.claims?.admin === true;
+            let isApprovedAdminUID = false;
+            try {
+                if (typeof firebaseDB !== 'undefined' && firebaseDB) {
+                    const adminUIDSnap = await firebaseDB.ref('systemControl/adminUIDs/' + credential.user.uid).once('value');
+                    const adminUIDValue = adminUIDSnap.val();
+                    isApprovedAdminUID = adminUIDValue === true || adminUIDValue === 'true' || (adminUIDValue && adminUIDValue.enabled === true);
+                }
+            } catch (approvalReadError) {
+                console.warn('Could not check approved manager UID list:', approvalReadError);
+            }
+            if (!hasTrustedAdminClaim && !isApprovedAdminUID) {
+                await firebase.auth().signOut();
+                alert('هذا الحساب غير معتمد كمدير. أضف UID الخاص به في systemControl/adminUIDs واجعل قيمته true.');
+                return;
+            }
+            currentUser = { role: 'admin', name: adminCredentials.name || 'مدير النظام', isPrimaryAdmin: true, firebaseUid: credential.user.uid, authEmail: credential.user.email || email };
+            APP_SECURITY.failedAttempts = 0;
+            APP_SECURITY.lockedUntil = 0;
+            applyUserPermissions();
+            const overlay = document.getElementById('loginOverlay');
+            if (overlay) overlay.style.display = 'none';
+            if (typeof openAdminMonitorMessagesPanel === 'function') setTimeout(openAdminMonitorMessagesPanel, 350);
+        } catch (error) {
+            console.error('Alternate admin Firebase Authentication failed:', error);
+            const code = String(error?.code || '');
+            if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found') || code.includes('invalid-email')) alert('الإيميل أو كلمة المرور غير صحيحة، أو أن الحساب غير موجود في Authentication.');
+            else if (code.includes('too-many-requests')) alert('محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.');
+            else alert('تعذر تسجيل الدخول. تحقق من الاتصال وإعدادات Firebase.');
+        } finally {
+            if (button) { button.disabled = false; button.textContent = 'دخول'; }
+        }
+    }
+
     async function performAdminEmailLogin() {
-        const email = String(document.getElementById('adminEmailInput')?.value || '').trim();
+        const email = 'school.iq.com@gmail.com'; // إيميل المدير ثابت داخل الكود ولا يظهر في صفحة الدخول
         const password = String(document.getElementById('adminEmailPasswordInput')?.value || '');
         const button = document.getElementById('adminEmailLoginButton');
-        if (!email || !password) { alert('أدخل إيميل المدير وكلمة المرور.'); return; }
+        if (!password) { alert('أدخل كلمة مرور المدير.'); return; }
         if (!window.firebase?.auth) { alert('خدمة Firebase Authentication غير محمّلة. تحقق من الاتصال بالإنترنت.'); return; }
         if (button) { button.disabled = true; button.textContent = 'جارٍ التحقق...'; }
         try {
@@ -5145,7 +5219,7 @@ function updateCloudStatus(text, color) {
         } catch (error) {
             console.error('Admin Firebase Authentication failed:', error);
             const code = String(error?.code || '');
-            if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) alert('الإيميل أو كلمة المرور غير صحيحة.');
+            if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) alert('كلمة مرور المدير غير صحيحة أو تعذر التحقق من الحساب.');
             else if (code.includes('too-many-requests')) alert('محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.');
             else alert('تعذر تسجيل دخول المدير إلى Firebase. تحقق من الاتصال وإعدادات المشروع.');
         } finally {
