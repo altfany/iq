@@ -3960,11 +3960,10 @@ function replyToComplaint(id){
 // ===== إدارة مدة حفظ التنبيهات =====
 // الاحتفاظ بالتنبيهات لمدة 7 أيام فقط، ثم حذفها تلقائياً من
 // الذاكرة المحلية ونسخة Firebase عند أقرب مزامنة/دخول/حفظ.
-const ANNOUNCEMENT_RETENTION_DAYS = 7;
+const ANNOUNCEMENT_RETENTION_DAYS = 2;
 
 function pruneExpiredAnnouncementsData() {
-    if (!Array.isArray(announcementsData) || announcementsData.length === 0) return false;
-
+    if (!Array.isArray(announcementsData)) announcementsData = [];
     const now = Date.now();
     const retentionMs = ANNOUNCEMENT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
     const before = announcementsData.length;
@@ -3977,7 +3976,26 @@ function pruneExpiredAnnouncementsData() {
         return (now - ts) < retentionMs;
     });
 
-    return announcementsData.length !== before;
+    let changed = announcementsData.length !== before;
+    // حذف الواجبات ورسائل المراسلة بعد 48 ساعة من الإرسال لتقليل استهلاك Firebase.
+    const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    if (Array.isArray(homeworkData)) {
+        const n = homeworkData.length;
+        homeworkData = homeworkData.filter(x => {
+            const t = Date.parse(x?.createdAt || x?.sentAt || '');
+            return !Number.isFinite(t) || t >= cutoff;
+        });
+        changed = changed || homeworkData.length !== n;
+    }
+    if (Array.isArray(parentTeacherMessagesData)) {
+        const n = parentTeacherMessagesData.length;
+        parentTeacherMessagesData = parentTeacherMessagesData.filter(x => {
+            const t = Date.parse(x?.createdAt || x?.sentAt || '');
+            return !Number.isFinite(t) || t >= cutoff;
+        });
+        changed = changed || parentTeacherMessagesData.length !== n;
+    }
+    return changed;
 }
 
 function getAnnouncementReaderKey() {
@@ -12584,7 +12602,7 @@ body.parent-only-mode header { display:none !important; }
     const warned=all.map(r=>({...r,monthlyAbsences:getStudentMonthlyAbsenceCount(r,dateObj.getFullYear(),dateObj.getMonth()+1)})).filter(r=>r.monthlyAbsences>5);
     const classes=[...new Set(all.map(r=>r.className))];
     body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin:14px 0">${statuses.map(card).join('')}<div style="border:2px solid #0f7c8c;background:#effbfc;border-radius:14px;padding:14px"><b>📈 النسب المئوية</b><div style="margin-top:8px;line-height:2">الحضور: <b>${pct(count.present)}%</b><br>الغياب: <b>${pct(count.absent)}%</b><br>المجاز: <b>${pct(count.leave)}%</b><br>المتأخر: <b>${pct(count.late)}%</b></div></div></div>
-    <div style="background:#fff7e8;border:1px solid #f0c36d;border-radius:14px;padding:13px;margin:12px 0"><h3 style="margin:0 0 8px;color:#8a5a00">⚠️ تنبيهات تجاوز الغياب 5 أيام خلال الشهر (${esc(month)})</h3>${warned.length?warned.map(r=>`<div style="padding:8px;border-bottom:1px solid #f2dfb7">⚠️ الطالب <b>${esc(r.name)}</b> — الصف: ${esc(r.className)} — رقم الهاتف: ${esc(r.phone||'—')} — عدد أيام الغياب: <b style="color:#c0392b">${r.monthlyAbsences}</b> أيام</div>`).join(''):'لا توجد أسماء تجاوزت 5 أيام غياب في هذا الشهر.'}</div>
+    <div style="background:#fff7e8;border:1px solid #f0c36d;border-radius:14px;padding:13px;margin:12px 0"><h3 style="margin:0 0 8px;color:#8a5a00">⚠️ تنبيهات تجاوز الغياب 5 أيام خلال الشهر (${esc(month)})</h3>${warned.length?warned.map((r,i)=>`<div class="daily-absence-warning-item" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px;border-bottom:1px solid #f2dfb7"><span>⚠️ الطالب <b>${esc(r.name)}</b> — الصف: ${esc(r.className)} — رقم الهاتف: ${esc(r.phone||'—')} — عدد أيام الغياب: <b style="color:#c0392b">${r.monthlyAbsences}</b> أيام</span><button type="button" onclick="this.closest('.daily-absence-warning-item').remove()" style="background:#c0392b;color:#fff;padding:5px 10px">🗑 حذف التنبيه</button></div>`).join(''):'لا توجد أسماء تجاوزت 5 أيام غياب في هذا الشهر.'}</div>
     <div style="font-size:12px;color:#667">الإحصاءات مستخرجة من السجلات المحفوظة في النظام للتاريخ المحدد، وليست أرقاماً ثابتة.</div>`;
     window.__dailyStatsData={date,all,count,labels,icons,colors,warned};
   };
@@ -12775,7 +12793,79 @@ body.parent-only-mode header { display:none !important; }
   window.printDailyStudentSearch=function(){const d=window.__dailyStudentSearchPrint;if(!d)return;const w=window.open('','_blank');if(!w){alert('يرجى السماح بالنوافذ المنبثقة للطباعة.');return;}w.document.write(`<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>سجل الطالب</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Tahoma,Arial;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #777;padding:6px;text-align:center}th{background:#eee}</style></head><body><h2>السجل الكامل لحالات الطالب</h2><p>بحث عن: ${AESC(d.q)} — عدد السجلات: ${d.records.length}</p><table><thead><tr><th>الطالب</th><th>الصف</th><th>التاريخ</th><th>الحالة</th><th>ساعة التأخر</th><th>سبب التأخر</th><th>سجل بواسطة</th></tr></thead><tbody>${d.records.map(x=>`<tr><td>${AESC(x.r.name)}</td><td>${AESC(x.r.className)}</td><td>${AESC(x.date)}</td><td>${AESC(statusLabels[x.status]||x.status)}</td><td>${AESC(x.lateTime||'—')}</td><td>${AESC(x.lateReason||'—')}</td><td>${AESC(x.changedByName||x.changedByRole||'—')}</td></tr>`).join('')}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();};
 })();
 </script>
-\n</body>
+\n
+<script id="mobile-print-links-and-retention-patch">
+(function(){
+  // رابط قابل للنقر داخل الرسائل والملاحظات والواجبات، مع إبقاء النص آمناً.
+  function linkifyTextNode(node){
+    if(!node || node.nodeType!==3 || !/https?:\/\/[^\s<>"']+/i.test(node.nodeValue||'')) return;
+    const text=node.nodeValue, re=/https?:\/\/[^\s<>"']+/ig;
+    const frag=document.createDocumentFragment(); let last=0, m;
+    while((m=re.exec(text))){
+      if(m.index>last) frag.appendChild(document.createTextNode(text.slice(last,m.index)));
+      let raw=m[0], trailing='';
+      while(/[),.!?،؛\]]$/.test(raw)){ trailing=raw.slice(-1)+trailing; raw=raw.slice(0,-1); }
+      if(/^https?:\/\/[^\s]+$/i.test(raw)){
+        const a=document.createElement('a'); a.href=raw; a.textContent=raw; a.target='_blank'; a.rel='noopener noreferrer';
+        a.style.cssText='color:#0879c9;text-decoration:underline;overflow-wrap:anywhere;word-break:break-word';
+        frag.appendChild(a);
+      }else frag.appendChild(document.createTextNode(raw));
+      if(trailing) frag.appendChild(document.createTextNode(trailing));
+      last=re.lastIndex;
+    }
+    if(last<text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode?.replaceChild(frag,node);
+  }
+  function scanLinks(root){
+    if(!root || root.nodeType!==1) return;
+    const skip='A,SCRIPT,STYLE,TEXTAREA,INPUT,BUTTON,PRE,CODE';
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+      if(!n.parentElement || n.parentElement.closest(skip)) return NodeFilter.FILTER_REJECT;
+      return /https?:\/\/[^\s<>"']+/i.test(n.nodeValue||'')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+    }});
+    const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(linkifyTextNode);
+  }
+  function start(){
+    scanLinks(document.body);
+    const observer=new MutationObserver(records=>records.forEach(r=>{
+      if(r.type==='childList') r.addedNodes.forEach(n=>{
+        if(n.nodeType===3) linkifyTextNode(n); else if(n.nodeType===1) scanLinks(n);
+      });
+    }));
+    observer.observe(document.body,{subtree:true,childList:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
+
+  // اجعل الطباعة على الهاتف تعتمد على نافذة الطباعة الأصلية للمتصفح، مع مقاس A4.
+  const css=document.createElement('style');
+  css.textContent=`
+    @media print {
+      @page { size: A4; margin: 10mm; }
+      html,body { width:auto!important; height:auto!important; overflow:visible!important; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
+      button,.no-print,[data-no-print="true"] { display:none!important; }
+      img { max-width:100%!important; }
+      table { max-width:100%!important; }
+    }
+    @media (max-width:600px) {
+      .daily-absence-warning-item button { min-height:40px!important; }
+      a[href^="http"] { overflow-wrap:anywhere; word-break:break-word; }
+    }`;
+  document.head.appendChild(css);
+
+  // تنظيف دوري للبيانات القديمة: الحذف النهائي يحدث عبر آلية الحفظ السحابي للنظام.
+  setInterval(function(){
+    try{
+      if(typeof pruneExpiredAnnouncementsData==='function'){
+        const changed=pruneExpiredAnnouncementsData();
+        if(changed && typeof saveData==='function') saveData();
+      }
+    }catch(e){ console.warn('تنظيف الرسائل القديمة:',e); }
+  }, 60*60*1000);
+})();
+</script>
+
+</body>
 </html>
 
 
