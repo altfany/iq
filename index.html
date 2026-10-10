@@ -1639,6 +1639,9 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
       async factoryReset() {
         const current = await firebaseDB.ref('systemControl/factoryReset').once('value');
         const old = current.exists() ? (current.val() || {}) : {};
+        // احتفظ بقائمة المدراء المعتمدين حتى بعد ترسيت بيانات المدرسة والنسخ الاحتياطية.
+        const adminUIDsSnap = await firebaseDB.ref('systemControl/adminUIDs').once('value');
+        const savedAdminUIDs = adminUIDsSnap.exists() ? adminUIDsSnap.val() : {};
         const oldGen = String(old.generation || '0');
         const nextGen = String((Number(oldGen) || 0) + 1) + '_' + Date.now();
         const now = new Date().toISOString();
@@ -1646,6 +1649,7 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
         await firebaseDB.ref().update({
           'systemControl/factoryReset': { generation: nextGen, resetAt: now, logoutToken: logoutToken },
           'systemControl/globalLogout': { token: logoutToken, reason: 'factory-reset', at: now },
+          'systemControl/adminUIDs': savedAdminUIDs,
           'schoolSystem': null,
           'schoolSystemBackups': null
         });
@@ -6218,6 +6222,9 @@ function updateCloudStatus(text, color) {
                     if(typeof firebaseDB==='undefined' || !firebaseDB) throw new Error('اتصال Firebase غير متاح.');
                     const currentSnap=await firebaseDB.ref('systemControl/factoryReset').once('value');
                     const old=currentSnap.exists()?(currentSnap.val()||{}):{};
+                    // استرجاع قائمة المدراء المعتمدين ضمن الترسيت وعدم حذفها مع بيانات المدرسة.
+                    const adminUIDsSnap=await firebaseDB.ref('systemControl/adminUIDs').once('value');
+                    const savedAdminUIDs=adminUIDsSnap.exists()?adminUIDsSnap.val():{};
                     const oldGen=String(old.generation||'0');
                     newFactoryGeneration=String((Number(oldGen)||0)+1)+'_'+Date.now();
                     newLogoutToken=newFactoryGeneration+'_LOGOUT_'+Date.now();
@@ -6225,6 +6232,7 @@ function updateCloudStatus(text, color) {
                     await firebaseDB.ref().update({
                         'systemControl/factoryReset':{generation:newFactoryGeneration,resetAt:now,logoutToken:newLogoutToken},
                         'systemControl/globalLogout':{token:newLogoutToken,reason:'factory-reset',at:now},
+                        'systemControl/adminUIDs':savedAdminUIDs,
                         'schoolSystem':null,'schoolSystemBackups':null
                     });
                 }
@@ -6388,24 +6396,67 @@ function updateCloudStatus(text, color) {
     }
     function savePrintManagerName(){ return savePrintPrintSettings(); }
 
-    function changeCurrentAdminPassword() {
-        if (!isPrimaryAdminUser()) { alert('تغيير الأكواد متاح لمدير النظام فقط.'); return; }
+    async function changeCurrentAdminPassword() {
+        if (!isPrimaryAdminUser()) { alert('تغيير الكود متاح للمدير أو للمعاون الذي لديه صلاحية مدير فعّالة.'); return; }
         const newCode = String(document.getElementById('adminNewPasswordInput')?.value || '').trim();
         const confirmCode = String(document.getElementById('adminConfirmPasswordInput')?.value || '').trim();
-        if (!newCode || newCode.length < 4) { alert('اكتب كوداً جديداً من 4 أرقام/رموز على الأقل.'); return; }
+        const isPrimary = !!currentUser?.isPrimaryAdmin;
+        const authUser = (isPrimary && window.firebase?.auth) ? firebase.auth().currentUser : null;
+        const assistant = currentUser?.isAssistant
+            ? (Array.isArray(assistantsData) ? assistantsData.find(a => String(a.id || '') === String(currentUser.assistantId || '')) : null)
+            : null;
+
+        if (currentUser?.isAssistant && !assistant) { alert('تعذر العثور على حساب المعاون الحالي. أعد تسجيل الدخول ثم حاول مجددًا.'); return; }
+        const minLength = authUser ? 6 : 4;
+        if (!newCode || newCode.length < minLength) {
+            alert(authUser
+                ? 'كلمة مرور Firebase يجب أن تتكون من 6 أحرف أو أرقام على الأقل.'
+                : 'اكتب كوداً جديداً من 4 أرقام/رموز على الأقل.');
+            return;
+        }
         if (newCode !== confirmCode) { alert('تأكيد الكود غير مطابق.'); return; }
 
-        if (newCode !== String(adminCredentials.password || '').trim() && isCodeAlreadyUsed(newCode)) {
+        const currentCode = assistant ? String(assistant.code || '').trim() : String(adminCredentials.password || '').trim();
+        if (newCode !== currentCode && isCodeAlreadyUsed(newCode, { excludeAssistantId: assistant?.id || '' })) {
             alert('هذا الكود مستخدم مسبقاً. اختر كوداً آخر.');
             return;
         }
-        adminCredentials.password = newCode;
-        currentUser.name = adminCredentials.name || 'مدير النظام';
 
+        // إذا كان المدير قد دخل عبر Firebase Authentication، غيّر كلمة مرور الحساب الفعلية أيضًا.
+        // لا نغيّر كود النظام في قاعدة البيانات إلا بعد نجاح تحديث كلمة مرور Authentication.
+        if (authUser) {
+            try {
+                await authUser.updatePassword(newCode);
+            } catch (error) {
+                console.error('Firebase Authentication password update failed:', error);
+                const code = String(error?.code || '');
+                if (code.includes('requires-recent-login')) {
+                    alert('لحماية الحساب، انتهت صلاحية التحقق الحالي. سجّل الخروج ثم ادخل مجددًا بإيميلك وكلمة مرورك الحالية، وبعدها غيّر كلمة المرور مباشرة.');
+                } else if (code.includes('weak-password')) {
+                    alert('كلمة المرور ضعيفة. استخدم 6 أحرف أو أرقام على الأقل.');
+                } else if (code.includes('network-request-failed')) {
+                    alert('تعذر الاتصال بـ Firebase. تحقق من الإنترنت ثم حاول مجددًا.');
+                } else {
+                    alert('لم تتغير كلمة مرور Firebase. تأكد من الاتصال ثم حاول مرة أخرى.');
+                }
+                return;
+            }
+        }
+
+        if (assistant) {
+            assistant.code = newCode;
+        } else {
+            adminCredentials.password = newCode;
+            currentUser.name = adminCredentials.name || 'مدير النظام';
+        }
         saveData();
         document.getElementById('adminNewPasswordInput').value = '';
         document.getElementById('adminConfirmPasswordInput').value = '';
-        alert('تم تغيير الكود الشخصي وحفظه في Firebase بنجاح.');
+        alert(authUser
+            ? 'تم تغيير كلمة مرور تسجيل دخول المدير في Firebase Authentication، وتحديث كود النظام في Realtime Database بنجاح.'
+            : assistant
+                ? 'تم تغيير كود المعاون وحفظه في Firebase بنجاح.'
+                : 'تم تغيير الكود الشخصي وحفظه في Firebase بنجاح.');
         renderAssistantsList();
     }
 
