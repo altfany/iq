@@ -14142,6 +14142,68 @@ body.parent-only-mode header { display:none !important; }
 })();
 </script>
 
+
+<style id="managerLightDarkThemeStyles">
+  body.manager-dark-mode{background:#101722!important;color:#e8edf5!important;color-scheme:dark}
+  body.manager-dark-mode #app,body.manager-dark-mode main,body.manager-dark-mode .main-content,body.manager-dark-mode .content,body.manager-dark-mode .page-content,body.manager-dark-mode .dashboard,body.manager-dark-mode .container,body.manager-dark-mode .wrapper{background-color:#101722!important;color:#e8edf5!important}
+  body.manager-dark-mode .card,body.manager-dark-mode .panel,body.manager-dark-mode .modal-content,body.manager-dark-mode .modal-box,body.manager-dark-mode .section,body.manager-dark-mode .stat-card,body.manager-dark-mode .dashboard-card,body.manager-dark-mode .box,body.manager-dark-mode .content-box,body.manager-dark-mode .announcement-admin-panel,body.manager-dark-mode .table-container,body.manager-dark-mode .settings-card,body.manager-dark-mode .report-card{background-color:#1b2635!important;color:#e8edf5!important;border-color:#344256!important;box-shadow:0 5px 18px rgba(0,0,0,.18)!important}
+  body.manager-dark-mode h1,body.manager-dark-mode h2,body.manager-dark-mode h3,body.manager-dark-mode h4,body.manager-dark-mode h5,body.manager-dark-mode p,body.manager-dark-mode label,body.manager-dark-mode span,body.manager-dark-mode strong,body.manager-dark-mode small,body.manager-dark-mode td,body.manager-dark-mode th,body.manager-dark-mode li{border-color:#344256}
+  body.manager-dark-mode input:not([type="checkbox"]):not([type="radio"]),body.manager-dark-mode select,body.manager-dark-mode textarea{background:#111b28!important;color:#f0f4fa!important;border-color:#46566c!important}
+  body.manager-dark-mode input::placeholder,body.manager-dark-mode textarea::placeholder{color:#aab7c8!important}
+  body.manager-dark-mode table{background:#1b2635!important;color:#e8edf5!important;border-color:#344256!important}
+  body.manager-dark-mode th{background:#253449!important;color:#f4f7fb!important}
+  body.manager-dark-mode tr:nth-child(even){background-color:rgba(255,255,255,.025)!important}
+  body.manager-dark-mode hr{border-color:#344256!important}
+  body.manager-dark-mode a:not(.btn){color:#8fc7ff}
+  #managerThemeToggle{position:fixed;left:18px;bottom:18px;z-index:2147482000;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:11px 16px;display:none;align-items:center;gap:9px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,.22);transition:transform .18s,background .18s;}
+  #managerThemeToggle:hover{transform:translateY(-2px)}
+  #managerThemeToggle.theme-light{background:#fff;color:#233044;border-color:#d7dfeb}
+  #managerThemeToggle.theme-dark{background:#202d40;color:#fff;border-color:#53657d}
+  @media(max-width:600px){#managerThemeToggle{left:10px;bottom:10px;padding:10px 13px;font-size:12px}}
+</style>
+<button id="managerThemeToggle" type="button" aria-label="تبديل الوضع الليلي والنهاري"><span id="managerThemeIcon">🌙</span><span id="managerThemeLabel">الوضع الليلي</span></button>
+<script id="managerLightDarkThemeLogic">
+(function(){
+  const KEY='tafany_manager_theme_preference_v1';
+  function isManager(){try{return typeof currentUser!=='undefined' && !!(currentUser && currentUser.role==='admin');}catch(e){return false;}}
+  function applyTheme(theme){
+    const dark=theme==='dark';
+    document.body.classList.toggle('manager-dark-mode',dark);
+    const btn=document.getElementById('managerThemeToggle');
+    const icon=document.getElementById('managerThemeIcon');
+    const label=document.getElementById('managerThemeLabel');
+    if(btn){btn.className=dark?'theme-dark':'theme-light';btn.setAttribute('aria-pressed',dark?'true':'false');}
+    if(icon)icon.textContent=dark?'☀️':'🌙';
+    if(label)label.textContent=dark?'الوضع النهاري':'الوضع الليلي';
+  }
+  function sync(){
+    const btn=document.getElementById('managerThemeToggle');
+    if(!btn)return;
+    const active=isManager();
+    btn.style.display=active?'inline-flex':'none';
+    if(!active){document.body.classList.remove('manager-dark-mode');return;}
+    let saved='light';try{saved=localStorage.getItem(KEY)||'light';}catch(e){}
+    applyTheme(saved);
+  }
+  function init(){
+    const btn=document.getElementById('managerThemeToggle');
+    if(btn && !btn.dataset.themeBound){
+      btn.dataset.themeBound='1';
+      btn.addEventListener('click',function(){
+        if(!isManager())return;
+        const next=document.body.classList.contains('manager-dark-mode')?'light':'dark';
+        try{localStorage.setItem(KEY,next);}catch(e){}
+        applyTheme(next);
+      });
+    }
+    sync();
+    if(!window.__managerThemeSyncTimer)window.__managerThemeSyncTimer=setInterval(sync,900);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
+
 </html>
 
 
