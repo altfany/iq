@@ -13930,6 +13930,69 @@ body.parent-only-mode header { display:none !important; }
   };
 })();
 </script>
+
+<style id="school-button-sound-style">
+#schoolButtonSoundToggle{
+ position:fixed;right:12px;bottom:14px;z-index:2147483000;
+ border:0;border-radius:999px;padding:11px 15px;min-height:46px;
+ background:linear-gradient(135deg,#1f6f8b,#2c3e50);color:#fff;
+ font:800 13px inherit;box-shadow:0 5px 16px rgba(0,0,0,.22);
+ cursor:pointer;direction:rtl
+}
+@media(max-width:480px){#schoolButtonSoundToggle{right:8px;bottom:8px;padding:10px 12px;font-size:12px}}
+</style>
+<script id="school-button-sound-system">
+(function(){
+ 'use strict';
+ const KEY='school_button_sound_enabled_v1';
+ let enabled=true, audioContext=null;
+ try { const saved=localStorage.getItem(KEY); if(saved!==null) enabled=saved==='true'; } catch(e){}
+ function paint(){
+   const b=document.getElementById('schoolButtonSoundToggle');
+   if(!b)return;
+   b.textContent=enabled?'🔊 صوت الأزرار: يعمل':'🔇 صوت الأزرار: صامت';
+   b.setAttribute('aria-pressed',String(enabled));
+   b.title=enabled?'اضغط لتفعيل الوضع الصامت':'اضغط لتشغيل أصوات الأزرار';
+ }
+ function playClick(){
+   if(!enabled)return;
+   try{
+     const Ctx=window.AudioContext||window.webkitAudioContext;
+     if(!Ctx)return;
+     if(!audioContext)audioContext=new Ctx();
+     if(audioContext.state==='suspended')audioContext.resume();
+     const osc=audioContext.createOscillator(), gain=audioContext.createGain();
+     osc.type='sine'; osc.frequency.setValueAtTime(720,audioContext.currentTime);
+     osc.frequency.exponentialRampToValueAtTime(520,audioContext.currentTime+0.045);
+     gain.gain.setValueAtTime(0.0001,audioContext.currentTime);
+     gain.gain.exponentialRampToValueAtTime(0.075,audioContext.currentTime+0.006);
+     gain.gain.exponentialRampToValueAtTime(0.0001,audioContext.currentTime+0.065);
+     osc.connect(gain);gain.connect(audioContext.destination);
+     osc.start();osc.stop(audioContext.currentTime+0.07);
+   }catch(e){}
+ }
+ function init(){
+   if(document.getElementById('schoolButtonSoundToggle'))return;
+   const b=document.createElement('button');
+   b.id='schoolButtonSoundToggle';b.type='button';
+   b.addEventListener('click',function(){
+     enabled=!enabled;
+     try{localStorage.setItem(KEY,String(enabled));}catch(e){}
+     paint();
+     if(enabled)playClick();
+   });
+   document.body.appendChild(b);paint();
+   document.addEventListener('click',function(e){
+     const target=e.target && e.target.closest &&
+       e.target.closest('button, input[type="button"], input[type="submit"], .class-tab, .desk, .class-card-pro, [role="button"]');
+     if(!target || target.id==='schoolButtonSoundToggle' || target.disabled)return;
+     playClick();
+   },true);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+ else init();
+})();
+</script>
 </body>
 </html>
 
