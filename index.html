@@ -1623,6 +1623,14 @@ try { window.cloudOnlyStorage.clear(); } catch (e) {}
   try {
     firebase.initializeApp(firebaseConfig);
     firebaseDB = firebase.database();
+    // Ensure the admin UID registry exists on every app open without overwriting
+    // any previously approved manager UIDs. Realtime Database does not persist
+    // an empty object, so use a harmless metadata key when the path is missing.
+    firebaseDB.ref('systemControl/adminUIDs').transaction(current => {
+      return current === null ? { __initialized: true } : current;
+    }).catch(error => {
+      console.warn('Could not initialize systemControl/adminUIDs:', error);
+    });
     window.FirebaseCloud = {
       enabled: true,
       async load() {
