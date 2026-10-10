@@ -1442,6 +1442,7 @@ table td,table th { line-height:1.55; }
 <!-- Firebase Cloud Storage (Realtime Database) -->
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
 <script>
 /* CLOUD ONLY: يمنع النظام نهائياً من استخدام localStorage كمصدر بيانات. Firebase هو المصدر الوحيد. */
 const cloudOnlyStorage = {
@@ -2324,6 +2325,17 @@ header > div:first-child{
 
         <div id="loginCloudStatus" style="font-size:12px;text-align:center;color:#777;margin:8px 0 4px;">جاري الاتصال بالسحابة...</div>
         <button id="loginButton" onclick="performLogin()" disabled style="width: 100%; background: var(--success); padding: 10px; font-weight: bold; margin-top: 10px;">دخول للنظام</button>
+        <button type="button" id="showAdminEmailLoginButton" onclick="toggleAdminEmailLogin(true)" style="width:100%;background:#263b53;padding:10px;font-weight:bold;margin-top:8px;">👑 دخول المدير بالإيميل</button>
+        <div id="adminEmailLoginPanel" style="display:none;text-align:right;margin-top:12px;padding:12px;border:1px solid #d8e3e8;border-radius:10px;background:#f7fafc;">
+          <div style="font-weight:900;color:#263b53;margin-bottom:8px;text-align:center;">دخول مدير النظام</div>
+          <label for="adminEmailInput" style="display:block;font-size:12px;margin:7px 0 4px;">البريد الإلكتروني</label>
+          <input type="email" id="adminEmailInput" autocomplete="username" placeholder="admin@example.com" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') performAdminEmailLogin()">
+          <label for="adminEmailPasswordInput" style="display:block;font-size:12px;margin:8px 0 4px;">كلمة المرور</label>
+          <input type="password" id="adminEmailPasswordInput" autocomplete="current-password" placeholder="كلمة مرور حساب المدير" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') performAdminEmailLogin()">
+          <button type="button" id="adminEmailLoginButton" onclick="performAdminEmailLogin()" style="width:100%;background:#16803c;padding:10px;font-weight:bold;margin-top:10px;">تسجيل دخول المدير</button>
+          <button type="button" onclick="toggleAdminEmailLogin(false)" style="width:100%;background:#667788;padding:8px;margin-top:6px;">العودة إلى دخول الأكواد</button>
+          <div style="font-size:11px;color:#6b7280;line-height:1.7;margin-top:8px;">يتطلب هذا الحساب صلاحية مدير موثّقة من Firebase، وليس مجرد حساب بريد إلكتروني.</div>
+        </div>
     </div>
 </div>
 
@@ -3450,7 +3462,7 @@ header > div:first-child{
 <div id="liveAnnouncementContainer"></div>
 
 <script>
-    const DEFAULT_ADMIN_LOGIN_CODE = '1234';
+    const DEFAULT_ADMIN_LOGIN_CODE = '1234'; // قيمة قديمة للتوافق مع بيانات النظام؛ لم تعد مسار دخول المدير الأساسي.
     let adminCredentials = { name: 'مدير النظام', password: DEFAULT_ADMIN_LOGIN_CODE };
     let printManagerName = String(cloudOnlyStorage.getItem('printManagerName') || '').trim();
     let printSchoolName = String(cloudOnlyStorage.getItem('printSchoolName') || '').trim();
@@ -5066,15 +5078,78 @@ function updateCloudStatus(text, color) {
         return Math.max(0,currentUser.parentSessionExpiresAt-Date.now());
     }
 
+    function toggleAdminEmailLogin(show) {
+        const panel = document.getElementById('adminEmailLoginPanel');
+        const codeInput = document.getElementById('loginCodeInput');
+        const codeButton = document.getElementById('loginButton');
+        const adminButton = document.getElementById('showAdminEmailLoginButton');
+        if (panel) panel.style.display = show ? 'block' : 'none';
+        if (codeInput) codeInput.closest('.form-group')?.style && (codeInput.closest('.form-group').style.display = show ? 'none' : '');
+        const remember = document.getElementById('rememberLoginCode')?.closest('label');
+        if (remember) remember.style.display = show ? 'none' : 'flex';
+        const showCode = document.getElementById('showLoginCode')?.closest('label');
+        if (showCode) showCode.style.display = show ? 'none' : 'flex';
+        if (codeButton) codeButton.style.display = show ? 'none' : 'block';
+        if (adminButton) adminButton.style.display = show ? 'none' : 'block';
+        if (show) setTimeout(() => document.getElementById('adminEmailInput')?.focus(), 50);
+        else setTimeout(() => codeInput?.focus(), 50);
+    }
+
+    async function performAdminEmailLogin() {
+        const email = String(document.getElementById('adminEmailInput')?.value || '').trim();
+        const password = String(document.getElementById('adminEmailPasswordInput')?.value || '');
+        const button = document.getElementById('adminEmailLoginButton');
+        if (!email || !password) { alert('أدخل إيميل المدير وكلمة المرور.'); return; }
+        if (!window.firebase?.auth) { alert('خدمة Firebase Authentication غير محمّلة. تحقق من الاتصال بالإنترنت.'); return; }
+        if (button) { button.disabled = true; button.textContent = 'جارٍ التحقق...'; }
+        try {
+            const credential = await firebase.auth().signInWithEmailAndPassword(email, password);
+            const tokenResult = await credential.user.getIdTokenResult(true);
+            const hasTrustedAdminClaim = tokenResult?.claims?.admin === true;
+            let isApprovedAdminUID = false;
+            // Free-plan alternative: an owner can approve an Auth user's UID in
+            // Realtime Database at systemControl/adminUIDs/<UID> = true.
+            try {
+                if (typeof firebaseDB !== 'undefined' && firebaseDB) {
+                    const adminUIDSnap = await firebaseDB.ref('systemControl/adminUIDs/' + credential.user.uid).once('value');
+                    const adminUIDValue = adminUIDSnap.val();
+                    isApprovedAdminUID = adminUIDValue === true || adminUIDValue === 'true' || (adminUIDValue && adminUIDValue.enabled === true);
+                }
+            } catch (approvalReadError) {
+                console.warn('Could not check approved manager UID list:', approvalReadError);
+            }
+            if (!hasTrustedAdminClaim && !isApprovedAdminUID) {
+                await firebase.auth().signOut();
+                alert('تم التحقق من الإيميل وكلمة المرور، لكن هذا الحساب غير مضاف إلى قائمة المدراء المعتمدين. أضف UID الحساب في Realtime Database ضمن systemControl/adminUIDs واجعل قيمته true، ثم حاول الدخول مجددًا.');
+                return;
+            }
+            currentUser = { role: 'admin', name: adminCredentials.name || 'مدير النظام', isPrimaryAdmin: true, firebaseUid: credential.user.uid, authEmail: credential.user.email || email };
+            APP_SECURITY.failedAttempts = 0;
+            APP_SECURITY.lockedUntil = 0;
+            applyUserPermissions();
+            const overlay = document.getElementById('loginOverlay');
+            if (overlay) overlay.style.display = 'none';
+            if (typeof openAdminMonitorMessagesPanel === 'function') setTimeout(openAdminMonitorMessagesPanel, 350);
+        } catch (error) {
+            console.error('Admin Firebase Authentication failed:', error);
+            const code = String(error?.code || '');
+            if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) alert('الإيميل أو كلمة المرور غير صحيحة.');
+            else if (code.includes('too-many-requests')) alert('محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.');
+            else alert('تعذر تسجيل دخول المدير إلى Firebase. تحقق من الاتصال وإعدادات المشروع.');
+        } finally {
+            if (button) { button.disabled = false; button.textContent = 'تسجيل دخول المدير'; }
+        }
+    }
+
     async function performLogin() {
         const enteredCode = String(document.getElementById('loginCodeInput')?.value || '').trim();
         if (!enteredCode) { alert('الرجاء إدخال كود الدخول.'); return; }
         if (loginIsLocked()) return;
-        // المدير: الكود الشخصي المحفوظ في Firebase.
-        if (enteredCode === String(adminCredentials.password || DEFAULT_ADMIN_LOGIN_CODE).trim()) {
-            currentUser = { role: 'admin', name: adminCredentials.name || 'مدير النظام', isPrimaryAdmin: true };
+        // دخول المدير الأساسي أصبح عبر Firebase Authentication فقط؛ لا تمنح أكواد المدير القديمة صلاحية الدخول.
+        if (false) {
+            currentUser = null;
         } else {
-            // المعاون: يمتلك نفس صلاحيات المدير داخل النظام.
+            // المعاون: يمتلك الصلاحيات المحددة له داخل النظام عبر كوده الحالي.
             const assistant = assistantsData.find(a => String(a.code || '').trim() === enteredCode);
             if (assistant) {
                 currentUser = {
@@ -5294,6 +5369,9 @@ function updateCloudStatus(text, color) {
             console.error('Logout cloud save failed:', e);
         }
 
+        if (currentUser?.role === 'admin' && currentUser?.firebaseUid && window.firebase?.auth) {
+            try { await firebase.auth().signOut(); } catch (authLogoutError) { console.warn('Firebase Auth sign-out failed:', authLogoutError); }
+        }
         cloudOnlyStorage.removeItem('currentUser');
         currentUser = null;
         const codeInput = document.getElementById('loginCodeInput');
