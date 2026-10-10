@@ -2384,6 +2384,7 @@ header > div:first-child{
         <div style="font-size:14px;font-weight:900;color:#34495e;margin-bottom:8px;">👥 الكادر التدريسي والإدارة</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button type="button" onclick="openTeachersModal()" style="background:var(--blue);">👨‍🏫 المعلمون</button>
+          <button type="button" id="btnTeacherWorkActivity" onclick="openTeacherWorkActivityModal()" style="background:linear-gradient(135deg,#0f766e,#14b8a6);font-weight:900">📊 أكثر المعلمين عملاً</button>
           <button type="button" id="btnTeacherAttendanceInbox" onclick="openTeacherAttendanceInbox()" style="background:#b45309;color:#fff;display:none;">🔔 بصمة حضور المعلمين <span id="teacherAttendancePendingCount" style="background:#fff;color:#b45309;border-radius:20px;padding:1px 6px;margin-right:4px">0</span></button>
           <button type="button" onclick="openAdminManagementModal()" id="staffAdminManagementButton" style="background:var(--orange);">⚙️ إدارة المدير والمعاون</button>
           <button onclick="openSystemGradesModal()" id="btnSystemGradesNav" style="background: var(--success); display:none;">📚 الدرجات</button>
@@ -2595,7 +2596,7 @@ header > div:first-child{
     <div class="modal-content large">
         <div class="pro-modal-head">
             <h3 class="pro-modal-title"><span class="title-icon">👨‍🏫</span>إدارة المعلمين</h3>
-            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo)">📋 سجل غياب معلم</button><button type="button" onclick="openTeacherWorkActivityModal()" style="background:linear-gradient(135deg,#0f766e,#14b8a6);font-weight:900">📊 أكثر المعلمين عملاً</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><button type="button" onclick="openTeachersAbsenceModal()" style="background:var(--indigo)">📋 سجل غياب معلم</button><button onclick="closeModal('teachersModal')" class="pro-close">إغلاق ✕</button></div>
         </div>
         <div id="addTeacherSection" class="pro-form-panel">
             <div class="pro-form-title">➕ إضافة معلم وتحديد الصف المسموح</div>
@@ -4995,6 +4996,12 @@ function updateCloudStatus(text, color) {
                 // المعلم: البحث عن الكود المخصص له.
                 const teacherObj = teachersData.find(t => String(t.password || '').trim() === enteredCode);
                 if (teacherObj) {
+                    if (teacherObj.suspended === true) {
+                        currentUser = null;
+                        const managerMessage = String(teacherObj.suspensionMessage || 'يرجى مراجعة إدارة المدرسة قبل الدخول إلى النظام.');
+                        alert('⛔ تم تعليق دخولك إلى النظام من قبل المدير.\n\nرسالة المدير: ' + managerMessage);
+                        return;
+                    }
                     beginTeacherSpecialtyLogin(teacherObj, enteredCode);
                     return;
                 } else {
@@ -6459,11 +6466,11 @@ function updateCloudStatus(text, color) {
         <div class="teacher-detail-grid">
           <div class="teacher-detail-info"><small>الاختصاص / الدروس</small><strong>${escapeGlobalSearchHTML(getTeacherSpecialties(t).join('، ') || 'غير محدد')}</strong></div>
           <div class="teacher-detail-info"><small>الصفوف المسموحة</small><strong>${escapeGlobalSearchHTML(assigned.join('، ') || 'غير محدد')}</strong></div>
-          ${sensitive ? `<div class="teacher-detail-info"><small>رقم الهاتف</small><strong>${t.phone && t.phone !== 'غير متوفر' ? `<a class="call-link" href="tel:${escapeGlobalSearchHTML(t.phone)}">${escapeGlobalSearchHTML(t.phone)}</a>` : 'غير متوفر'}</strong></div><div class="teacher-detail-info"><small>العمر</small><strong>${escapeGlobalSearchHTML(t.age || '—')}</strong></div><div class="teacher-detail-info"><small>كود الدخول</small><strong class="teacher-code">${escapeGlobalSearchHTML(indexCode)}</strong></div>` : ''}
+          ${sensitive ? `<div class="teacher-detail-info"><small>رقم الهاتف</small><strong>${t.phone && t.phone !== 'غير متوفر' ? `<a class="call-link" href="tel:${escapeGlobalSearchHTML(t.phone)}">${escapeGlobalSearchHTML(t.phone)}</a>` : 'غير متوفر'}</strong></div><div class="teacher-detail-info"><small>العمر</small><strong>${escapeGlobalSearchHTML(t.age || '—')}</strong></div><div class="teacher-detail-info"><small>كود الدخول</small><strong class="teacher-code">${escapeGlobalSearchHTML(indexCode)}</strong><button type="button" onclick="window.toggleTeacherSuspension(${index})" style="margin-top:8px;background:${t.suspended?'#15803d':'#b91c1c'};width:100%">${t.suspended?'🔓 رفع التعليق':'⛔ تعليق هذا المعلم'}</button></div>` : ''}
         </div>
         <h4 class="teacher-detail-section-title">الصفوف والدروس المسموحة</h4>
         <div class="teacher-detail-classes">${classDetails || '<div class="pro-empty">لم يتم تحديد صفوف لهذا المعلم.</div>'}</div>
-        ${sensitive ? `<div class="teacher-card-actions teacher-detail-actions"><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ تعديل الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف المعلم</button></div>` : ''}`;
+        ${sensitive ? `<div class="teacher-card-actions teacher-detail-actions"><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ تعديل الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف المعلم</button></div>${t.suspended ? `<div style="margin-top:10px;padding:10px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412"><b>⛔ هذا المعلم معلّق حالياً</b><div>رسالة المدير: ${escapeGlobalSearchHTML(t.suspensionMessage||'يرجى مراجعة إدارة المدرسة.')}</div></div>` : ''}` : ''}`;
     }
     function closeTeacherDetails() {
         const panel = document.getElementById('teacherDetailsPanel');
@@ -12954,7 +12961,7 @@ body.parent-only-mode header { display:none !important; }
       <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0"><label style="display:grid;gap:5px;font-weight:800">اختر الشهر للإحصائية الشهرية<input id="teacherWorkActivityMonth" type="month" value="${monthDefault}" style="padding:9px;border:1px solid #cbd5e1;border-radius:9px"></label><button type="button" id="teacherWorkActivityRefresh" style="background:#0f766e">🔄 تحديث التقرير</button></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button type="button" data-work-tab="monthly" style="background:#0f766e">🏆 النشاط الشهري</button><button type="button" data-work-tab="daily" style="background:#334155">🕒 نشاط اليوم بالتوقيت</button></div>
       <section id="teacherWorkMonthlyPane"><div id="teacherWorkMonthlyBody"></div></section>
-      <section id="teacherWorkDailyPane" style="display:none"><div style="font-weight:900;margin:6px 0 10px">نشاط المعلمين المسجل اليوم: ${now.toLocaleDateString('ar-IQ')}</div><div id="teacherWorkDailyBody"></div></section>
+      <section id="teacherWorkDailyPane" style="display:none"><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:8px 0 12px"><label style="display:grid;gap:5px;font-weight:900">اختر تاريخ النشاط الذي تريد مشاهدته<input id="teacherWorkActivityDate" type="date" value="${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}" style="padding:9px;border:1px solid #cbd5e1;border-radius:9px"></label><button type="button" id="teacherWorkActivityDateRefresh" style="background:#0f766e">🔎 عرض هذا التاريخ</button><span id="teacherWorkActivityDateLabel" style="font-weight:800;color:#475569">التاريخ المحدد: ${now.toLocaleDateString('ar-IQ')}</span></div><div id="teacherWorkDailyBody"></div></section>
     </div>`;
     document.body.appendChild(modal);
     const monthInput=modal.querySelector('#teacherWorkActivityMonth'),monthlyPane=modal.querySelector('#teacherWorkMonthlyPane'),dailyPane=modal.querySelector('#teacherWorkDailyPane');
@@ -12991,13 +12998,29 @@ body.parent-only-mode header { display:none !important; }
       modal.querySelector('#teacherWorkMonthlyBody').innerHTML=rows.length?`<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:650px"><thead><tr style="background:#ecfdf5"><th style="padding:10px;border:1px solid #d1fae5">الترتيب</th><th style="padding:10px;border:1px solid #d1fae5">المعلم</th><th style="padding:10px;border:1px solid #d1fae5">الدرجات</th><th style="padding:10px;border:1px solid #d1fae5">الواجبات</th><th style="padding:10px;border:1px solid #d1fae5">تفاعلات الرسائل</th><th style="padding:10px;border:1px solid #d1fae5">مجموع النشاط</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${i+1}</td><td style="padding:9px;border:1px solid #e2e8f0;font-weight:800">${esc(r.teacherName)}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${r.grades}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${r.homework}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center">${r.messages}</td><td style="padding:9px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#0f766e">${r.total}</td></tr>`).join('')}</tbody></table></div><p style="font-size:12px;color:#64748b">عدد المعلمين الذين لديهم نشاط مسجل: ${rows.length} — الفترة: ${esc(value)}</p>`:'<div style="padding:20px;text-align:center;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b">لا توجد أنشطة مسجلة للمعلمين في الشهر المحدد.</div>';
     }
     function renderDaily(){
-      const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),end=start+86400000;
-      const all=collectActivities().filter(a=>a.ts>=start&&a.ts<end).sort((a,b)=>b.ts-a.ts);
-      modal.querySelector('#teacherWorkDailyBody').innerHTML=all.length?all.map(a=>`<article style="border:1px solid #dbe5ec;border-right:5px solid ${a.type==='grade'?'#2563eb':a.type==='homework'?'#d97706':'#7c3aed'};border-radius:12px;padding:12px;margin:8px 0;background:#fff"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>👨‍🏫 ${esc(a.teacherName)}</b><span style="font-size:12px;color:#475569">🕒 ${esc(fmtTime(a.stamp))}</span></div><div style="font-weight:900;margin:7px 0;color:#0f766e">${esc(a.label)}</div><div style="font-size:13px;line-height:1.8">🏫 الصف: ${esc(a.className)}${a.subject?' — المادة: '+esc(a.subject):''}<br>${esc(a.detail)}</div></article>`).join(''):'<div style="padding:20px;text-align:center;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b">لا توجد درجات أو واجبات أو تفاعلات رسائل مسجلة اليوم.</div>';
+      const dateInput=modal.querySelector('#teacherWorkActivityDate');
+      const selected=dateInput?.value||new Date().toISOString().slice(0,10);
+      const [yy,mm,dd]=selected.split('-').map(Number);
+      const start=yy&&mm&&dd?new Date(yy,mm-1,dd).getTime():NaN;
+      const end=start+86400000;
+      const label=modal.querySelector('#teacherWorkActivityDateLabel');
+      if(label){const dt=new Date(yy,mm-1,dd);label.textContent='التاريخ المحدد: '+(Number.isFinite(dt.getTime())?dt.toLocaleDateString('ar-IQ'):selected);}
+      const all=collectActivities().filter(a=>Number.isFinite(start)&&a.ts>=start&&a.ts<end).sort((a,b)=>b.ts-a.ts);
+      modal.querySelector('#teacherWorkDailyBody').innerHTML=all.length?all.map(a=>`<article style="border:1px solid #dbe5ec;border-right:5px solid ${a.type==='grade'?'#2563eb':a.type==='homework'?'#d97706':'#7c3aed'};border-radius:12px;padding:12px;margin:8px 0;background:#fff"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>👨‍🏫 ${esc(a.teacherName)}</b><span style="font-size:12px;color:#475569">🕒 ${esc(fmtTime(a.stamp))}</span></div><div style="font-weight:900;margin:7px 0;color:#0f766e">${esc(a.label)}</div><div style="font-size:13px;line-height:1.8">🏫 الصف: ${esc(a.className)}${a.subject?' — المادة: '+esc(a.subject):''}<br>${esc(a.detail)}</div></article>`).join(''):'<div style="padding:20px;text-align:center;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b">لا توجد أنشطة درجات أو واجبات أو تفاعلات رسائل مسجلة في التاريخ المحدد.</div>';
     }
     modal.querySelectorAll('[data-work-tab]').forEach(btn=>btn.addEventListener('click',()=>{const daily=btn.dataset.workTab==='daily';monthlyPane.style.display=daily?'none':'';dailyPane.style.display=daily?'':'none';modal.querySelectorAll('[data-work-tab]').forEach(b=>b.style.background=b===btn?'#0f766e':'#334155');if(daily)renderDaily();else renderMonthly();}));
     monthInput.addEventListener('change',renderMonthly);modal.querySelector('#teacherWorkActivityRefresh').addEventListener('click',()=>{renderMonthly();renderDaily();});
+    modal.querySelector('#teacherWorkActivityDateRefresh')?.addEventListener('click',renderDaily);
+    modal.querySelector('#teacherWorkActivityDate')?.addEventListener('change',renderDaily);
     renderMonthly();renderDaily();
+  };
+  window.toggleTeacherSuspension=function(index){
+    if(!currentUser||currentUser.role!=='admin'||(typeof isPrimaryAdminUser==='function'&&!isPrimaryAdminUser())){alert('تعليق المعلم ورفع التعليق من صلاحية المدير الرئيسي فقط.');return;}
+    const t=(Array.isArray(teachersData)?teachersData:[])[Number(index)];if(!t)return;
+    if(t.suspended===true){if(!confirm(`هل تريد رفع التعليق عن المعلم ${t.name||''} والسماح له بالدخول مجدداً؟`))return;t.suspended=false;t.suspensionMessage='';t.suspensionUpdatedAt=new Date().toISOString();t.suspensionUpdatedBy=String(currentUser.name||'المدير');try{saveData()}catch(e){};try{if(typeof renderTeachersTable==='function')renderTeachersTable();if(typeof openTeacherDetails==='function')openTeacherDetails(Number(index))}catch(e){};alert('تم رفع التعليق، ويمكن للمعلم الدخول مجدداً.');return;}
+    const message=prompt(`اكتب رسالة المدير التي ستظهر للمعلم ${t.name||''} عند محاولة الدخول:`,`يرجى مراجعة إدارة المدرسة قبل الدخول إلى النظام.`);if(message===null)return;if(!message.trim()){alert('يجب كتابة رسالة للمعلم قبل تعليق الدخول.');return;}
+    if(!confirm(`تأكيد تعليق دخول المعلم ${t.name||''}؟ لن يستطيع الدخول حتى ترفع التعليق.`))return;
+    t.suspended=true;t.suspensionMessage=message.trim();t.suspensionUpdatedAt=new Date().toISOString();t.suspensionUpdatedBy=String(currentUser.name||'المدير');try{saveData()}catch(e){};try{if(typeof renderTeachersTable==='function')renderTeachersTable();if(typeof openTeacherDetails==='function')openTeacherDetails(Number(index))}catch(e){};alert('تم تعليق دخول المعلم وحفظ رسالة المدير.');
   };
   function updatePendingCount(){const n=(teacherAttendanceRequestsData||[]).filter(r=>r.status==='pending').length;const b=document.getElementById('teacherAttendancePendingCount');if(b)b.textContent=String(n);const btn=document.getElementById('btnTeacherAttendanceInbox');if(btn)btn.style.display=currentUser?.role==='admin'?'inline-flex':'none';}
   window.teacherHomeShowClasses=function(){const nav=document.getElementById('classesNav');if(nav){nav.style.display='';nav.scrollIntoView({behavior:'smooth',block:'start'})}const c=document.getElementById('classContent');if(c)c.style.display='none';currentClassIndex=null;};
