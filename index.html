@@ -13994,6 +13994,154 @@ body.parent-only-mode header { display:none !important; }
 })();
 </script>
 </body>
+
+<script>
+/* شاشة توقف المدير بعد 3 دقائق من عدم النشاط */
+(function(){
+  const IDLE_LIMIT = 3 * 60 * 1000;
+  let idleTimer = null;
+  let locked = false;
+  let previousFocus = null;
+
+  function managerIsActive(){
+    try {
+      return !!(typeof currentUser !== 'undefined' &&
+        currentUser && currentUser.role === 'admin' &&
+        currentUser.isPrimaryAdmin === true &&
+        !(document.getElementById('loginOverlay') &&
+          getComputedStyle(document.getElementById('loginOverlay')).display !== 'none'));
+    } catch(e){ return false; }
+  }
+
+  function createScreensaver(){
+    if(document.getElementById('managerIdleScreensaver')) return;
+    const style = document.createElement('style');
+    style.id = 'managerIdleScreensaverStyles';
+    style.textContent = `
+      #managerIdleScreensaver{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;overflow:hidden;
+        background:radial-gradient(circle at 20% 15%,#263b70 0,#111827 42%,#050914 100%);font-family:Tahoma,Arial,sans-serif;direction:rtl}
+      #managerIdleScreensaver.is-visible{display:flex}
+      #managerIdleScreensaver .idle-glow{position:absolute;inset:-30%;background:conic-gradient(from 0deg,transparent,rgba(90,220,255,.12),transparent,rgba(255,90,190,.13),transparent);animation:idleGlowSpin 18s linear infinite}
+      #managerIdleScreensaver .idle-content{position:relative;z-index:1;width:min(94vw,1200px);text-align:center;padding:clamp(18px,4vw,56px);box-sizing:border-box}
+      #managerIdleScreensaver .idle-title{font-size:clamp(35px,8vw,100px);font-weight:1000;line-height:1.65;letter-spacing:1px;margin:0 auto 24px;
+        color:#fff;background:linear-gradient(90deg,#ffcf4a,#ff6b9d,#8b8cff,#4de4d1,#ffcf4a);background-size:300% 100%;
+        -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:idleColors 7s linear infinite;
+        filter:drop-shadow(0 0 18px rgba(105,220,255,.24))}
+      #managerIdleScreensaver .idle-subtitle{font-size:clamp(13px,2vw,21px);color:#cbd5e1;letter-spacing:2px;margin-top:6px}
+      #managerIdleScreensaver .idle-writing-line{height:5px;width:min(72%,620px);margin:25px auto 0;border-radius:9px;background:linear-gradient(90deg,#ffcf4a,#ff6b9d,#8b8cff,#4de4d1);background-size:250% 100%;animation:idleColors 5s linear infinite}
+      #managerIdleScreensaver .idle-pencil{position:absolute;z-index:2;top:calc(50% + clamp(65px,13vw,140px));left:14%;font-size:clamp(32px,6vw,64px);transform:rotate(-28deg);filter:drop-shadow(0 7px 7px #0008);animation:idlePencilWrite 5s ease-in-out infinite alternate}
+      #managerIdleScreensaver .idle-hint{margin-top:clamp(35px,7vh,75px);font-size:clamp(12px,1.8vw,17px);color:#e2e8f0;opacity:.78}
+      #managerIdleScreensaver .idle-unlock{position:absolute;inset:0;z-index:5;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.82);backdrop-filter:blur(10px);padding:20px;box-sizing:border-box}
+      #managerIdleScreensaver.unlocking .idle-unlock{display:flex}
+      #managerIdleScreensaver .idle-unlock-card{width:min(92vw,430px);padding:clamp(22px,5vw,36px);border-radius:24px;background:#fff;color:#172033;box-shadow:0 24px 90px #0008;text-align:center;box-sizing:border-box}
+      #managerIdleScreensaver .idle-unlock-card h2{margin:0 0 10px;font-size:clamp(22px,5vw,30px);color:#172554}
+      #managerIdleScreensaver .idle-unlock-card p{margin:0 0 20px;color:#64748b;font-size:14px}
+      #managerIdleScreensaver .idle-password{width:100%;box-sizing:border-box;padding:14px 15px;border:2px solid #cbd5e1;border-radius:12px;font-size:18px;text-align:center;outline:none}
+      #managerIdleScreensaver .idle-password:focus{border-color:#2563eb;box-shadow:0 0 0 3px #2563eb22}
+      #managerIdleScreensaver .idle-unlock-btn{width:100%;margin-top:12px;padding:13px;border:0;border-radius:12px;background:linear-gradient(90deg,#2563eb,#7c3aed);color:#fff;font-size:16px;font-weight:900;cursor:pointer}
+      #managerIdleScreensaver .idle-error{min-height:22px;color:#dc2626;font-size:13px;margin-top:10px}
+      @keyframes idleColors{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+      @keyframes idleGlowSpin{to{transform:rotate(360deg)}}
+      @keyframes idlePencilWrite{0%{left:15%;transform:translateY(0) rotate(-28deg)}50%{left:48%;transform:translateY(-13px) rotate(-18deg)}100%{left:80%;transform:translateY(0) rotate(-30deg)}}
+      @media(prefers-reduced-motion:reduce){#managerIdleScreensaver *{animation-duration:30s!important}}
+    `;
+    document.head.appendChild(style);
+
+    const screen = document.createElement('div');
+    screen.id = 'managerIdleScreensaver';
+    screen.setAttribute('aria-label','شاشة توقف المدير');
+    screen.innerHTML = `
+      <div class="idle-glow"></div>
+      <div class="idle-content">
+        <div class="idle-title">العلم نور<br>والجهل ظلام</div>
+        <div class="idle-writing-line"></div>
+        <div class="idle-subtitle">بالعلم نبني المستقبل</div>
+        <div class="idle-hint">تحرك أو اضغط أي مفتاح للمتابعة</div>
+      </div>
+      <div class="idle-pencil" aria-hidden="true">✏️</div>
+      <div class="idle-unlock">
+        <form class="idle-unlock-card" id="managerIdleUnlockForm">
+          <div style="font-size:38px;margin-bottom:8px">🔐</div>
+          <h2>تم قفل شاشة المدير</h2>
+          <p>أدخل الرمز السري للمدير للعودة إلى النظام</p>
+          <input class="idle-password" id="managerIdlePassword" type="password" autocomplete="current-password" placeholder="الرمز السري للمدير" required>
+          <button class="idle-unlock-btn" type="submit">فتح النظام</button>
+          <div class="idle-error" id="managerIdleError" role="alert"></div>
+        </form>
+      </div>`;
+    document.body.appendChild(screen);
+
+    screen.addEventListener('pointerdown', function(){
+      if(locked) showUnlock();
+    });
+    screen.addEventListener('keydown', function(e){
+      if(locked && e.key === 'Escape'){ e.preventDefault(); showUnlock(); }
+    });
+    document.getElementById('managerIdleUnlockForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const entered = String(document.getElementById('managerIdlePassword').value || '').trim();
+      const expected = String((typeof adminCredentials !== 'undefined' && adminCredentials && adminCredentials.password) || '').trim();
+      if(entered && expected && entered === expected){
+        locked = false;
+        screen.classList.remove('is-visible','unlocking');
+        document.getElementById('managerIdlePassword').value = '';
+        document.getElementById('managerIdleError').textContent = '';
+        resetIdleTimer();
+      }else{
+        document.getElementById('managerIdleError').textContent = 'الرمز السري غير صحيح. حاول مرة أخرى.';
+        document.getElementById('managerIdlePassword').value = '';
+        document.getElementById('managerIdlePassword').focus();
+      }
+    });
+  }
+
+  function showUnlock(){
+    const screen = document.getElementById('managerIdleScreensaver');
+    if(!screen) return;
+    screen.classList.add('unlocking');
+    const input = document.getElementById('managerIdlePassword');
+    if(input) setTimeout(()=>input.focus(),50);
+  }
+  function lockScreen(){
+    if(locked || !managerIsActive()) return;
+    createScreensaver();
+    locked = true;
+    previousFocus = document.activeElement;
+    const screen = document.getElementById('managerIdleScreensaver');
+    screen.classList.add('is-visible');
+    screen.classList.remove('unlocking');
+  }
+  function resetIdleTimer(){
+    if(idleTimer) clearTimeout(idleTimer);
+    if(locked || !managerIsActive()) return;
+    idleTimer = setTimeout(lockScreen, IDLE_LIMIT);
+  }
+  function activity(){
+    if(locked){
+      showUnlock();
+      return;
+    }
+    resetIdleTimer();
+  }
+  ['pointerdown','pointermove','keydown','scroll','touchstart','click'].forEach(type=>{
+    document.addEventListener(type, activity, {capture:true, passive:true});
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden && !locked) resetIdleTimer();
+  });
+  // بدء احتساب الخمول بعد تحميل الواجهة وتسجيل الدخول.
+  setInterval(()=>{
+    if(!locked && managerIsActive() && !idleTimer) resetIdleTimer();
+    if(!managerIsActive() && idleTimer){clearTimeout(idleTimer);idleTimer=null;}
+  },1000);
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{createScreensaver();resetIdleTimer();});
+  }else{
+    createScreensaver();resetIdleTimer();
+  }
+})();
+</script>
+
 </html>
 
 
