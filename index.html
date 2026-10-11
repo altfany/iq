@@ -2510,11 +2510,11 @@ tbody tr:hover{background:#eef6fc}
 
         <div id="loginCloudStatus" style="font-size:12px;text-align:center;color:#777;margin:8px 0 4px;">جاري الاتصال بالسحابة...</div>
         <button id="loginButton" onclick="performLogin()" disabled style="width: 100%; background: var(--success); padding: 10px; font-weight: bold; margin-top: 10px;">دخول للنظام</button>
-        <button type="button" id="showAdminEmailLoginButton" onclick="toggleAdminEmailLogin(true)" style="width:100%;background:#263b53;padding:10px;font-weight:bold;margin-top:8px;">👑 دخول المدير بالإيميل</button>
+        <button type="button" id="showAdminEmailLoginButton" onclick="toggleAdminEmailLogin(true)" style="width:100%;background:#263b53;padding:10px;font-weight:bold;margin-top:8px;">👑 المدير</button>
         <button type="button" id="showAlternateAdminLoginButton" onclick="toggleAlternateAdminLogin(true)" style="display:block;margin:4px auto 0;background:#d62828;color:#fff;border:0;border-radius:4px;padding:2px 7px;font-size:9px;line-height:1.2;min-height:16px;width:auto;cursor:pointer;">****</button>
         <div id="alternateAdminLoginPanel" style="display:none;text-align:right;margin-top:12px;padding:12px;border:1px solid #f0b8b8;border-radius:10px;background:#fff8f8;">
-          <div style="font-weight:900;color:#b91c1c;margin-bottom:8px;text-align:center;">دخول مدير معتمد</div>
-          <label for="alternateAdminEmailInput" style="display:block;font-size:12px;margin:7px 0 4px;">الإيميل المسجّل في Firebase Authentication</label>
+          <div style="font-weight:900;color:#b91c1c;margin-bottom:8px;text-align:center;"></div>
+          <label for="alternateAdminEmailInput" style="display:block;font-size:12px;margin:7px 0 4px;"></label>
           <input type="email" id="alternateAdminEmailInput" autocomplete="username" placeholder="أدخل الإيميل" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') document.getElementById('alternateAdminPasswordInput')?.focus()">
           <label for="alternateAdminPasswordInput" style="display:block;font-size:12px;margin:7px 0 4px;">كلمة المرور</label>
           <input type="password" id="alternateAdminPasswordInput" autocomplete="current-password" placeholder="كلمة مرور حساب Authentication" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" onkeydown="if(event.key==='Enter') performAlternateAdminLogin()">
@@ -2534,7 +2534,7 @@ tbody tr:hover{background:#eef6fc}
           <input type="password" id="adminEmailPasswordInput" autocomplete="current-password" placeholder="كلمة مرور حساب المدير" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5df;border-radius:7px;" oninput="saveAdminPasswordLocally()" onkeydown="if(event.key==='Enter') performAdminEmailLogin()">
           <button type="button" id="adminEmailLoginButton" onclick="performAdminEmailLogin()" style="width:100%;background:#16803c;padding:10px;font-weight:bold;margin-top:10px;">تسجيل دخول المدير</button>
           <button type="button" onclick="toggleAdminEmailLogin(false)" style="width:100%;background:#667788;padding:8px;margin-top:6px;">العودة إلى دخول الأكواد</button>
-          <div style="font-size:11px;color:#6b7280;line-height:1.7;margin-top:8px;">يتطلب هذا الحساب صلاحية مدير موثّقة من Firebase، وليس مجرد حساب بريد إلكتروني.</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.7;margin-top:8px;"></div>
         </div>
     </div>
 </div>
@@ -2881,8 +2881,8 @@ tbody tr:hover{background:#eef6fc}
             <p style="font-size:11px;color:#718294;margin-top:0;">الكود الجديد سيصبح كود الدخول الخاص بالحساب الحالي.</p>
             <div class="pro-form-grid">
                 <div class="form-group pro-field"><label>المستخدم الحالي</label><input id="adminCurrentUserName" readonly></div>
-                <div class="form-group pro-field"><label>اسم المدير للطباعة على النتائج</label><input type="text" id="printManagerNameInput" placeholder="مثال: الأستاذ أحمد"></div>
-                <div class="form-group pro-field"><label>اسم المدرسة للطباعة على النتائج</label><input type="text" id="printSchoolNameInput" placeholder="مثال: مدرسة التسامي"></div>
+                <div class="form-group pro-field"><label>اسم المدير للطباعة على النتائج</label><input type="text" id="printManagerNameInput" placeholder="مثال: الأستاذ "></div>
+                <div class="form-group pro-field"><label>اسم المدرسة للطباعة على النتائج</label><input type="text" id="printSchoolNameInput" placeholder="مثال: مدرسة "></div>
                 <div class="form-group pro-field"><label>السنة الدراسية — من سنة</label><input type="number" id="studyYearFromInput" min="2000" max="2100" placeholder="2025"></div>
                 <div class="form-group pro-field"><label>السنة الدراسية — إلى سنة</label><input type="number" id="studyYearToInput" min="2000" max="2100" placeholder="2026"></div>
                 <div class="form-group pro-field"><label>الكود الجديد</label><input type="password" id="adminNewPasswordInput" autocomplete="new-password" placeholder="مثال: 5678"></div>
