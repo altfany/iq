@@ -6184,7 +6184,22 @@ function updateCloudStatus(text, color) {
         renderAnnouncementsList();
         updateGeneralAnnouncementIndicators();
     }
+    function openParentAnnouncementsModal(){
+        if(!currentUser || currentUser.role!=='parent') return;
+        const modal=document.getElementById('announcementsModal');
+        if(!modal){ alert('تعذر فتح مركز التنبيهات. يرجى تحديث الصفحة وإعادة المحاولة.'); return; }
+        currentAnnouncementTab='parentInbox';
+        modal.style.display='flex'; modal.style.zIndex='100250'; modal.style.position='fixed';
+        const adminPanel=document.getElementById('announcementAdminPanel'); if(adminPanel)adminPanel.style.display='none';
+        const parentsTab=document.getElementById('annTabParents'); if(parentsTab)parentsTab.style.display='none';
+        const teachersTab=document.getElementById('annTabTeachers'); if(teachersTab)teachersTab.style.display='none';
+        const generalTab=document.getElementById('annTabGeneral'); if(generalTab){generalTab.style.display='inline-flex';generalTab.classList.add('active');}
+        renderAnnouncementsList(); updateGeneralAnnouncementIndicators();
+    }
+    window.openParentAnnouncementsModal=openParentAnnouncementsModal;
+
     function switchAnnouncementTab(tab){
+        if(currentUser?.role==='parent' && tab==='general') tab='parentInbox';
         currentAnnouncementTab=tab;
         const t=document.getElementById('annTabTeachers'), p=document.getElementById('annTabParents'), g=document.getElementById('annTabGeneral');
         if(t)t.classList.toggle('active',tab==='teachers');
@@ -6364,6 +6379,8 @@ function updateCloudStatus(text, color) {
         let list;
         if(currentUser.role==='admin'){
             list=announcementsData.filter(a=> currentAnnouncementTab==='teachers' ? (a.audience==='all_teachers'||a.audience==='teacher') : currentAnnouncementTab==='parents' ? (a.audience==='all_parents'||a.audience==='parent') : currentAnnouncementTab==='general' ? a.audience==='all_users' : false);
+        }else if(currentAnnouncementTab==='parentInbox' && currentUser.role==='parent'){
+            list=announcementsData.filter(a=>a && (a.audience==='all_users' || ((a.audience==='all_parents'||a.audience==='parent') && announcementBelongsToCurrentUser(a))));
         }else if(currentAnnouncementTab==='general'){
             list=announcementsData.filter(a=>a.audience==='all_users');
         }else if(currentAnnouncementTab==='teachers'){
@@ -11552,7 +11569,7 @@ function updateCloudStatus(text, color) {
         const scheduleHead=scheduleDays.map(d=>`<th class="parent-schedule-day ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}"><span>${d.name}</span>${d.index===todayIndex?'<small>اليوم</small>':''}${d.index===tomorrowIndex?'<small>غداً</small>':''}</th>`).join('');
         const scheduleBody=Array.from({length:lessons},(_,l)=>`<tr><th class="parent-schedule-lesson">الحصة ${l+1}</th>${scheduleDays.map(d=>{const e=d.enabled?getScheduleEntryData(liveClass,`${d.index}_${l}`):{subject:'',teacherName:'',emergency:false};const t=e.teacherName||(!e.emergency?findScheduleTeacher(liveClass,e.subject)?.name:'');return `<td class="parent-schedule-cell ${d.index===todayIndex?'is-today':''} ${d.index===tomorrowIndex?'is-tomorrow':''}">${e.subject?`<b>${e.emergency?'⚠️ ':''}${escapeGlobalSearchHTML(e.subject)}</b><small>${escapeGlobalSearchHTML(t||'-')}</small>`:'<span class="schedule-empty">—</span>'}</td>`;}).join('')}</tr>`).join('');
         const modal=document.createElement('div'); modal.id='studentRoleDashboardModal'; modal.className='modal'; modal.style.cssText='display:flex;position:fixed;inset:0;z-index:100050;background:linear-gradient(135deg,rgba(10,28,48,.92),rgba(20,72,100,.88));padding:10px;align-items:center;justify-content:center;overflow:auto;';
-        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" id="parentActionAbsence" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" id="parentActionGrades" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" id="parentActionBehavior" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" id="parentActionHomework" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" id="parentActionTeacherMessage" onclick="openParentTeacherMessagePage()" style="background:#1976d2!important;color:#fff">💬 رسالة إلى معلم</button><button type="button" onclick="openAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><section id="parentHomeLocationCard" style="margin:14px 16px 4px;padding:15px;border:1px solid #b8d9ee;border-radius:16px;background:linear-gradient(135deg,#f1f9ff,#fff);box-shadow:0 5px 16px rgba(25,85,125,.08);"><label for="parentHomeLocationConsent" style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;font-weight:900;color:#174b70;line-height:1.8;min-height:44px"><input id="parentHomeLocationConsent" name="parentHomeLocationConsent" type="checkbox" autocomplete="off" onchange="updateParentHomeLocationConsent(this.checked)" aria-label="الموافقة على تحديد موقع الجهاز عند الحاجة الطارئة" style="appearance:auto;-webkit-appearance:checkbox;display:block;position:relative;z-index:2;pointer-events:auto;touch-action:manipulation;width:26px;height:26px;min-width:26px;min-height:26px;flex:0 0 26px;margin:3px 0 0;accent-color:#16834a;cursor:pointer"><span style="display:block;flex:1;cursor:pointer">📍 يجب وضع صح لتحديد موقعكم عند حدوث أمر طارئ في المدرسة لنعلم أين موقعكم.</span></label><div style="font-size:12px;color:#586c7a;line-height:1.8;margin:8px 0 0 36px">عند وضع الصح سيطلب المتصفح إذن تحديد الموقع، ويُحفظ الموقع الحالي ليظهر لمدير المدرسة عند البحث عن اسم الطالب. إذا انتقلتم إلى المنزل أو أردتم تحديث الموقع، ألغوا الصح ثم ضعوه مرة أخرى. إلغاء الصح يحذف الموقع المحفوظ. الموقع لا يتحدّث تلقائياً ولا يتتبّع تحركاتكم.</div><div id="parentHomeLocationStatus" style="font-size:12px;line-height:1.8;margin:8px 0 0 36px;color:#24536d"></div></section><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
+        modal.innerHTML=`<div class="modal-content parent-portal parent-portal-${portalTheme}" style="width:min(900px,98vw);max-height:96vh;overflow:auto;padding:0;background:var(--parent-bg);border:0;box-shadow:0 25px 70px rgba(0,0,0,.35)"><div class="parent-portal-hero"><div><div class="parent-kicker">🏫 نظام المدرسة الشامل</div><h2>بوابة ولي الأمر</h2><p>اختر الخدمة التي تريدها فقط.</p></div><button class="parent-logout" onclick="logoutSystem()">🚪 خروج</button></div>${todayMessage}<div class="parent-stats"><div><span>👨‍🎓</span><small>الطالب</small><b>${escapeGlobalSearchHTML(studentName)}</b></div><div><span>🏫</span><small>الصف</small><b>${escapeGlobalSearchHTML(liveClass.name||'-')}</b></div></div><div class="parent-portal-actions"><button type="button" onclick="openParentSectionPage('schedule')">📅 جدول الحصص</button><button type="button" id="parentActionAbsence" onclick="openParentAbsencePage()">📌 الغيابات</button><button type="button" id="parentActionGrades" onclick="openParentSectionPage('grades')">📝 الدرجات</button><button type="button" id="parentActionBehavior" onclick="openParentSectionPage('behavior')">⭐ السلوك والمستوى</button><button type="button" id="parentActionHomework" onclick="openParentSectionPage('homework')" style="background:#d35400!important">📚 الواجبات</button><button type="button" id="parentActionTeacherMessage" onclick="openParentTeacherMessagePage()" style="background:#1976d2!important;color:#fff">💬 رسالة إلى معلم</button><button type="button" id="parentAnnouncementsAction" onclick="openParentAnnouncementsModal()" style="background:#e67e22!important;color:#fff">🔔 التنبيهات والرسائل</button><button type="button" onclick="openComplaintSenderModal()" style="background:#8e44ad!important;color:#fff">📮 شكوى إلى المدير</button></div><section id="parentHomeLocationCard" style="margin:14px 16px 4px;padding:15px;border:1px solid #b8d9ee;border-radius:16px;background:linear-gradient(135deg,#f1f9ff,#fff);box-shadow:0 5px 16px rgba(25,85,125,.08);"><label for="parentHomeLocationConsent" style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;font-weight:900;color:#174b70;line-height:1.8;min-height:44px"><input id="parentHomeLocationConsent" name="parentHomeLocationConsent" type="checkbox" autocomplete="off" onchange="updateParentHomeLocationConsent(this.checked)" aria-label="الموافقة على تحديد موقع الجهاز عند الحاجة الطارئة" style="appearance:auto;-webkit-appearance:checkbox;display:block;position:relative;z-index:2;pointer-events:auto;touch-action:manipulation;width:26px;height:26px;min-width:26px;min-height:26px;flex:0 0 26px;margin:3px 0 0;accent-color:#16834a;cursor:pointer"><span style="display:block;flex:1;cursor:pointer">📍 يجب وضع صح لتحديد موقعكم عند حدوث أمر طارئ في المدرسة لنعلم أين موقعكم.</span></label><div style="font-size:12px;color:#586c7a;line-height:1.8;margin:8px 0 0 36px">عند وضع الصح سيطلب المتصفح إذن تحديد الموقع، ويُحفظ الموقع الحالي ليظهر لمدير المدرسة عند البحث عن اسم الطالب. إذا انتقلتم إلى المنزل أو أردتم تحديث الموقع، ألغوا الصح ثم ضعوه مرة أخرى. إلغاء الصح يحذف الموقع المحفوظ. الموقع لا يتحدّث تلقائياً ولا يتتبّع تحركاتكم.</div><div id="parentHomeLocationStatus" style="font-size:12px;line-height:1.8;margin:8px 0 0 36px;color:#24536d"></div></section><div style="text-align:center;padding:18px 16px 22px;color:#6b7b88;font-size:12px">🔒 هذه البوابة تعرض بيانات الطالب المرتبط بكود الدخول فقط.<br>اضغط على الزر المطلوب لعرض تفاصيله.</div></div>`;
         document.body.appendChild(modal);
         renderParentHomeLocationControl();
         startParentActivityPulse();
@@ -14936,20 +14953,33 @@ body.manager-dark-mode .sd-new-topic,body.manager-dark-mode .sd-conversation{bac
 
 <script id="parent-emergency-location-required-warning">
 (function(){
+  if(window.__parentEmergencyWarningInstalled) return;
+  window.__parentEmergencyWarningInstalled=true;
   const style=document.createElement('style');
-  style.textContent=`.parent-emergency-location-overlay{position:fixed;inset:0;z-index:2147483647;background:rgba(8,20,35,.72);display:flex;align-items:center;justify-content:center;padding:18px;direction:rtl}.parent-emergency-location-dialog{width:min(480px,100%);background:#fff;border:2px solid #d5b15c;border-radius:20px;padding:22px;box-shadow:0 24px 70px #0005;text-align:right;font-family:inherit}.parent-emergency-location-dialog h3{margin:0 0 10px;color:#153957;font-size:20px}.parent-emergency-location-dialog p{margin:0 0 18px;line-height:1.9;color:#35495a}.parent-emergency-location-dialog button{display:block;width:100%;min-height:46px;border:0;border-radius:12px;background:linear-gradient(135deg,#173b62,#b38b35);color:#fff;font-weight:900;font-size:15px;cursor:pointer}`;
+  style.textContent=`.parent-emergency-location-overlay{position:fixed;inset:0;z-index:2147483647;background:rgba(8,20,35,.72);display:flex;align-items:center;justify-content:center;padding:18px;direction:rtl}.parent-emergency-location-dialog{width:min(480px,100%);background:#fff;border:2px solid #d5b15c;border-radius:20px;padding:22px;box-shadow:0 24px 70px #0005;text-align:right;font-family:inherit}.parent-emergency-location-dialog h3{margin:0 0 10px;color:#153957;font-size:20px}.parent-emergency-location-dialog p{margin:0 0 18px;line-height:1.9;color:#35495a}.parent-emergency-location-dialog button{display:block;width:100%;min-height:46px;border:0;border-radius:12px;background:linear-gradient(135deg,#173b62,#b38b35);color:#fff;font-weight:900;font-size:15px;cursor:pointer}#announcementsModal{z-index:100250!important}`;
   document.head.appendChild(style);
+  let dismissedForPortal=false, activePortal=null, timer=null;
+  function getCheckbox(){return document.getElementById('parentHomeLocationConsent');}
+  function getPortal(cb){return cb?.closest('.parent-portal') || document.getElementById('studentRoleDashboardModal') || null;}
   function showWarning(){
-    const cb=document.getElementById('parentHomeLocationConsent');
-    if(!cb || cb.checked || document.getElementById('parentEmergencyLocationWarning')) return;
+    const cb=getCheckbox();
+    if(!cb){activePortal=null;dismissedForPortal=false;return;}
+    const portal=getPortal(cb);
+    if(portal && portal!==activePortal){activePortal=portal;dismissedForPortal=false;}
+    if(cb.checked || dismissedForPortal || document.getElementById('parentEmergencyLocationWarning')) return;
     const overlay=document.createElement('div');overlay.id='parentEmergencyLocationWarning';overlay.className='parent-emergency-location-overlay';
     overlay.innerHTML='<div class="parent-emergency-location-dialog" role="alertdialog" aria-modal="true" aria-labelledby="parentEmergencyLocationWarningTitle"><h3 id="parentEmergencyLocationWarningTitle">📍 تنبيه مهم للطوارئ</h3><p>يتوجب عليكم وضع صح في المربع لتحديد موقعكم للطوارئ، حتى تتمكن إدارة المدرسة من معرفة الموقع عند الحاجة.</p><button type="button" id="parentEmergencyLocationWarningOk">موافق</button></div>';
     document.body.appendChild(overlay);
-    document.getElementById('parentEmergencyLocationWarningOk').addEventListener('click',()=>overlay.remove());
+    document.getElementById('parentEmergencyLocationWarningOk').addEventListener('click',function(){dismissedForPortal=true;overlay.remove();});
   }
-  function scheduleCheck(){setTimeout(showWarning,250);}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',scheduleCheck); else scheduleCheck();
-  const observer=new MutationObserver(()=>{if(document.getElementById('parentHomeLocationConsent'))setTimeout(showWarning,250);});
+  function check(){if(timer)clearTimeout(timer);timer=setTimeout(showWarning,250);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check);else check();
+  const observer=new MutationObserver(function(){
+    const cb=getCheckbox();
+    if(!cb){activePortal=null;dismissedForPortal=false;}
+    else if(getPortal(cb)!==activePortal){activePortal=getPortal(cb);dismissedForPortal=false;}
+    check();
+  });
   function beginObserver(){if(document.body)observer.observe(document.body,{childList:true,subtree:true});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',beginObserver);else beginObserver();
 })();
