@@ -2488,8 +2488,61 @@ tbody tr:hover{background:#eef6fc}
 }
 </style>
 
+
+<style id="tafani-royal-dashboard-v4">
+:root{--primary:#071b34;--success:#218b68;--danger:#b83a4b;--warning:#d4a43a;--light:#102842;--purple:#8f73c8;--teal:#1b9b91;--orange:#c58a36;--pink:#cb719c;--blue:#327ab8;--indigo:#5868b7;--royal-bg:#061629;--royal-panel:#0b223b;--royal-panel2:#102b47;--royal-gold:#e6c477;--royal-border:rgba(222,184,95,.48);--royal-text:#f5f1e7;--royal-muted:#b8c5d4}
+html{scroll-behavior:smooth} body{background:radial-gradient(ellipse at 12% 0%,#16395b 0,#081c32 38%,#04101f 100%)!important;color:var(--royal-text)!important;padding:14px 16px 18px!important;font-family:'Segoe UI',Tahoma,Arial,sans-serif!important}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(120deg,transparent 0 70%,rgba(230,196,119,.035) 70.2%,transparent 70.6%),radial-gradient(circle at 85% 20%,rgba(218,177,83,.07),transparent 28%)}
+.container{max-width:none!important;margin:0 0 0 0!important}
+header{background:linear-gradient(120deg,#07182d,#102c49 62%,#08182c)!important;border:1px solid var(--royal-border)!important;border-radius:18px!important;box-shadow:0 12px 34px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.06)!important;padding:17px 20px!important;position:relative;overflow:hidden}
+header:after{content:"";position:absolute;bottom:0;left:5%;right:5%;height:2px;background:linear-gradient(90deg,transparent,#e6c477,transparent)}
+header h2{color:#f4d58c!important;font-weight:900!important;letter-spacing:.15px}
+.header-actions{gap:6px!important}.header-actions button,button{border-radius:10px!important;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease!important}
+button{box-shadow:0 4px 12px rgba(0,0,0,.14)}button:hover{transform:translateY(-1px);filter:brightness(1.08);box-shadow:0 7px 18px rgba(0,0,0,.22)}
+input,select,textarea{border-radius:9px!important} .section-box,.class-card,.card,.pro-panel,.pro-stat,.teacher-dashboard-card,.dashboard-card,.box,.panel{border-radius:15px!important}
+/* unified dark premium surfaces */
+.section-box,.pro-panel,.pro-stat,.class-card-pro,.class-card,.dashboard-card,.teacher-dashboard-card,.modal-content:not(.parent-portal),.internal-page-bar,.class-internal-page,.log-search-box,#staffAdminBar>div,#adminDailySchoolReportBox>div{background:linear-gradient(145deg,rgba(13,37,62,.98),rgba(7,24,43,.98))!important;color:var(--royal-text)!important;border-color:var(--royal-border)!important;box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.035)!important}
+.section-box h2,.section-box h3,.pro-panel h2,.pro-panel h3,.class-card-pro h3,.internal-page-bar{color:#f0d18a!important}
+label,small,.muted,.footer{color:var(--royal-muted)}
+table{border-color:rgba(222,184,95,.25)!important;color:var(--royal-text)!important}th{background:#173653!important;color:#f3d58c!important;border-color:rgba(222,184,95,.35)!important}td{background:rgba(5,22,40,.74)!important;color:#f1f5f9!important;border-color:rgba(222,184,95,.18)!important}tr:nth-child(even) td{background:rgba(19,48,75,.72)!important}
+input,select,textarea{background:#071a2e!important;color:#f8fafc!important;border:1px solid rgba(222,184,95,.4)!important}input::placeholder,textarea::placeholder{color:#9bacc0!important}
+#tafaniRoyalSidebar{position:fixed;z-index:9990;right:14px;top:14px;bottom:14px;width:226px;display:none;flex-direction:column;padding:15px 12px;border:1px solid rgba(230,196,119,.6);border-radius:20px;background:linear-gradient(180deg,rgba(7,25,45,.98),rgba(4,15,29,.99));box-shadow:0 18px 55px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.05);overflow-y:auto;backdrop-filter:blur(16px)}
+#tafaniRoyalSidebar .royal-brand{display:flex;align-items:center;gap:10px;padding:8px 5px 15px;border-bottom:1px solid rgba(230,196,119,.28);margin-bottom:12px}
+#tafaniRoyalSidebar .royal-emblem{width:42px;height:42px;display:grid;place-items:center;flex-shrink:0;border:1px solid #d9b45f;border-radius:50%;color:#f1d58d;font-size:22px;background:linear-gradient(145deg,#173a5b,#08192c);box-shadow:0 0 18px rgba(230,196,119,.12)}
+#tafaniRoyalSidebar .royal-brand strong{display:block;font-size:13px;line-height:1.6;color:#f2d58c}#tafaniRoyalSidebar .royal-brand small{font-size:10px;color:#aebfd0}
+#tafaniRoyalSidebar .royal-nav-title{font-size:10px;color:#9fb0c2;padding:7px 10px 5px;letter-spacing:.4px}
+#tafaniRoyalSidebar button.royal-nav{width:100%;display:flex;align-items:center;gap:10px;text-align:right;padding:11px 10px;margin:3px 0;color:#eaf0f7;background:transparent;border:1px solid transparent;font-size:12px;font-weight:700;box-shadow:none}
+#tafaniRoyalSidebar button.royal-nav span:first-child{width:23px;text-align:center;font-size:17px;color:#e6c477}
+#tafaniRoyalSidebar button.royal-nav:hover,#tafaniRoyalSidebar button.royal-nav.active{background:linear-gradient(100deg,rgba(211,168,76,.2),rgba(211,168,76,.04));border-color:rgba(230,196,119,.48);color:#ffe5a3;box-shadow:inset -3px 0 #e6c477}
+#tafaniRoyalSidebar .royal-side-bottom{margin-top:auto;border-top:1px solid rgba(230,196,119,.22);padding-top:12px;color:#9fb0c2;font-size:10px;text-align:center;line-height:1.8}
+body.royal-sidebar-on{padding-right:258px!important}body.royal-sidebar-on header{margin-right:0!important}
+#loginOverlay{background:radial-gradient(circle at 50% 35%,rgba(22,57,88,.96),rgba(3,13,26,.98))!important}#loginOverlay .login-card{background:linear-gradient(145deg,#102c49,#06182b)!important;color:#f7f2e8!important;border:1px solid var(--royal-border)!important;border-radius:20px!important;box-shadow:0 24px 70px rgba(0,0,0,.45)!important}#loginOverlay .login-card h2{color:#f0d18a!important}
+/* preserve dedicated portal and print surfaces */
+.parent-portal{color:inherit!important} .parent-portal input,.parent-portal select,.parent-portal textarea{color:inherit}
+@media(max-width:1050px){#tafaniRoyalSidebar{width:194px;right:8px;top:8px;bottom:8px;padding:10px 8px}body.royal-sidebar-on{padding-right:215px!important}}
+@media(max-width:700px){#tafaniRoyalSidebar{position:fixed;top:auto;left:8px;right:8px;bottom:8px;width:auto;height:auto;max-height:54vh;border-radius:17px;padding:8px;display:none;flex-direction:row;flex-wrap:wrap;align-content:flex-start;gap:3px}#tafaniRoyalSidebar .royal-brand,#tafaniRoyalSidebar .royal-nav-title,#tafaniRoyalSidebar .royal-side-bottom{display:none}#tafaniRoyalSidebar button.royal-nav{width:calc(33.333% - 3px);justify-content:center;flex-direction:column;gap:3px;padding:7px 3px;font-size:10px;margin:0}#tafaniRoyalSidebar button.royal-nav span:first-child{font-size:16px}body.royal-sidebar-on{padding:7px 7px 58px!important}header{padding:12px!important}.header-actions{justify-content:flex-start}}
+</style>
+
 </head>
 <body>
+
+<aside id="tafaniRoyalSidebar" aria-label="القائمة الرئيسية">
+ <div class="royal-brand"><div class="royal-emblem">♛</div><div><strong>مدرسة التفاني الابتدائية</strong><small>نظام الإدارة الملكي</small></div></div>
+ <div class="royal-nav-title">القائمة الرئيسية</div>
+ <button class="royal-nav active" onclick="royalNavAction('home',this)"><span>⌂</span><span>الصفحة الرئيسية</span></button>
+ <button class="royal-nav" onclick="royalNavAction('students',this)"><span>♟</span><span>إدارة الطلاب</span></button>
+ <button class="royal-nav" onclick="royalNavAction('attendance',this)"><span>▣</span><span>الحضور والغياب</span></button>
+ <button class="royal-nav" onclick="royalNavAction('teachers',this)"><span>♙</span><span>المعلمون والكادر</span></button>
+ <button class="royal-nav" onclick="royalNavAction('classes',this)"><span>▦</span><span>الصفوف</span></button>
+ <button class="royal-nav" onclick="royalNavAction('reports',this)"><span>▥</span><span>التقارير والإحصائيات</span></button>
+ <button class="royal-nav" onclick="royalNavAction('messages',this)"><span>✉</span><span>التنبيهات والرسائل</span></button>
+ <button class="royal-nav" onclick="royalNavAction('whatsapp',this)"><span>◉</span><span>رسائل واتساب</span></button>
+ <button class="royal-nav" onclick="royalNavAction('talk',this)"><span>☏</span><span>التحدث معنا</span></button>
+ <button class="royal-nav" onclick="royalNavAction('settings',this)"><span>⚙</span><span>الإعدادات</span></button>
+ <button class="royal-nav" onclick="royalNavAction('system',this)"><span>▦</span><span>نظام المدرسة الشامل</span></button>
+ <div class="royal-side-bottom">العلم نور والجهل ظلام<br>واجهة ملكية • كحلي وذهبي</div>
+</aside>
+
 
 <div id="loginOverlay">
     <div class="login-card">
@@ -14370,6 +14423,34 @@ const oldShow=window.sdShowManagerMessages;window.sdShowManagerMessages=async fu
     const url='https://wa.me/'+phone+'?text='+encodeURIComponent(message);
     window.open(url,'_blank','noopener,noreferrer');
   };
+})();
+</script>
+
+
+<script id="tafani-royal-dashboard-v4-js">
+(function(){
+ function isLoggedIn(){var o=document.getElementById('loginOverlay');return !!o && getComputedStyle(o).display==='none';}
+ function updateSidebar(){var side=document.getElementById('tafaniRoyalSidebar');if(!side)return;var logged=isLoggedIn();side.style.display=logged?'flex':'none';document.body.classList.toggle('royal-sidebar-on',logged);}
+ window.royalNavAction=function(which,btn){
+  document.querySelectorAll('#tafaniRoyalSidebar .royal-nav').forEach(function(b){b.classList.toggle('active',b===btn)});
+  var click=function(id){var e=document.getElementById(id);if(e && getComputedStyle(e).display!=='none'){e.click();return true}return false};
+  try{
+   if(which==='home'){window.scrollTo({top:0,behavior:'smooth'});return;}
+   if(which==='students'){if(typeof openStudentManagementModal==='function'){openStudentManagementModal();return;} if(typeof openAddModal==='function'){openAddModal();return;} click('globalStudentSearchInput');return;}
+   if(which==='attendance'){if(typeof openDailyAttendanceStats==='function' && currentUser?.role==='admin'){openDailyAttendanceStats();return;} var cc=document.getElementById('classContent');if(cc){cc.scrollIntoView({behavior:'smooth',block:'start'});return;} if(typeof openMonitorCenter==='function'&&currentUser?.role==='monitor'){openMonitorCenter();return;}}
+   if(which==='teachers'){if(typeof openTeachersModal==='function'){openTeachersModal();return;} click('btnTeachersNav');return;}
+   if(which==='classes'){var cc2=document.getElementById('classContent');if(cc2){cc2.scrollIntoView({behavior:'smooth',block:'start'});return;} if(typeof openAddModal==='function'){openAddModal();return;}}
+   if(which==='reports'){if(typeof openDailyAttendanceStats==='function'){openDailyAttendanceStats();return;} if(typeof openTeacherMonthlyReportModal==='function'){openTeacherMonthlyReportModal();return;}}
+   if(which==='messages'){if(typeof openAnnouncementsModal==='function'){openAnnouncementsModal();return;} click('btnAnnouncementsNav');return;}
+   if(which==='whatsapp'){if(typeof openManagerWhatsAppPage==='function'){openManagerWhatsAppPage();return;} click('btnManagerWhatsApp');return;}
+   if(which==='talk'){if(typeof openTalkToUsModal==='function'){openTalkToUsModal();return;} if(typeof openManagerTalkToUs==='function'){openManagerTalkToUs();return;} var found=false;document.querySelectorAll('button').forEach(function(b){if(!found && /التحدث معنا/.test(b.innerText||'')){b.click();found=true;}});return;}
+   if(which==='settings'){if(typeof openSettingsModal==='function'){openSettingsModal();return;} var f=document.querySelector('button[onclick*="Settings"],button[onclick*="settings"]');if(f){f.click();return;}}
+   if(which==='system'){var all=document.querySelector('button[onclick*="openSystem"]');if(all){all.click();return;}window.scrollTo({top:0,behavior:'smooth'});}
+  }catch(e){console.warn('Royal menu action:',e)}
+ };
+ document.addEventListener('click',function(e){var t=e.target;if(t&&t.closest&&t.closest('button[onclick*="logoutSystem"]'))setTimeout(updateSidebar,50);});
+ var observer=new MutationObserver(updateSidebar);function init(){updateSidebar();var o=document.getElementById('loginOverlay');if(o)observer.observe(o,{attributes:true,attributeFilter:['style','class']});setInterval(updateSidebar,1200);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
 
