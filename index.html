@@ -14921,3 +14921,50 @@ body.manager-dark-mode.manager-sidebar-active #managerSideNav button:focus-visib
 body.manager-dark-mode .sd-new-topic,body.manager-dark-mode .sd-conversation{background:#1b2635!important;color:#e8edf5!important;border-color:#344256!important}body.manager-dark-mode .sd-chat-line.mine .sd-chat-bubble{background:#174b3a;color:#f0fff7}body.manager-dark-mode .sd-chat-line.theirs .sd-chat-bubble{background:#29394f;color:#f0f4fa}
 @media(max-width:600px){.sd-chat-card{padding:13px!important}.sd-chat-compose{align-items:stretch}.sd-chat-compose button{padding:8px!important}.sd-chat-bubble{max-width:92%}.sd-chat-thread{max-height:45vh}}
 </style>
+
+
+<!-- إصلاح إظهار زر التنبيهات في سستم المدير -->
+<script id="restore-manager-announcements-button">
+(function () {
+  'use strict';
+  function restoreManagerAnnouncementsButton() {
+    var btn = document.getElementById('btnAnnouncementsNav');
+    if (!btn) return;
+
+    var user = window.currentUser || null;
+    if (!user) {
+      try { if (typeof currentUser !== 'undefined') user = currentUser; } catch (e) {}
+    }
+    if (!user) return;
+
+    var role = String(user.role || '').toLowerCase();
+    var isManager = ['admin', 'manager', 'principal', 'مدير', 'المدير'].includes(role) || !!user.isAssistant;
+    if (!isManager) return;
+
+    /* لا نغيّر صلاحيات بقية الأدوار؛ نعيد الزر للمدير فقط. */
+    btn.style.setProperty('display', 'inline-flex', 'important');
+    btn.style.setProperty('visibility', 'visible', 'important');
+    btn.style.setProperty('opacity', '1', 'important');
+    btn.style.setProperty('align-items', 'center', 'important');
+    btn.style.setProperty('gap', '8px', 'important');
+
+    var nav = document.getElementById('managerSideNav');
+    var actions = document.querySelector('.header-actions');
+    if (nav && btn.parentElement !== nav && document.body.classList.contains('manager-sidebar-active')) {
+      nav.appendChild(btn);
+    } else if (!nav && actions && btn.parentElement !== actions) {
+      actions.insertBefore(btn, actions.querySelector('button[onclick*="logoutSystem"]') || null);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', restoreManagerAnnouncementsButton);
+  } else {
+    restoreManagerAnnouncementsButton();
+  }
+  window.addEventListener('load', restoreManagerAnnouncementsButton);
+  window.addEventListener('resize', restoreManagerAnnouncementsButton);
+  window.setInterval(restoreManagerAnnouncementsButton, 1500);
+})();
+</script>
+
