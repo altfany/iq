@@ -14343,8 +14343,9 @@ const oldShow=window.sdShowManagerMessages;window.sdShowManagerMessages=async fu
   window.renderManagerWhatsAppResults=function(){
     const box=document.getElementById('managerWhatsAppResults'); if(!box)return;
     const q=String(document.getElementById('managerWhatsAppSearch')?.value||'').trim().toLocaleLowerCase('ar');
-    const contacts=collectWhatsAppContacts().filter(c=>!q||(c.name+' '+c.phone+' '+c.kind+' '+c.extra).toLocaleLowerCase('ar').includes(q));
-    if(!contacts.length){box.innerHTML='<div style="padding:18px;text-align:center;color:#64748b">لا توجد نتائج مطابقة.</div>';return;}
+    if(!q){box.innerHTML='<div style="padding:18px;text-align:center;color:#64748b;border:1px dashed #cbd5e1;border-radius:12px">اكتب اسم الشخص أو رقم الهاتف في حقل البحث لعرض النتائج.</div>';window.__managerWhatsAppVisibleContacts=[];return;}
+    const contacts=collectWhatsAppContacts().filter(c=>(c.name+' '+c.phone+' '+c.kind+' '+c.extra).toLocaleLowerCase('ar').includes(q));
+    if(!contacts.length){box.innerHTML='<div style="padding:18px;text-align:center;color:#64748b">لا توجد نتائج مطابقة.</div>';window.__managerWhatsAppVisibleContacts=[];return;}
     box.innerHTML=contacts.slice(0,100).map((c,i)=>`<button type="button" onclick="chooseManagerWhatsAppRecipient(${i})" style="display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:right;background:#fff;color:#243447;border:1px solid #dbe5e7;padding:12px;border-radius:12px;min-height:60px"><span><b>${esc(c.name)}</b><small style="display:block;color:#64748b">${esc(c.kind)}${c.extra?' • '+esc(c.extra):''}</small></span><span style="text-align:left"><b>${c.phone?esc(c.phone):'لم يسجل رقم هاتفه'}</b><small style="display:block;color:${c.phone?'#128c7e':'#c0392b'}">${c.phone?'اختيار للإرسال':'لا يوجد رقم هاتف مسجل'}</small></span></button>`).join('');
     window.__managerWhatsAppVisibleContacts=contacts.slice(0,100);
   };
@@ -14378,3 +14379,99 @@ document.addEventListener('DOMContentLoaded',function(){
   try{ initializeSecretCodeInputs(); }catch(e){}
 });
 </script>
+
+<style id="tafany-global-dark-and-compact-controls">
+/* الوضع الليلي يطبق على محتويات النظام والنوافذ التي تُنشأ ديناميكياً */
+body.manager-dark-mode,
+body.manager-dark-mode #app,body.manager-dark-mode main,body.manager-dark-mode header,
+body.manager-dark-mode section,body.manager-dark-mode article,body.manager-dark-mode aside,
+body.manager-dark-mode nav,body.manager-dark-mode .modal,body.manager-dark-mode .modal-content,
+body.manager-dark-mode .modal-box,body.manager-dark-mode .overlay,body.manager-dark-mode .sd-overlay,
+body.manager-dark-mode .sd-card,body.manager-dark-mode .parent-portal,
+body.manager-dark-mode .pro-panel,body.manager-dark-mode .pro-table-wrap,
+body.manager-dark-mode .class-card,body.manager-dark-mode .class-card-pro,
+body.manager-dark-mode .desk,body.manager-dark-mode .attendance-modal,
+body.manager-dark-mode .managerWhatsAppModal {
+  color:#e8edf5!important;border-color:#344256!important;
+}
+body.manager-dark-mode .modal-content,body.manager-dark-mode .modal-box,
+body.manager-dark-mode .sd-card,body.manager-dark-mode .sd-msg,
+body.manager-dark-mode .parent-portal,body.manager-dark-mode .pro-panel,
+body.manager-dark-mode .pro-table-wrap,body.manager-dark-mode .class-card,
+body.manager-dark-mode .class-card-pro,body.manager-dark-mode .desk,
+body.manager-dark-mode .announcement-admin-panel,body.manager-dark-mode .settings-card,
+body.manager-dark-mode .report-card,body.manager-dark-mode [class*="-card"],
+body.manager-dark-mode [class*="-panel"],body.manager-dark-mode [class*="-section"]{
+  background-color:#1b2635!important;color:#e8edf5!important;border-color:#344256!important;
+}
+body.manager-dark-mode .modal,body.manager-dark-mode .sd-overlay{background-color:rgba(4,9,18,.82)!important}
+body.manager-dark-mode button:not(.sd-gold):not(.sd-red):not(.sd-navy),
+body.manager-dark-mode .parent-portal button{border-color:#46566c}
+body.manager-dark-mode .parent-portal-hero,body.manager-dark-mode .sd-head,
+body.manager-dark-mode .school-command-hero{color:#f7f9fc!important}
+#tafanyManagerQuickToggles{display:inline-flex;align-items:center;gap:3px;flex-wrap:nowrap;vertical-align:middle;margin-inline-start:5px}
+#tafanyManagerQuickToggles button{position:static!important;inset:auto!important;z-index:auto!important;width:25px!important;height:25px!important;min-width:25px!important;min-height:25px!important;padding:0!important;margin:0!important;border-radius:6px!important;font-size:12px!important;line-height:1!important;gap:0!important;box-shadow:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important;transform:none!important}
+#tafanyManagerQuickToggles #managerThemeLabel{display:none!important}
+#tafanyManagerQuickToggles #managerThemeToggle{display:inline-flex!important}
+#tafanyManagerQuickToggles #schoolButtonSoundToggle{display:inline-flex!important}
+@media(max-width:600px){#tafanyManagerQuickToggles{gap:2px;margin-inline-start:3px}#tafanyManagerQuickToggles button{width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;font-size:11px!important}}
+#sdManagerLauncher.sd-unread-pulse{animation:sdUnreadPulse 1s ease-in-out infinite!important;box-shadow:0 0 0 3px rgba(255,65,65,.2),0 0 20px rgba(255,55,55,.9)!important;filter:brightness(1.2)!important}
+@keyframes sdUnreadPulse{0%,100%{box-shadow:0 0 0 2px rgba(255,65,65,.18),0 0 8px rgba(255,55,55,.45)}50%{box-shadow:0 0 0 4px rgba(255,65,65,.35),0 0 24px rgba(255,55,55,1)}}
+</style>
+<script id="tafany-requested-ui-fixes">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ function isAdminNow(){try{const u=window.currentUser||(typeof currentUser!=='undefined'?currentUser:null);return !!u&&['admin','manager','principal','مدير','المدير'].includes(String(u.role||'').toLowerCase())}catch(e){return false}}
+ function placeCompactToggles(){
+   const comprehensive=$('dev5ComprehensiveButton');
+   const theme=$('managerThemeToggle');
+   const sound=$('schoolButtonSoundToggle');
+   if(!comprehensive||!theme||!sound)return;
+   let wrap=$('tafanyManagerQuickToggles');
+   if(!wrap){wrap=document.createElement('span');wrap.id='tafanyManagerQuickToggles';wrap.setAttribute('aria-label','إعدادات سريعة');}
+   if(wrap.parentElement!==comprehensive.parentElement || wrap.previousElementSibling!==comprehensive){comprehensive.insertAdjacentElement('afterend',wrap)}
+   if(theme.parentElement!==wrap)wrap.appendChild(theme);
+   if(sound.parentElement!==wrap)wrap.appendChild(sound);
+   theme.style.display=isAdminNow()?'inline-flex':'none';
+   sound.style.display=isAdminNow()?'inline-flex':'none';
+   theme.title='تبديل الوضع الليلي والنهاري';
+   sound.title='تشغيل أو كتم صوت الأزرار';
+ }
+ // Keep the talking button illuminated while the designer has sent an unread reply.
+ function dbRef(path){try{const d=window.firebaseDB||(window.FirebaseCloud&&window.firebase&&firebase.database?firebase.database():null);return d?d.ref('systemDesigner/'+path):null}catch(e){return null}}
+ async function refreshUnreadTalkButton(){
+   const b=$('sdManagerLauncher');if(!b)return;
+   if(!isAdminNow()){b.classList.remove('sd-unread-pulse');return}
+   try{
+     const ref=dbRef('messages');if(!ref)return;
+     const snap=await ref.once('value');const all=snap.val()||{};const now=Date.now();
+     const unread=Object.values(all).some(m=>m&&m.from==='manager'&&Math.max(Number(m.expiresAt||0),Number(m.replyExpiresAt||0),Number(m.replyImageExpiresAt||0))>now&&(m.reply||m.replyImage)&&!m.managerReplyReadAt);
+     b.classList.toggle('sd-unread-pulse',unread);
+     b.title=unread?'يوجد رد جديد غير مقروء — اضغط لقراءته':'التحدث معنا';
+   }catch(e){/* إبقاء النظام عاملاً حتى إن انقطع الاتصال */}
+ }
+ // After displaying the thread, mark only replies actually displayed as read.
+ function installReadTracking(){
+   if(window.__tafanyUnreadTalkTracking)return;window.__tafanyUnreadTalkTracking=true;
+   const old=window.sdShowManagerMessages;
+   if(typeof old==='function')window.sdShowManagerMessages=async function(){
+     const result=await old.apply(this,arguments);
+     try{
+       const ref=dbRef('messages');if(ref){const snap=await ref.once('value');const all=snap.val()||{},updates={};const now=Date.now();
+         Object.entries(all).forEach(([id,m])=>{if(m&&m.from==='manager'&&(m.reply||m.replyImage)&&!m.managerReplyReadAt&&Math.max(Number(m.expiresAt||0),Number(m.replyExpiresAt||0),Number(m.replyImageExpiresAt||0))>now)updates[id+'/managerReplyReadAt']=now;});
+         if(Object.keys(updates).length)await ref.update(updates);
+       }
+     }catch(e){}
+     setTimeout(refreshUnreadTalkButton,100);return result;
+   };
+ }
+ function init(){placeCompactToggles();installReadTracking();refreshUnreadTalkButton();}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+ setInterval(()=>{placeCompactToggles();installReadTracking();refreshUnreadTalkButton()},5000);
+ // Apply theme to every dynamic part of the system, including modal content inserted later.
+ const obs=new MutationObserver(()=>{if(document.body.classList.contains('manager-dark-mode'))document.body.style.colorScheme='dark';});
+ if(document.body)obs.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
