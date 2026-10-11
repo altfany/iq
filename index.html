@@ -2576,6 +2576,7 @@ tbody tr:hover{background:#eef6fc}
             <button type="button" id="btnTeacherAttendanceFingerprint" onclick="openTeacherAttendanceFingerprint()" style="display:none;background:linear-gradient(135deg,#0f766e,#14b8a6);font-weight:900;">🖐️ بصمة حضور</button>
             <button onclick="openHomeworkModal()" id="btnHomeworkNav" title="إضافة ومتابعة واجبات الطلاب" style="background:linear-gradient(135deg,#d35400,#e67e22);display:none;font-weight:900;">📚 واجبات الطلاب</button>
             <button onclick="openParentTeacherMessagesForTeacher()" id="btnTeacherParentMessagesNav" title="صندوق رسائل أولياء الأمور" style="background:linear-gradient(135deg,#1976d2,#3498db);display:none;font-weight:900;">📨 رسائل أولياء الأمور</button>
+            <button type="button" id="btnSchoolWhatsAppMessage" onclick="openSchoolWhatsAppModal()" style="display:none;background:linear-gradient(135deg,#128c7e,#075e54);color:#fff;font-weight:900;">💬 إرسال رسالة واتساب</button>
             <button onclick="openAnnouncementsModal()" id="btnAnnouncementsNav" style="background: #8e44ad;">🔔 التنبيهات والرسائل</button>
             <button onclick="openComplaintsManagerModal()" id="btnComplaintsNav" style="background:#c0398a;">📮 الشكاوي</button>
             <button onclick="openComplaintSenderModal()" id="btnTeacherComplaintsNav" style="background:#8e44ad;display:none;font-weight:900;">📨 إرسال شكوى إلى المدير</button>
@@ -2678,6 +2679,7 @@ tbody tr:hover{background:#eef6fc}
                 </div>
             </div>
             <button class="btn-toggle-schedule class-action-single" onclick="openModal('scheduleModalBox')">📅 الجدول</button>
+            <button type="button" id="btnClassWhatsAppMessage" class="class-action-single" onclick="openClassWhatsAppModal()" style="display:none;background:linear-gradient(135deg,#128c7e,#075e54);color:#fff;font-weight:900">💬 رسالة واتساب</button>
             <button class="btn-toggle-grade class-action-single" onclick="openGradesModal()" id="btnGradesNavTab">📝 درجات الطلاب</button>
         </div>
     </div>
@@ -5787,6 +5789,8 @@ function updateCloudStatus(text, color) {
         }
         updateComplaintsManagerIndicator();
 
+        const schoolWhatsAppButton=document.getElementById('btnSchoolWhatsAppMessage');
+        if(schoolWhatsAppButton) schoolWhatsAppButton.style.display=(currentUser.role==='admin')?'inline-block':'none';
         if (currentUser.role === 'admin') {
             if(complaintsNavBtn){
                 complaintsNavBtn.style.display='inline-block';
@@ -7467,6 +7471,140 @@ function updateCloudStatus(text, color) {
         if(!win){alert('تعذر فتح صفحة الطباعة. اسمح بالنوافذ المنبثقة للمتصفح.');return;}
         win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>ملف الطالب - ${esc(r.name)}</title><style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:"Noto Sans Arabic",Arial,sans-serif;color:#1f2937;margin:0;background:#fff;font-size:12px;line-height:1.6}.sheet{width:100%;min-height:270mm}.head{border:2px solid #26384a;border-radius:10px;padding:12px;text-align:center;margin-bottom:12px}.head h1{margin:0;font-size:22px}.head p{margin:4px 0 0;color:#64748b}.section{border:1px solid #cfd8e3;border-radius:8px;padding:9px;margin-bottom:10px}.section h2{font-size:14px;margin:0 0 8px;color:#243b53;border-bottom:1px solid #e5e7eb;padding-bottom:5px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.field{border:1px solid #e2e8f0;border-radius:6px;padding:7px;background:#fafcff}.field small{display:block;color:#64748b;font-size:10px}.field b{font-size:12px}.print-location-card{grid-column:1/-1;border:1px solid #b8e2c7;background:#effaf3;border-radius:6px;padding:8px;color:#176b45}.print-location-card a{color:#176b45;font-weight:bold}.print-location-card div{font-size:10px;margin-top:3px}.photo{text-align:center;margin:8px}.photo img{max-width:100px;max-height:100px;border:1px solid #cbd5e1;border-radius:8px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:6px;text-align:center}th{background:#f1f5f9}.footer{margin-top:12px;text-align:center;color:#64748b;font-size:10px}</style></head><body><div class="sheet"><div class="head"><h1>ملف الطالب</h1><p>تقرير صادر من نظام المدرسة الشامل</p></div><div class="section"><h2>👨‍🎓 معلومات الطالب</h2><div class="grid">${fields.concat(extras).map(x=>`<div class="field"><small>${esc(x[0])}</small><b>${esc(x[1]||'—')}</b></div>`).join('')}${parentHomeLocationPrint}</div>${photo?`<div class="photo"><img src="${esc(photo)}" alt="صورة الطالب"></div>`:''}</div><div class="two"><div class="section"><h2>⭐ السلوك</h2><table><thead><tr><th>النوع</th><th>التقييم</th></tr></thead><tbody>${behaviorRows}</tbody></table></div><div class="section"><h2>📈 المستوى</h2><table><thead><tr><th>المادة</th><th>المستوى</th></tr></thead><tbody>${levelRows}</tbody></table></div></div><div class="section"><h2>📌 سجل الحضور والغياب</h2><table><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>${attRows}</tbody></table></div><div class="footer">لا تظهر في هذا التقرير حصص اليوم. تاريخ الطباعة: ${esc(new Date().toLocaleString('ar-IQ'))}</div></div>
 
+
+
+<!-- مراسلات واتساب الصف: يستخدم أرقام أولياء الأمور المحفوظة في بيانات المقاعد -->
+<div class="modal" id="classWhatsAppModal" style="z-index:1000010">
+  <div class="modal-content large" style="max-width:760px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 style="margin:0;color:#075e54">💬 رسالة واتساب — <span id="classWhatsAppModalClassName">الصف</span></h3>
+      <button type="button" onclick="closeClassWhatsAppModal()" style="background:#566573">إغلاق ✕</button>
+    </div>
+    <p style="font-size:12px;color:#596b75;line-height:1.8">اختر رسالة عامة لكل أولياء أمور الصف أو رسالة خاصة لولي أمر طالب محدد.</p>
+    <div class="form-group">
+      <label for="classWhatsAppMode">نوع الرسالة</label>
+      <select id="classWhatsAppMode" onchange="classWhatsAppModeChanged()">
+        <option value="general">رسالة عامة لكل طلاب الصف</option>
+        <option value="private">رسالة خاصة لطالب معين</option>
+      </select>
+    </div>
+    <div class="form-group" id="classWhatsAppStudentBox" style="display:none">
+      <label for="classWhatsAppStudent">حدد الطالب</label>
+      <select id="classWhatsAppStudent"></select>
+    </div>
+    <div class="form-group">
+      <label for="classWhatsAppText">نص الرسالة</label>
+      <textarea id="classWhatsAppText" rows="5" placeholder="اكتب الرسالة التي تريد إرسالها عبر واتساب..."></textarea>
+    </div>
+    <div id="classWhatsAppRecipientsInfo" style="font-size:12px;color:#596b75;margin:8px 0"></div>
+    <button type="button" onclick="prepareClassWhatsAppMessages()" style="background:linear-gradient(135deg,#128c7e,#075e54);color:white;width:100%">📲 تجهيز رسالة واتساب</button>
+    <div id="classWhatsAppLinks" style="margin-top:12px;display:grid;gap:8px"></div>
+    <p style="font-size:11px;color:#7b8790;line-height:1.8;margin-bottom:0">ملاحظة: واتساب لا يسمح لصفحة ويب بإرسال الرسائل تلقائياً أو إنشاء كروب وتغيير اسمه. سيُفتح واتساب برسالة جاهزة لكل رقم؛ اضغط إرسال داخل واتساب، والرسائل العامة تُرسل لكل رقم على حدة.</p>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  let recipients = [];
+  function normalizeWhatsAppPhone(value){
+    let n=String(value||'').replace(/[^\d+]/g,'').replace(/^\+/,'');
+    if(n.startsWith('00')) n=n.slice(2);
+    if(n.startsWith('0')) n='964'+n.slice(1);
+    else if(n.startsWith('7') && n.length===10) n='964'+n;
+    return n;
+  }
+  function getClassWhatsAppRecipients(cls){
+    const out=[], seen=new Set();
+    (Array.isArray(cls?.desks)?cls.desks:[]).forEach((desk,di)=>{
+      [1,2].forEach(slot=>{
+        const name=String(desk?.['student'+slot]||'').trim();
+        const raw=String(desk?.['phone'+slot]||'').trim();
+        if(!name || !raw) return;
+        const phone=normalizeWhatsAppPhone(raw);
+        if(!/^964\d{8,12}$/.test(phone)) return;
+        if(seen.has(phone)) return;
+        seen.add(phone);
+        out.push({name,phone,deskNumber:desk?.deskNumber??di+1,slot});
+      });
+    });
+    return out;
+  }
+  window.openClassWhatsAppModal=function(){
+    if(!currentUser || currentUser.role!=='admin'){
+      alert('هذه الخاصية متاحة لمدير النظام فقط.'); return;
+    }
+    const cls=schoolData?.[currentClassIndex];
+    if(!cls){alert('افتح الصف أولاً.');return;}
+    recipients=getClassWhatsAppRecipients(cls);
+    $('classWhatsAppModalClassName').textContent=cls.name||'الصف';
+    $('classWhatsAppText').value='';
+    $('classWhatsAppLinks').innerHTML='';
+    const select=$('classWhatsAppStudent');
+    select.innerHTML='';
+    recipients.forEach((r,i)=>{
+      const opt=document.createElement('option');
+      opt.value=String(i); opt.textContent=r.name+' — '+r.phone;
+      select.appendChild(opt);
+    });
+    $('classWhatsAppRecipientsInfo').textContent=`تم العثور على ${recipients.length} رقم ولي أمر صالحاً من بيانات هذا الصف.`;
+    $('classWhatsAppStudentBox').style.display='none';
+    $('classWhatsAppMode').value='general';
+    $('classWhatsAppModal').style.display='flex';
+  };
+  window.closeClassWhatsAppModal=function(){
+    $('classWhatsAppModal').style.display='none';
+  };
+  window.classWhatsAppModeChanged=function(){
+    const priv=$('classWhatsAppMode').value==='private';
+    $('classWhatsAppStudentBox').style.display=priv?'block':'none';
+    $('classWhatsAppLinks').innerHTML='';
+  };
+  window.prepareClassWhatsAppMessages=function(){
+    const cls=schoolData?.[currentClassIndex];
+    if(!cls){alert('تعذر تحديد الصف الحالي.');return;}
+    const body=String($('classWhatsAppText').value||'').trim();
+    if(!body){alert('اكتب نص الرسالة أولاً.');return;}
+    const mode=$('classWhatsAppMode').value;
+    let targets=recipients;
+    if(mode==='private'){
+      const picked=recipients[Number($('classWhatsAppStudent').value)];
+      if(!picked){alert('اختر طالباً لديه رقم هاتف مسجل وصالح.');return;}
+      targets=[picked];
+    }
+    if(!targets.length){alert('لا توجد أرقام هواتف صالحة مسجلة في بيانات هذا الصف.');return;}
+    const message=(mode==='general'?'📢 رسالة عامة — صف '+(cls.name||'')+'\n\n':'📩 رسالة خاصة بخصوص الطالب: '+targets[0].name+'\n\n')+body;
+    const box=$('classWhatsAppLinks'); box.innerHTML='';
+    const info=document.createElement('div');
+    info.style.cssText='padding:10px;background:#e8f7f2;border-radius:10px;color:#075e54;font-weight:800';
+    info.textContent=mode==='general'
+      ? `جهزت الرسالة لـ ${targets.length} رقم. افتح كل محادثة واضغط إرسال داخل واتساب.`
+      : 'الرسالة جاهزة للرقم المحدد. اضغط الرابط ثم إرسال داخل واتساب.';
+    box.appendChild(info);
+    targets.forEach((r,i)=>{
+      const a=document.createElement('a');
+      a.href='https://wa.me/'+r.phone+'?text='+encodeURIComponent(message);
+      a.target='_blank'; a.rel='noopener noreferrer';
+      a.textContent=(mode==='general'?(i+1)+'. ':'')+'فتح واتساب — '+r.name+' ('+r.phone+')';
+      a.style.cssText='display:block;padding:11px 13px;background:#128c7e;color:#fff;border-radius:10px;text-decoration:none;font-weight:800;text-align:center';
+      box.appendChild(a);
+    });
+  };
+  document.addEventListener('change',function(e){
+    if(e.target && e.target.id==='classWhatsAppMode') window.classWhatsAppModeChanged();
+  });
+  // يظهر الزر للمدير فقط، دون تغيير صلاحيات بقية الأدوار.
+  function syncClassWhatsAppButton(){
+    const b=$('btnClassWhatsAppMessage');
+    if(b) b.style.display=(currentUser && currentUser.role==='admin' && currentClassIndex!==null && currentClassIndex!==undefined)?'inline-block':'none';
+  }
+  document.addEventListener('click',function(){setTimeout(syncClassWhatsAppButton,0);});
+  const oldRender=window.renderClassroom;
+  if(typeof oldRender==='function'){
+    window.renderClassroom=function(){const result=oldRender.apply(this,arguments);syncClassWhatsAppButton();return result;};
+  }
+  setInterval(syncClassWhatsAppButton,1200);
+})();
+</script>
 
 </body></html>`);
         win.document.close();
@@ -12648,7 +12786,7 @@ window.addEventListener('unhandledrejection', function (event) {
     }catch(e){ console.error('فتح سجل العمليات:',e); }
     // Fallback مستقل حتى لا يتعطل الزر إذا تعطلت إحدى وحدات النظام.
     try{
-      const isAdmin=!!(window.currentUser?.role==='admin' || window.currentUser?.isPrimaryAdmin || window.currentUser?.isAssistant);
+      const isAdmin=!!(currentUser?.role==='admin' || currentUser?.isPrimaryAdmin || currentUser?.isAssistant);
       if(!isAdmin){ alert('سجل العمليات متاح للمدير والمعاون فقط.'); return; }
       const data=Array.isArray(window.ProfessionalModules?.auditLog)?window.ProfessionalModules.auditLog:[];
       document.getElementById('professionalAuditModal')?.remove();
@@ -14231,7 +14369,7 @@ const ROOT='systemDesigner'; const DAY=86400000; const AUTO_REPLY='سوف يتم
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function db(){return window.firebaseDB || (window.FirebaseCloud&&window.firebase&&firebase.database?firebase.database():null)}
-function isAdmin(){try{const u=window.currentUser||(typeof currentUser!=='undefined'?currentUser:null);return !!(u&&u.role==='admin')}catch(e){return false}}
+function isAdmin(){try{const u=currentUser||(typeof currentUser!=='undefined'?currentUser:null);return !!(u&&u.role==='admin')}catch(e){return false}}
 function designerRef(path){const d=db();if(!d)throw new Error('لا يوجد اتصال بقاعدة Firebase السحابية.');return d.ref(ROOT+(path?'/'+path:''))}
 function close(){ $('sdOverlay')?.remove(); }
 function makeOverlay(html){close();const o=document.createElement('div');o.id='sdOverlay';o.className='sd-overlay';o.innerHTML=html;o.addEventListener('click',e=>{if(e.target===o)close()});document.body.appendChild(o);return o}
@@ -14269,4 +14407,54 @@ const oldShow=window.sdShowManagerMessages;window.sdShowManagerMessages=async fu
 document.addEventListener('DOMContentLoaded',function(){
   try{ initializeSecretCodeInputs(); }catch(e){}
 });
+</script>
+
+
+<!-- رسائل واتساب على مستوى المدرسة — تظهر للمدير فقط -->
+<div id="schoolWhatsAppModal" style="display:none;position:fixed;inset:0;z-index:1000025;background:rgba(7,20,32,.72);align-items:center;justify-content:center;padding:12px;direction:rtl;">
+  <div style="background:#fff;width:min(760px,98vw);max-height:94vh;overflow:auto;border-radius:20px;box-shadow:0 22px 70px rgba(0,0,0,.32);padding:18px;border-top:6px solid #128c7e;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <h2 style="margin:0;color:#075e54;font-size:20px;">💬 إرسال رسالة واتساب</h2>
+      <button type="button" onclick="closeSchoolWhatsAppModal()" style="background:#e74c3c;color:#fff;border:0;border-radius:9px;padding:8px 12px;font-weight:800;">إغلاق ✕</button>
+    </div>
+    <p style="margin:0 0 12px;color:#536575;line-height:1.8;font-size:13px;">اختر المستلمين، واكتب الرسالة، ثم افتح روابط واتساب الجاهزة لإرسالها. تُستخدم أرقام الهواتف المسجلة في بيانات النظام فقط.</p>
+    <label for="schoolWhatsAppTarget" style="display:block;font-weight:900;margin:8px 0 5px;">إرسال إلى</label>
+    <select id="schoolWhatsAppTarget" onchange="schoolWhatsAppTargetChanged()" style="width:100%;padding:11px;border:1px solid #cbd8df;border-radius:10px;font:inherit;background:#fff;">
+      <option value="class">صف محدد — جميع أرقام هواتف طلابه</option>
+      <option value="allStudents">جميع طلاب المدرسة — كل الأرقام المسجلة</option>
+      <option value="teacher">معلم محدد</option>
+      <option value="allTeachers">جميع المعلمين — كل الأرقام المسجلة</option>
+    </select>
+    <div id="schoolWhatsAppClassWrap" style="margin-top:10px;">
+      <label for="schoolWhatsAppClass" style="display:block;font-weight:800;margin:5px 0;">اختر الصف</label>
+      <select id="schoolWhatsAppClass" style="width:100%;padding:10px;border:1px solid #cbd8df;border-radius:10px;font:inherit;background:#fff;"></select>
+    </div>
+    <div id="schoolWhatsAppTeacherWrap" style="display:none;margin-top:10px;">
+      <label for="schoolWhatsAppTeacher" style="display:block;font-weight:800;margin:5px 0;">اختر المعلم</label>
+      <select id="schoolWhatsAppTeacher" style="width:100%;padding:10px;border:1px solid #cbd8df;border-radius:10px;font:inherit;background:#fff;"></select>
+    </div>
+    <label for="schoolWhatsAppText" style="display:block;font-weight:900;margin:13px 0 5px;">نص الرسالة</label>
+    <textarea id="schoolWhatsAppText" rows="5" maxlength="5000" placeholder="اكتب الرسالة هنا..." style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd8df;border-radius:12px;font:inherit;resize:vertical;line-height:1.8;"></textarea>
+    <div id="schoolWhatsAppInfo" style="margin:10px 0;color:#536575;font-size:12px;line-height:1.8;"></div>
+    <button type="button" onclick="prepareSchoolWhatsAppMessages()" style="width:100%;background:linear-gradient(135deg,#128c7e,#075e54);color:#fff;border:0;border-radius:11px;padding:12px;font:inherit;font-weight:900;">تجهيز روابط واتساب</button>
+    <div id="schoolWhatsAppLinks" style="display:grid;gap:8px;margin-top:12px;"></div>
+    <div style="margin-top:12px;padding:10px;background:#fff7e6;border:1px solid #f3d28b;border-radius:10px;color:#795b17;font-size:12px;line-height:1.8;">ملاحظة: واتساب لا يسمح لهذه الصفحة بإرسال الرسائل تلقائياً أو إنشاء مجموعة وإضافة الجميع. ستُفتح محادثة لكل رقم برسالة جاهزة، ويجب الضغط على «إرسال» داخل واتساب. لا يتم إرسال أي شيء قبل اختيار الرابط وإتمام الإرسال بنفسك.</div>
+  </div>
+</div>
+<script>
+(function(){
+  const byId=id=>document.getElementById(id);
+  function normPhone(raw){let n=String(raw||'').replace(/[\s\-()]/g,'').replace(/^\+/,'').replace(/[^\d]/g,'');if(n.startsWith('00'))n=n.slice(2);if(n.startsWith('0'))n='964'+n.slice(1);else if(n.startsWith('7')&&n.length===10)n='964'+n;return n;}
+  function validPhone(raw){const n=normPhone(raw);return /^964\d{8,12}$/.test(n)?n:'';}
+  function studentRecipients(classIndex=null){const out=[],seen=new Set();(Array.isArray(schoolData)?schoolData:[]).forEach((cls,ci)=>{if(classIndex!==null&&ci!==classIndex)return;(Array.isArray(cls?.desks)?cls.desks:[]).forEach((desk,di)=>{[1,2].forEach(slot=>{const name=String(desk?.['student'+slot]||'').trim();const phone=validPhone(desk?.['phone'+slot]||desk?.['parentPhone'+slot]||'');if(!name||!phone||seen.has(phone))return;seen.add(phone);out.push({name,phone,className:String(cls?.name||'صف'),deskNumber:desk?.deskNumber??di+1});});});});return out;}
+  function teacherRecipients(){const out=[],seen=new Set();(Array.isArray(teachersData)?teachersData:[]).forEach(t=>{const name=String(t?.name||'').trim(),phone=validPhone(t?.phone||t?.mobile||t?.phoneNumber||'');if(!name||!phone||seen.has(phone))return;seen.add(phone);out.push({name,phone});});return out;}
+  window.openSchoolWhatsAppModal=function(){if(!currentUser||currentUser.role!=='admin'){alert('هذه الخاصية متاحة في سستم المدير فقط.');return;}const c=byId('schoolWhatsAppClass'),t=byId('schoolWhatsAppTeacher');c.innerHTML='';(Array.isArray(schoolData)?schoolData:[]).forEach((cls,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=String(cls?.name||('الصف '+(i+1)));c.appendChild(o);});t.innerHTML='';(Array.isArray(teachersData)?teachersData:[]).forEach((teacher,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=String(teacher?.name||('المعلم '+(i+1)))+' — '+(validPhone(teacher?.phone)||'لا يوجد رقم صالح');t.appendChild(o);});byId('schoolWhatsAppText').value='';byId('schoolWhatsAppLinks').innerHTML='';byId('schoolWhatsAppTarget').value='class';window.schoolWhatsAppTargetChanged();byId('schoolWhatsAppModal').style.display='flex';};
+  window.closeSchoolWhatsAppModal=function(){byId('schoolWhatsAppModal').style.display='none';};
+  window.schoolWhatsAppTargetChanged=function(){const v=byId('schoolWhatsAppTarget').value;byId('schoolWhatsAppClassWrap').style.display=v==='class'?'block':'none';byId('schoolWhatsAppTeacherWrap').style.display=v==='teacher'?'block':'none';byId('schoolWhatsAppLinks').innerHTML='';let count=0;if(v==='class')count=studentRecipients(Number(byId('schoolWhatsAppClass').value||0)).length;else if(v==='allStudents')count=studentRecipients().length;else if(v==='teacher')count=byId('schoolWhatsAppTeacher').options.length?1:0;else count=teacherRecipients().length;byId('schoolWhatsAppInfo').textContent='عدد المستلمين المتوقع بحسب الأرقام الصالحة المسجلة: '+count+' (قد يقل العدد إذا كانت بعض الأرقام غير صالحة).';};
+  window.prepareSchoolWhatsAppMessages=function(){if(!currentUser||currentUser.role!=='admin'){alert('هذه الخاصية متاحة في سستم المدير فقط.');return;}const body=String(byId('schoolWhatsAppText').value||'').trim();if(!body){alert('اكتب نص الرسالة أولاً.');return;}const type=byId('schoolWhatsAppTarget').value;let targets=[],heading='';if(type==='class'){const ci=Number(byId('schoolWhatsAppClass').value);const cls=schoolData?.[ci];if(!cls){alert('اختر صفاً صحيحاً.');return;}targets=studentRecipients(ci);heading='رسالة عامة — صف '+String(cls.name||'');}else if(type==='allStudents'){targets=studentRecipients();heading='رسالة عامة — جميع طلاب مدرسة التفاني الابتدائية';}else if(type==='teacher'){const t=teachersData?.[Number(byId('schoolWhatsAppTeacher').value)];const phone=validPhone(t?.phone||t?.mobile||t?.phoneNumber||'');if(t&&phone)targets=[{name:String(t.name||'المعلم'),phone}];heading='رسالة إلى المعلم '+String(t?.name||'');}else{targets=teacherRecipients();heading='رسالة عامة — جميع معلمي مدرسة التفاني الابتدائية';}if(!targets.length){alert('لم يتم العثور على أرقام هواتف صالحة للمستلمين المحددين. تحقق من أرقام الهواتف المسجلة في النظام.');return;}const message='📢 '+heading+'\n\n'+body;const box=byId('schoolWhatsAppLinks');box.innerHTML='';const info=document.createElement('div');info.style.cssText='padding:10px;background:#e8f7f2;border-radius:10px;color:#075e54;font-weight:800;line-height:1.8';info.textContent='تم تجهيز '+targets.length+' رابط واتساب. افتح كل رابط واضغط إرسال داخل واتساب؛ لن تُرسل الرسائل تلقائياً.';box.appendChild(info);targets.forEach((r,i)=>{const a=document.createElement('a');a.href='https://wa.me/'+r.phone+'?text='+encodeURIComponent(message);a.target='_blank';a.rel='noopener noreferrer';a.textContent=(i+1)+'. فتح واتساب — '+r.name+(r.className?' ('+r.className+')':'')+' — '+r.phone;a.style.cssText='display:block;padding:11px 13px;background:#128c7e;color:#fff;border-radius:10px;text-decoration:none;font-weight:800;text-align:center;overflow-wrap:anywhere';box.appendChild(a);});};
+  const buttonSync=()=>{const b=byId('btnSchoolWhatsAppMessage');if(b)b.style.display=(typeof currentUser!=='undefined'&&currentUser&&currentUser.role==='admin')?'inline-block':'none';};
+  document.addEventListener('click',()=>setTimeout(buttonSync,0));setInterval(buttonSync,1200);
+  document.addEventListener('change',e=>{if(e.target&&['schoolWhatsAppTarget','schoolWhatsAppClass','schoolWhatsAppTeacher'].includes(e.target.id))window.schoolWhatsAppTargetChanged();});
+  buttonSync();
+})();
 </script>
