@@ -8662,21 +8662,21 @@ function updateCloudStatus(text, color) {
         if(photoDraft2!==null&&photoDraft2!==undefined)desk.photoData2=photoDraft2;
         if(!newStudent1){desk.photoData1='';desk.photo1='';desk.imageData1='';desk.image1='';}
         if(!newStudent2){desk.photoData2='';desk.photo2='';desk.imageData2='';desk.image2='';}
-        if (newStudent1 && newStudent1 !== oldStudent1) desk.student1Id = createStableId('student');
-        if (newStudent2 && newStudent2 !== oldStudent2) desk.student2Id = createStableId('student');
+        if (newStudent1 && !oldStudent1 && !desk.student1Id) desk.student1Id = createStableId('student');
+        if (newStudent2 && !oldStudent2 && !desk.student2Id) desk.student2Id = createStableId('student');
         if (!newStudent1) desk.student1Id = '';
         if (!newStudent2) desk.student2Id = '';
 
         /* لا نأخذ قيمة الكود من أي input */
         if (!newStudent1) {
             desk.code1 = '';
-        } else if (newStudent1 !== oldStudent1 || !String(desk.code1 || '').trim()) {
+        } else if (!String(desk.code1 || '').trim()) {
             desk.code1 = generateUniqueSystemCode();
         }
 
         if (!newStudent2) {
             desk.code2 = '';
-        } else if (newStudent2 !== oldStudent2 || !String(desk.code2 || '').trim()) {
+        } else if (!String(desk.code2 || '').trim()) {
             desk.code2 = generateUniqueSystemCode();
         }
 
@@ -14934,6 +14934,70 @@ body.manager-dark-mode.manager-sidebar-active #managerSideNav button:focus-visib
   body.manager-sidebar-active #managerSideNav button { transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease !important; }
 }
 </style>
+
+
+<style id="parent-homework-unread-glow-css">
+@keyframes parentHomeworkUnreadPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,193,7,.35),0 0 10px rgba(255,152,0,.45)}50%{transform:scale(1.035);box-shadow:0 0 0 6px rgba(255,193,7,0),0 0 24px rgba(255,152,0,.9)}}
+#parentActionHomework.parent-homework-unread{animation:parentHomeworkUnreadPulse 1.25s ease-in-out infinite!important;outline:3px solid #ffb300!important;outline-offset:2px;position:relative;z-index:3}
+</style>
+<script id="parent-homework-unread-glow-script">
+(function(){
+  const keyForStudent=()=>{
+    try{
+      const u=window.currentUser||currentUser;
+      if(!u||u.role!=='parent')return '';
+      const f=typeof currentStudentForDashboard==='function'?currentStudentForDashboard():null;
+      const st=f?.student||u.studentSnapshot||{};
+      return String(st.id||u.studentId||('student:'+String(u.classIndex??'')+':'+String(u.deskIndex??'')+':'+String(st.slot??'')));
+    }catch(_){return '';}
+  };
+  const relevantHomework=()=>{
+    try{
+      const sid=keyForStudent(); if(!sid)return [];
+      const f=typeof currentStudentForDashboard==='function'?currentStudentForDashboard():null;
+      const st=f?.student||currentUser?.studentSnapshot||{};
+      const code=String(st.code||currentUser?.studentSnapshot?.code||'');
+      const classId=String(f?.classObj?.id||currentUser?.classId||'');
+      return (Array.isArray(homeworkData)?homeworkData:[]).filter(h=>{
+        if(!h||!h.id)return false;
+        if(h.audience==='student'){
+          const target=String(h.studentId||h.targetStudentId||h.studentCode||'');
+          return target===sid || (!!code&&target===code) || (!!st.name&&String(h.studentName||'')===String(st.name));
+        }
+        return !h.classId||!classId||String(h.classId)===classId;
+      });
+    }catch(_){return [];}
+  };
+  const readKey=()=> 'parentHomeworkRead:'+keyForStudent();
+  function update(){
+    const b=document.getElementById('parentActionHomework');if(!b)return;
+    const sid=keyForStudent();if(!sid){b.classList.remove('parent-homework-unread');return;}
+    let seen={};try{seen=JSON.parse((window.cloudOnlyStorage||cloudOnlyStorage).getItem(readKey())||'{}')||{};}catch(_){}
+    const fresh=relevantHomework().some(h=>!seen[String(h.id)]);
+    b.classList.toggle('parent-homework-unread',fresh);
+    b.title=fresh?'يوجد واجب جديد لم تتم مشاهدته':'عرض الواجبات';
+    let badge=b.querySelector('.parent-homework-new-badge');
+    if(fresh&&!badge){badge=document.createElement('span');badge.className='parent-homework-new-badge';badge.textContent='جديد';badge.style.cssText='display:inline-block;margin-inline-start:7px;padding:2px 7px;border-radius:999px;background:#b91c1c;color:white;font-size:11px;font-weight:900';b.appendChild(badge);}
+    if(!fresh&&badge)badge.remove();
+  }
+  function markViewed(){
+    const sid=keyForStudent();if(!sid)return;
+    let seen={};try{seen=JSON.parse((window.cloudOnlyStorage||cloudOnlyStorage).getItem(readKey())||'{}')||{};}catch(_){}
+    relevantHomework().forEach(h=>{if(h?.id)seen[String(h.id)]=Date.now();});
+    try{(window.cloudOnlyStorage||cloudOnlyStorage).setItem(readKey(),JSON.stringify(seen));}catch(_){}
+    update();
+  }
+  document.addEventListener('click',e=>{
+    const b=e.target?.closest?.('#parentActionHomework');
+    if(b){setTimeout(markViewed,350);}
+  },true);
+  const oldUpdate=window.updateTeacherWorkHomeworkNotice;
+  document.addEventListener('DOMContentLoaded',update);
+  document.addEventListener('visibilitychange',update);
+  setInterval(update,5000);
+  window.updateParentHomeworkUnread=update;
+})();
+</script>
 
 </body>
 </html>
