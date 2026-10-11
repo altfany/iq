@@ -14513,41 +14513,93 @@ body.manager-dark-mode .modal,body.manager-dark-mode .sd-overlay{background-colo
 </script>
 
 <style id="manager-sidebar-and-circular-summary">
-:root{--royal-navy:#101f3b;--royal-gold:#d8b45a}
-body.manager-sidebar-active{padding-right:246px;background:#f4f6fa}
-#managerSideNav{display:none;position:fixed;z-index:900;right:0;top:0;bottom:0;width:230px;overflow:auto;padding:18px 12px;background:linear-gradient(180deg,#101f3b,#172c4f 72%,#0d1930);border-left:2px solid #d8b45a;box-shadow:-8px 0 28px #101f3b22;color:#fff}
-body.manager-sidebar-active #managerSideNav{display:flex;flex-direction:column;gap:8px}
-#managerSideNav .msn-title{font-weight:900;color:#f2d78c;padding:8px 6px 13px;border-bottom:1px solid #d8b45a66;margin-bottom:5px}
-#managerSideNav button{width:100%!important;text-align:right!important;min-height:42px!important;background:linear-gradient(135deg,#fff,#edf1f6)!important;color:#172a48!important;border:1px solid #d8b45a66!important;border-radius:11px!important;box-shadow:0 4px 10px #0002!important}
+:root{--royal-navy:#101f3b;--royal-gold:#d8b45a;--royal-ink:#192943}
+body.manager-sidebar-active{padding-right:250px;background:#f3f6fb}
+#managerSideNav{display:none;position:fixed;z-index:1201;right:0;top:0;bottom:0;width:238px;overflow:auto;padding:18px 13px;background:linear-gradient(160deg,#0b1730,#14294b 58%,#091326);border-left:2px solid #dfbd66;box-shadow:-12px 0 34px #09132626;color:#fff}
+body.manager-sidebar-active #managerSideNav{display:flex;flex-direction:column;gap:9px}
+#managerSideNav .msn-title{font-weight:900;color:#f6dc91;padding:8px 7px 15px;border-bottom:1px solid #d8b45a66;margin-bottom:5px;line-height:1.5}
+#managerSideNav button{width:100%!important;text-align:right!important;min-height:43px!important;background:linear-gradient(145deg,#fff,#edf2f8)!important;color:#172a48!important;border:1px solid #d8b45a77!important;border-radius:12px!important;box-shadow:0 4px 12px #0002!important;transition:transform .18s ease,box-shadow .18s ease!important}
+#managerSideNav button:hover{transform:translateX(-2px)!important;box-shadow:0 7px 16px #0003!important}
 body.manager-sidebar-active header{background:linear-gradient(115deg,#101f3b,#203a61);border:1px solid #d8b45a;border-radius:0 0 16px 16px}
-#adminDailySchoolReportBox .daily-circles{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:12px;margin-top:12px}
-#adminDailySchoolReportBox .daily-circle-card{background:linear-gradient(145deg,#fff,#f5f7fb);border:1px solid #e4e8ef;border-radius:16px;padding:12px;text-align:center;color:#1b2d49;box-shadow:0 5px 16px #172a4610}
-#adminDailySchoolReportBox .daily-circle{--p:0;--c:#27ae60;width:82px;height:82px;border-radius:50%;margin:0 auto 8px;background:conic-gradient(var(--c) calc(var(--p)*1%),#e9edf3 0);display:grid;place-items:center;position:relative}
-#adminDailySchoolReportBox .daily-circle:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#fff}
-#adminDailySchoolReportBox .daily-circle strong{position:relative;z-index:1;font-size:17px;color:#172a48}
-#adminDailySchoolReportBox .daily-circle-card b{display:block;font-size:13px}
-#adminDailySchoolReportBox .daily-circle-card small{color:#66758a}
-@media(max-width:760px){body.manager-sidebar-active{padding-right:0;padding-bottom:80px}#managerSideNav{top:auto;left:0;right:0;bottom:0;width:auto;height:auto;max-height:46vh;border-left:0;border-top:2px solid #d8b45a;border-radius:16px 16px 0 0;padding:8px;display:none}body.manager-sidebar-active #managerSideNav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}#managerSideNav .msn-title{grid-column:1/-1;padding:4px;margin:0}#managerSideNav button{font-size:12px!important;min-height:38px!important;padding:6px!important}#adminDailySchoolReportBox .daily-circles{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#adminDailySchoolReportBox .daily-circle{width:68px;height:68px}}
+#adminDailySchoolReportBox .daily-circles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0 10px}
+#adminDailySchoolReportBox .daily-circle-card{position:relative;overflow:hidden;background:linear-gradient(150deg,#fff,#f5f7fc);border:1px solid #e0e7f0;border-radius:19px;padding:16px 10px 13px;text-align:center;color:#1b2d49;box-shadow:0 8px 22px #172a4610,inset 0 1px #fff;min-width:0}
+#adminDailySchoolReportBox .daily-circle-card:before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--card-accent,#d8b45a)}
+#adminDailySchoolReportBox .daily-circle{--p:0;--c:#27ae60;width:96px;height:96px;border-radius:50%;margin:0 auto 10px;background:conic-gradient(var(--c) calc(var(--p)*1%),#e9edf4 0);display:grid;place-items:center;position:relative;box-shadow:0 4px 12px #172a4610}
+#adminDailySchoolReportBox .daily-circle:before{content:"";position:absolute;inset:8px;border-radius:50%;background:linear-gradient(145deg,#fff,#f8faff);box-shadow:inset 0 2px 7px #1528460d}
+#adminDailySchoolReportBox .daily-circle strong{position:relative;z-index:1;font-size:21px;font-weight:900;color:#172a48;font-variant-numeric:tabular-nums}
+#adminDailySchoolReportBox .daily-circle-card b{display:block;font-size:14px;font-weight:850;margin:3px 0 5px}
+#adminDailySchoolReportBox .daily-circle-card small{display:inline-flex;align-items:center;justify-content:center;color:#607086;background:#edf2f8;border-radius:20px;padding:4px 9px;font-size:11px;font-weight:700}
+#tafanyMobileServicesToggle{display:none}
+#tafanyMobileServicesOverlay{display:none}
+#tafanyAttendanceLiveStatus{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0 4px;padding:10px 13px;border:1px solid #dce6f0;border-radius:13px;background:linear-gradient(110deg,#f8fbff,#fff);font-size:12px;color:#42536b}
+#tafanyAttendanceLiveStatus .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1eaa67;box-shadow:0 0 0 4px #1eaa6718;margin-left:7px}
+#tafanyAttendanceLiveStatus.offline .live-dot{background:#d99a24;box-shadow:0 0 0 4px #d99a2418}
+@media(max-width:760px){
+ body.manager-sidebar-active{padding-right:0;padding-bottom:18px}
+ #managerSideNav{display:none!important;top:0;right:0;bottom:0;left:auto;width:min(84vw,330px);max-height:none;height:100dvh;padding:17px 13px calc(20px + env(safe-area-inset-bottom));border-left:2px solid #d8b45a;border-top:0;border-radius:0 0 0 18px;transform:translateX(105%);transition:transform .24s ease;box-shadow:-18px 0 50px #06112655}
+ body.manager-sidebar-active #managerSideNav.mobile-open{display:flex!important;transform:translateX(0)}
+ #managerSideNav .msn-title{font-size:16px;padding:8px 7px 14px}
+ #managerSideNav button{font-size:14px!important;min-height:46px!important;padding:10px 12px!important}
+ #tafanyMobileServicesToggle{display:flex;align-items:center;justify-content:center;gap:9px;width:calc(100% - 20px);margin:10px auto 12px;padding:13px 15px;border-radius:14px;border:1px solid #d8b45a;background:linear-gradient(115deg,#0e1e39,#203b63);color:#f8df98;font-weight:900;font-size:14px;box-shadow:0 7px 18px #10234424}
+ #tafanyMobileServicesToggle .services-hamburger{font-size:19px;line-height:1}
+ #tafanyMobileServicesOverlay.open{display:block;position:fixed;z-index:1200;inset:0;background:#06112688;backdrop-filter:blur(3px)}
+ #adminDailySchoolReportBox .daily-circles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+ #adminDailySchoolReportBox .daily-circle-card{padding:13px 7px 11px;border-radius:16px}
+ #adminDailySchoolReportBox .daily-circle{width:76px;height:76px;margin-bottom:8px}
+ #adminDailySchoolReportBox .daily-circle:before{inset:7px}
+ #adminDailySchoolReportBox .daily-circle strong{font-size:18px}
+ #adminDailySchoolReportBox .daily-circle-card b{font-size:13px}
+ #adminDailySchoolReportBox .daily-circle-card small{font-size:10px;padding:4px 7px}
+ #tafanyAttendanceLiveStatus{font-size:11px;padding:9px 10px}
+}
+@media(min-width:761px){#tafanyMobileServicesToggle,#tafanyMobileServicesOverlay{display:none!important}}
+body.manager-dark-mode #adminDailySchoolReportBox .daily-circle-card{background:linear-gradient(145deg,#1b2a40,#142136)!important;border-color:#34465e!important;color:#edf3fc!important}
+body.manager-dark-mode #adminDailySchoolReportBox .daily-circle:before{background:linear-gradient(145deg,#1b2a40,#142136)!important}
+body.manager-dark-mode #adminDailySchoolReportBox .daily-circle strong{color:#f5d982!important}
+body.manager-dark-mode #adminDailySchoolReportBox .daily-circle-card small{background:#293b53;color:#d7e1ee}
+body.manager-dark-mode #tafanyAttendanceLiveStatus{background:linear-gradient(110deg,#16243a,#1b2b42);border-color:#34465e;color:#d9e4f2}
 </style>
-<div id="managerSideNav" aria-label="القائمة الجانبية للمدير"><div class="msn-title">✦ خدمات الإدارة المدرسية</div></div>
+<div id="managerSideNav" aria-label="خدمات الإدارة المدرسية"><div class="msn-title">✦ خدمات الإدارة المدرسية</div></div>
+<div id="tafanyMobileServicesOverlay" aria-hidden="true"></div>
 <script id="manager-sidebar-and-attendance-rings">
 (function(){
- const keepIds=new Set(['globalSearchWrapper']);
- function moveManagerButtons(){
-   const reportBox=document.getElementById('adminDailySchoolReportBox');const badge=document.getElementById('userRoleBadge');const admin=!!(reportBox&&reportBox.style.display!=='none'&&reportBox.style.display!=='')||!!(badge&&/مدير النظام|معاون المدير/.test(badge.textContent||''));
-   const body=document.body,nav=document.getElementById('managerSideNav'),actions=document.querySelector('.header-actions');if(!body||!nav||!actions)return;
-   if(!admin){body.classList.remove('manager-sidebar-active');[...nav.querySelectorAll('button')].forEach(btn=>{if(btn.dataset.movedByManagerNav==='1'){if(btn.dataset.managerNavOrigin==='staff'){const dest=document.querySelector('#staffAdminBar div div');if(dest)dest.appendChild(btn);}else actions.insertBefore(btn,actions.querySelector('button[onclick*="logoutSystem"]')||null);delete btn.dataset.movedByManagerNav;delete btn.dataset.managerNavOrigin;}});return;}
-   body.classList.add('manager-sidebar-active');
-   const logout=[...actions.querySelectorAll('button')].find(b=>(b.textContent||'').includes('تسجيل خروج'));
-   [...actions.querySelectorAll(':scope > button')].forEach(btn=>{if(btn.id==='btnManagerWhatsApp'||btn.id==='btnAnnouncementsNav'||btn.id==='btnComplaintsNav'||btn.id==='btnAddClassNav'||btn.id==='btnTeacherComplaintsNav'||btn.id==='btnTeacherMonthlyReportNav'||btn.id==='btnTeachersNav'||btn.id==='btnTeachersAbsenceNav'||btn.id==='btnTeacherAttendanceFingerprint'||btn.id==='btnHomeworkNav'||btn.id==='btnTeacherParentMessagesNav'||btn.id==='btnTransferNav'||btn.id==='btnManagerNotesNav'||btn.id==='btnSystemResetNav'){if(btn.parentElement===actions&&btn.style.display!=='none'&&btn.style.display!=='none!important'){btn.dataset.movedByManagerNav='1';nav.appendChild(btn);}}});
-   if(logout&&logout.parentElement===actions){logout.style.marginTop='auto';}
-   document.querySelectorAll('#staffAdminBar button').forEach(btn=>{if(btn.parentElement&&btn.dataset.movedByManagerNav!=='1'){btn.dataset.managerNavOrigin='staff';btn.dataset.movedByManagerNav='1';nav.appendChild(btn);}});
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ let mobileToggle=null,overlay=null,nav=null;
+ function isMobile(){return window.matchMedia&&window.matchMedia('(max-width: 760px)').matches}
+ function isAdmin(){const report=$('adminDailySchoolReportBox'),badge=$('userRoleBadge');let u=window.currentUser;try{if(!u&&typeof currentUser!=='undefined')u=currentUser}catch(e){}return !!(u&&(['admin','manager','principal','مدير','المدير'].includes(String(u.role||'').toLowerCase())||u.isAssistant))||!!(report&&report.style.display!=='none'&&report.style.display!=='')||!!(badge&&/مدير النظام|معاون المدير/.test(badge.textContent||''))}
+ function closeMobileNav(){if(nav)nav.classList.remove('mobile-open');if(overlay){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true')}if(mobileToggle)mobileToggle.setAttribute('aria-expanded','false')}
+ function openMobileNav(){if(!nav)return;nav.classList.add('mobile-open');if(overlay){overlay.classList.add('open');overlay.setAttribute('aria-hidden','false')}if(mobileToggle)mobileToggle.setAttribute('aria-expanded','true')}
+ function setupMobileMenu(){nav=$('managerSideNav');overlay=$('tafanyMobileServicesOverlay');if(!nav)return;
+   if(!mobileToggle){mobileToggle=document.createElement('button');mobileToggle.type='button';mobileToggle.id='tafanyMobileServicesToggle';mobileToggle.innerHTML='<span class="services-hamburger">☰</span><span>خدمات الإدارة المدرسية</span><span aria-hidden="true">⌄</span>';mobileToggle.setAttribute('aria-expanded','false');mobileToggle.addEventListener('click',()=>nav.classList.contains('mobile-open')?closeMobileNav():openMobileNav());
+     const report=$('adminDailySchoolReportBox');const header=document.querySelector('header');if(report&&report.parentNode)report.parentNode.insertBefore(mobileToggle,report);else if(header&&header.parentNode)header.insertAdjacentElement('afterend',mobileToggle);else document.body.insertBefore(mobileToggle,document.body.firstChild);
+   }
+   if(overlay&&!overlay.dataset.bound){overlay.dataset.bound='1';overlay.addEventListener('click',closeMobileNav)}
+   if(nav&&!nav.dataset.closeBound){nav.dataset.closeBound='1';nav.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&isMobile())setTimeout(closeMobileNav,90)})}
+   if(!isMobile())closeMobileNav();
+   mobileToggle.style.display=isAdmin()&&isMobile()?'flex':'none';
  }
- function buildRings(){const box=document.getElementById('adminDailySchoolReportBox');if(!box||box.dataset.rings==='1')return;const header=box.firstElementChild;if(!header)return;const wrap=document.createElement('div');wrap.className='daily-circles';const defs=[['present','الحضور','#239b56'],['absent','الغياب','#d64545'],['leave','المجاز','#d6a126'],['late','المتأخرون','#3977c5']];wrap.innerHTML=defs.map(function(d){return '<div class="daily-circle-card"><div class="daily-circle" id="dailyRing_'+d[0]+'" style="--p:0;--c:'+d[2]+'"><strong id="dailyRingPct_'+d[0]+'">0%</strong></div><b>'+d[1]+'</b><small id="dailyRingCount_'+d[0]+'">0 طالب</small></div>';}).join('');header.insertAdjacentElement('afterend',wrap);box.dataset.rings='1';}
- function updateRings(){buildRings();const box=document.getElementById('adminDailySchoolReportBox');if(!box||box.style.display==='none')return;let rows=[];try{if(typeof getDailySchoolStudentRows==='function')rows=getDailySchoolStudentRows()||[];else if(window.ProfessionalModules?.attendanceData)rows=window.ProfessionalModules.attendanceData.filter(x=>x.date===(typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10)));}catch(e){}const total=rows.length||0;const counts={present:0,absent:0,leave:0,late:0};rows.forEach(r=>{let st=String(r.status||r.state||'').toLowerCase();if(['present','حاضر','حضور'].includes(st))counts.present++;else if(['absent','غائب','غياب'].includes(st))counts.absent++;else if(['leave','excused','مجاز','إجازة'].includes(st))counts.leave++;else if(['late','متأخر','تأخر'].includes(st))counts.late++;});Object.keys(counts).forEach(k=>{const pct=total?Math.round(counts[k]/total*100):0;const ring=document.getElementById('dailyRing_'+k),p=document.getElementById('dailyRingPct_'+k),c=document.getElementById('dailyRingCount_'+k);if(ring)ring.style.setProperty('--p',pct);if(p)p.textContent=pct+'%';if(c)c.textContent=counts[k]+' طالب';});}
- function run(){moveManagerButtons();updateRings();}
+ function moveManagerButtons(){
+   const report=$('adminDailySchoolReportBox'),badge=$('userRoleBadge'),actions=document.querySelector('.header-actions');if(!nav||!actions)return;
+   const admin=isAdmin();
+   if(!admin){document.body.classList.remove('manager-sidebar-active');closeMobileNav();[...nav.querySelectorAll('button')].forEach(btn=>{if(btn.dataset.movedByManagerNav==='1'){if(btn.dataset.managerNavOrigin==='staff'){const dest=document.querySelector('#staffAdminBar div div');if(dest)dest.appendChild(btn)}else actions.insertBefore(btn,actions.querySelector('button[onclick*="logoutSystem"]')||null);delete btn.dataset.movedByManagerNav;delete btn.dataset.managerNavOrigin}});return}
+   document.body.classList.add('manager-sidebar-active');
+   [...actions.querySelectorAll(':scope > button')].forEach(btn=>{if(['btnManagerWhatsApp','btnAnnouncementsNav','btnComplaintsNav','btnAddClassNav','btnTeacherComplaintsNav','btnTeacherMonthlyReportNav','btnTeachersNav','btnTeachersAbsenceNav','btnTeacherAttendanceFingerprint','btnHomeworkNav','btnTeacherParentMessagesNav','btnTransferNav','btnManagerNotesNav','btnSystemResetNav'].includes(btn.id)&&btn.parentElement===actions&&btn.style.display!=='none'){btn.dataset.movedByManagerNav='1';nav.appendChild(btn)}});
+   document.querySelectorAll('#staffAdminBar button').forEach(btn=>{if(btn.parentElement&&btn.dataset.movedByManagerNav!=='1'){btn.dataset.managerNavOrigin='staff';btn.dataset.movedByManagerNav='1';nav.appendChild(btn)}});
+   const title=nav.querySelector('.msn-title');if(title)title.textContent='✦ خدمات الإدارة المدرسية';
+ }
+ function buildRings(){const box=$('adminDailySchoolReportBox');if(!box||box.dataset.rings==='1')return;const header=box.firstElementChild;if(!header)return;const wrap=document.createElement('div');wrap.className='daily-circles';const defs=[['present','الحضور','#239b56'],['absent','الغياب','#d64545'],['leave','المجاز','#d6a126'],['late','المتأخرون','#3977c5']];wrap.innerHTML=defs.map(d=>'<div class="daily-circle-card" style="--card-accent:'+d[2]+'"><div class="daily-circle" id="dailyRing_'+d[0]+'" style="--p:0;--c:'+d[2]+'"><strong id="dailyRingPct_'+d[0]+'">0%</strong></div><b>'+d[1]+'</b><small id="dailyRingCount_'+d[0]+'">0 طالب</small></div>').join('');header.insertAdjacentElement('afterend',wrap);
+   const live=document.createElement('div');live.id='tafanyAttendanceLiveStatus';live.innerHTML='<span><i class="live-dot"></i><b id="tafanyAttendanceLiveLabel">تحديث مباشر</b></span><span id="tafanyAttendanceLiveDetail">تتم قراءة سجلات اليوم المحفوظة في النظام</span>';wrap.insertAdjacentElement('afterend',live);box.dataset.rings='1';}
+ function currentRows(){try{if(typeof getDailySchoolStudentRows==='function')return getDailySchoolStudentRows()||[]}catch(e){}return []}
+ function normStatus(value){const s=String(value??'').trim().toLowerCase();if(['absent','غائب','غياب','غائبة'].includes(s))return'absent';if(['leave','excused','مجـاز','مجاز','إجازة','اجازة','معذور'].includes(s))return'leave';if(['late','متأخر','متأخرة','تأخر'].includes(s))return'late';return'present'}
+ function statusFor(row,date){try{if(typeof getDailySchoolStudentStatus==='function')return normStatus(getDailySchoolStudentStatus(row,date));}catch(e){}try{const a=window.ProfessionalModules?.attendanceData||[];const r=a.find(x=>String(x.studentId||'').trim()===String(row.id||'').trim()&&String(x.date||'')===date);if(r)return normStatus(r.status)}catch(e){}return'present'}
+ function updateRings(){buildRings();const box=$('adminDailySchoolReportBox');if(!box)return;const rows=currentRows();const today=(()=>{try{return typeof getFormattedDate==='function'?getFormattedDate():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}})();const counts={present:0,absent:0,leave:0,late:0};rows.forEach(r=>counts[statusFor(r,today)]++);const total=rows.length;
+   Object.keys(counts).forEach(k=>{const pct=total?Math.round(counts[k]/total*100):0;const ring=$('dailyRing_'+k),p=$('dailyRingPct_'+k),c=$('dailyRingCount_'+k);if(ring)ring.style.setProperty('--p',pct);if(p)p.textContent=pct+'%';if(c)c.textContent=counts[k]+' من '+total+' طالب';});
+   const live=$('tafanyAttendanceLiveStatus'),label=$('tafanyAttendanceLiveLabel'),detail=$('tafanyAttendanceLiveDetail');const cloudText=Array.from(document.querySelectorAll('[id*="cloud" i],[class*="cloud" i]')).map(e=>(e.innerText||e.textContent||'').trim()).find(t=>/متصل|مزامنة مباشرة|تم الحفظ|لا يوجد إنترنت|غير متصل/i.test(t))||'';const online=navigator.onLine!==false;const connected=online&&(!/لا يوجد إنترنت|غير متصل/i.test(cloudText));if(live)live.classList.toggle('offline',!connected);if(label)label.textContent=connected?'تحديث مباشر من السحابة':'الاتصال غير مؤكد';if(detail)detail.textContent=(new Date()).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'})+' • '+(connected?'تتجدد الأرقام تلقائياً عند وصول تحديثات المدير أو المراقب أو مرشد الصف':'تُعرض آخر البيانات المتاحة حتى عودة الاتصال');
+ }
+ function run(){setupMobileMenu();moveManagerButtons();updateRings()}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
- setInterval(run,1600);
+ setInterval(run,1200);window.addEventListener('resize',setupMobileMenu);window.addEventListener('online',updateRings);window.addEventListener('offline',updateRings);
 })();
 </script>
 </body>
