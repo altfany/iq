@@ -14534,7 +14534,7 @@ body.manager-sidebar-active header{background:linear-gradient(115deg,#101f3b,#20
 #tafanyAttendanceLiveStatus{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0 4px;padding:10px 13px;border:1px solid #dce6f0;border-radius:13px;background:linear-gradient(110deg,#f8fbff,#fff);font-size:12px;color:#42536b}
 #tafanyAttendanceLiveStatus .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1eaa67;box-shadow:0 0 0 4px #1eaa6718;margin-left:7px}
 #tafanyAttendanceLiveStatus.offline .live-dot{background:#d99a24;box-shadow:0 0 0 4px #d99a2418}
-@media(max-width:760px){
+@media(max-width:900px){
  body.manager-sidebar-active{padding-right:0;padding-bottom:18px}
  #managerSideNav{display:none!important;top:0;right:0;bottom:0;left:auto;width:min(84vw,330px);max-height:none;height:100dvh;padding:17px 13px calc(20px + env(safe-area-inset-bottom));border-left:2px solid #d8b45a;border-top:0;border-radius:0 0 0 18px;transform:translateX(105%);transition:transform .24s ease;box-shadow:-18px 0 50px #06112655}
  body.manager-sidebar-active #managerSideNav.mobile-open{display:flex!important;transform:translateX(0)}
@@ -14552,7 +14552,7 @@ body.manager-sidebar-active header{background:linear-gradient(115deg,#101f3b,#20
  #adminDailySchoolReportBox .daily-circle-card small{font-size:10px;padding:4px 7px}
  #tafanyAttendanceLiveStatus{font-size:11px;padding:9px 10px}
 }
-@media(min-width:761px){#tafanyMobileServicesToggle,#tafanyMobileServicesOverlay{display:none!important}}
+@media(min-width:901px){#tafanyMobileServicesToggle,#tafanyMobileServicesOverlay{display:none!important}}
 body.manager-dark-mode #adminDailySchoolReportBox .daily-circle-card{background:linear-gradient(145deg,#1b2a40,#142136)!important;border-color:#34465e!important;color:#edf3fc!important}
 body.manager-dark-mode #adminDailySchoolReportBox .daily-circle:before{background:linear-gradient(145deg,#1b2a40,#142136)!important}
 body.manager-dark-mode #adminDailySchoolReportBox .daily-circle strong{color:#f5d982!important}
@@ -14566,14 +14566,15 @@ body.manager-dark-mode #tafanyAttendanceLiveStatus{background:linear-gradient(11
  'use strict';
  const $=id=>document.getElementById(id);
  let mobileToggle=null,overlay=null,nav=null;
- function isMobile(){return window.matchMedia&&window.matchMedia('(max-width: 760px)').matches}
+ function isMobile(){return window.matchMedia&&window.matchMedia('(max-width: 900px), (pointer: coarse) and (max-width: 1100px)').matches}
  function isAdmin(){const report=$('adminDailySchoolReportBox'),badge=$('userRoleBadge');let u=window.currentUser;try{if(!u&&typeof currentUser!=='undefined')u=currentUser}catch(e){}return !!(u&&(['admin','manager','principal','مدير','المدير'].includes(String(u.role||'').toLowerCase())||u.isAssistant))||!!(report&&report.style.display!=='none'&&report.style.display!=='')||!!(badge&&/مدير النظام|معاون المدير/.test(badge.textContent||''))}
  function closeMobileNav(){if(nav)nav.classList.remove('mobile-open');if(overlay){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true')}if(mobileToggle)mobileToggle.setAttribute('aria-expanded','false')}
  function openMobileNav(){if(!nav)return;nav.classList.add('mobile-open');if(overlay){overlay.classList.add('open');overlay.setAttribute('aria-hidden','false')}if(mobileToggle)mobileToggle.setAttribute('aria-expanded','true')}
  function setupMobileMenu(){nav=$('managerSideNav');overlay=$('tafanyMobileServicesOverlay');if(!nav)return;
-   if(!mobileToggle){mobileToggle=document.createElement('button');mobileToggle.type='button';mobileToggle.id='tafanyMobileServicesToggle';mobileToggle.innerHTML='<span class="services-hamburger">☰</span><span>خدمات الإدارة المدرسية</span><span aria-hidden="true">⌄</span>';mobileToggle.setAttribute('aria-expanded','false');mobileToggle.addEventListener('click',()=>nav.classList.contains('mobile-open')?closeMobileNav():openMobileNav());
+   if(!mobileToggle){mobileToggle=document.createElement('button');mobileToggle.type='button';mobileToggle.id='tafanyMobileServicesToggle';mobileToggle.innerHTML='<span class="services-hamburger">☰</span><span>خدمات الإدارة المدرسية</span><span class="services-chevron" aria-hidden="true">⌄</span>';mobileToggle.setAttribute('aria-expanded','false');mobileToggle.setAttribute('aria-controls','managerSideNav');mobileToggle.addEventListener('click',()=>nav.classList.contains('mobile-open')?closeMobileNav():openMobileNav());
      const report=$('adminDailySchoolReportBox');const header=document.querySelector('header');if(report&&report.parentNode)report.parentNode.insertBefore(mobileToggle,report);else if(header&&header.parentNode)header.insertAdjacentElement('afterend',mobileToggle);else document.body.insertBefore(mobileToggle,document.body.firstChild);
    }
+   if(nav&&!$('tafanyMobileNavClose')){const close=document.createElement('button');close.id='tafanyMobileNavClose';close.type='button';close.className='tafany-mobile-nav-close';close.setAttribute('aria-label','إغلاق قائمة الخدمات');close.innerHTML='<span>إغلاق القائمة</span><span aria-hidden="true">✕</span>';close.addEventListener('click',closeMobileNav);nav.insertBefore(close,nav.firstChild)}
    if(overlay&&!overlay.dataset.bound){overlay.dataset.bound='1';overlay.addEventListener('click',closeMobileNav)}
    if(nav&&!nav.dataset.closeBound){nav.dataset.closeBound='1';nav.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&isMobile())setTimeout(closeMobileNav,90)})}
    if(!isMobile())closeMobileNav();
@@ -14602,5 +14603,41 @@ body.manager-dark-mode #tafanyAttendanceLiveStatus{background:linear-gradient(11
  setInterval(run,1200);window.addEventListener('resize',setupMobileMenu);window.addEventListener('online',updateRings);window.addEventListener('offline',updateRings);
 })();
 </script>
+
+<style id="tafany-mobile-premium-navigation">
+/* Responsive app-like navigation: mobile remains a mobile layout even in landscape. */
+#managerSideNav .tafany-mobile-nav-close{display:none}
+#tafanyMobileServicesToggle{position:relative;isolation:isolate;min-height:52px;letter-spacing:.1px;border-radius:16px;justify-content:space-between;padding-inline:17px;background:linear-gradient(115deg,#0a1730 0%,#18345b 58%,#10213d 100%);box-shadow:0 8px 22px #0b1c3826,inset 0 1px #ffffff20;transition:transform .18s ease,box-shadow .18s ease}
+#tafanyMobileServicesToggle:active{transform:scale(.985)}
+#tafanyMobileServicesToggle .services-hamburger{display:grid;place-items:center;width:32px;height:32px;border:1px solid #d8b45a88;border-radius:10px;background:#ffffff0d}
+#tafanyMobileServicesToggle .services-chevron{margin-right:auto;font-size:21px;color:#f7dc91}
+#managerSideNav .msn-title{font-size:16px;letter-spacing:.15px;display:flex;align-items:center;gap:8px}
+#managerSideNav .msn-title:before{content:"";display:inline-block;width:5px;height:25px;border-radius:8px;background:linear-gradient(#f5dc94,#c89c37);box-shadow:0 0 12px #d8b45a55}
+@media(max-width:900px){
+ #staffAdminBar{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
+ body.manager-sidebar-active{padding-right:0!important;padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;background:#f2f5fa}
+ body.manager-sidebar-active header{border-radius:0 0 20px 20px!important;margin:0 8px!important;overflow:visible}
+ #managerSideNav{width:min(86vw,350px)!important;max-width:350px!important;box-sizing:border-box!important;padding:calc(13px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))!important;gap:9px!important;background:radial-gradient(ellipse at top right,#29456d 0%,transparent 45%),linear-gradient(160deg,#08152d 0%,#102747 55%,#091426 100%)!important;border-left:1px solid #e2c16f!important;border-radius:22px 0 0 22px!important;transform:translateX(110%);visibility:hidden;transition:transform .25s cubic-bezier(.2,.8,.2,1),visibility .25s!important;box-shadow:-20px 0 55px #06112655!important}
+ body.manager-sidebar-active #managerSideNav.mobile-open{display:flex!important;visibility:visible!important;transform:translateX(0)!important}
+ #managerSideNav .tafany-mobile-nav-close{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto;min-height:43px!important;padding:8px 12px!important;margin-bottom:3px!important;background:#ffffff0b!important;color:#f7dfa0!important;border:1px solid #d8b45a55!important;border-radius:12px!important;box-shadow:none!important;font-size:13px!important}
+ #managerSideNav .msn-title{padding:9px 5px 14px!important;margin-bottom:5px!important;font-size:16px!important}
+ #managerSideNav button:not(.tafany-mobile-nav-close){min-height:48px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;padding:11px 13px!important;border-radius:13px!important;font-size:14px!important;font-weight:800!important;box-shadow:0 4px 12px #0002,inset 0 1px #fff!important}
+ #tafanyMobileServicesOverlay.open{background:#030b1bd1!important;backdrop-filter:blur(5px)!important}
+ #adminDailySchoolReportBox{margin:10px!important;width:auto!important;max-width:none!important}
+ #adminDailySchoolReportBox .daily-circles{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+}
+/* Touch devices in landscape must not switch to the desktop dashboard layout. */
+@media (pointer:coarse) and (max-width:1100px){
+ #tafanyMobileServicesToggle{display:flex!important}
+ #tafanyMobileServicesOverlay{display:none}
+ body.manager-sidebar-active{padding-right:0!important}
+ #staffAdminBar{display:none!important}
+ #managerSideNav{display:none!important}
+ body.manager-sidebar-active #managerSideNav.mobile-open{display:flex!important}
+ #adminDailySchoolReportBox .daily-circles{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(prefers-reduced-motion:reduce){#managerSideNav,#tafanyMobileServicesToggle{transition:none!important}}
+</style>
+
 </body>
 </html>
