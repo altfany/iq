@@ -2845,6 +2845,18 @@ tbody tr:hover{background:#eef6fc}
     </div>
 </div>
 
+<div class="modal" id="editTeacherInfoModal" style="z-index:1000003 !important;">
+  <div class="modal-content" style="width:min(560px,96vw);max-height:90vh;overflow:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><h3 style="margin:0;color:#0f766e;">✏️ تعديل معلومات المعلم</h3><button type="button" onclick="closeModal('editTeacherInfoModal')" style="background:#7f8c8d">إغلاق ✕</button></div>
+    <p style="font-size:12px;color:#64748b;">تُحفظ التعديلات في بيانات النظام وتُرسل إلى قاعدة البيانات السحابية.</p>
+    <input type="hidden" id="editTeacherInfoIndex">
+    <div class="form-group"><label for="editTeacherInfoName">اسم المعلم</label><input id="editTeacherInfoName" type="text" autocomplete="name" required></div>
+    <div class="form-group"><label for="editTeacherInfoPhone">رقم الهاتف</label><input id="editTeacherInfoPhone" type="tel" autocomplete="tel"></div>
+    <div class="form-group"><label for="editTeacherInfoAge">العمر</label><input id="editTeacherInfoAge" type="number" min="18" max="100"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;"><button type="button" onclick="saveTeacherInfoChanges()" style="background:#0f766e;flex:1">💾 حفظ التعديلات</button><button type="button" onclick="closeModal('editTeacherInfoModal')" style="background:#64748b">إلغاء</button></div>
+  </div>
+</div>
+
 <div class="modal" id="teacherPermissionsModal" style="z-index:1000002 !important;">
   <div class="modal-content" style="width:min(700px,96vw);max-height:90vh;overflow:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;"><h3 style="margin:0;color:var(--blue);">⚙️ صلاحيات المعلم</h3><button onclick="closeModal('teacherPermissionsModal')" style="background:#7f8c8d">إغلاق ✕</button></div>
@@ -7010,8 +7022,58 @@ function updateCloudStatus(text, color) {
         </div>
         <h4 class="teacher-detail-section-title">الصفوف والدروس المسموحة</h4>
         <div class="teacher-detail-classes">${classDetails || '<div class="pro-empty">لم يتم تحديد صفوف لهذا المعلم.</div>'}</div>
-        ${sensitive ? `<div class="teacher-card-actions teacher-detail-actions"><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ تعديل الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف المعلم</button></div>${t.suspended ? `<div style="margin-top:10px;padding:10px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412"><b>⛔ هذا المعلم معلّق حالياً</b><div>رسالة المدير: ${escapeGlobalSearchHTML(t.suspensionMessage||'يرجى مراجعة إدارة المدرسة.')}</div></div>` : ''}` : ''}`;
+        ${sensitive ? `<div class="teacher-card-actions teacher-detail-actions"><button onclick="openEditTeacherInfoModal(${index})" style="background:#0f766e">✏️ تعديل معلومات المعلم</button><button onclick="openTeacherPermissionsEditor(${index})" style="background:var(--blue)">⚙️ تعديل الصفوف والدروس</button><button onclick="openEditTeacherPasswordModal(${index})" style="background:var(--warning)">🔑 توليد كود</button><button onclick="deleteTeacher(${index})" style="background:var(--danger)">🗑 حذف المعلم</button></div>${t.suspended ? `<div style="margin-top:10px;padding:10px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412"><b>⛔ هذا المعلم معلّق حالياً</b><div>رسالة المدير: ${escapeGlobalSearchHTML(t.suspensionMessage||'يرجى مراجعة إدارة المدرسة.')}</div></div>` : ''}` : ''}`;
     }
+    function openEditTeacherInfoModal(index) {
+        if (!isPrimaryAdminUser()) { alert('تعديل معلومات المعلم متاح لمدير النظام فقط.'); return; }
+        const t = teachersData[Number(index)];
+        if (!t) { alert('تعذر العثور على بيانات المعلم.'); return; }
+        document.getElementById('editTeacherInfoIndex').value = String(index);
+        document.getElementById('editTeacherInfoName').value = String(t.name || '');
+        document.getElementById('editTeacherInfoPhone').value = String(t.phone === 'غير متوفر' ? '' : (t.phone || ''));
+        document.getElementById('editTeacherInfoAge').value = String(t.age === '-' ? '' : (t.age || ''));
+        document.getElementById('editTeacherInfoModal').style.display = 'flex';
+    }
+
+    async function saveTeacherInfoChanges() {
+        if (!isPrimaryAdminUser()) { alert('تعديل معلومات المعلم متاح لمدير النظام فقط.'); return; }
+        const index = Number(document.getElementById('editTeacherInfoIndex')?.value);
+        const t = teachersData[index];
+        if (!t) { alert('تعذر العثور على بيانات المعلم. أعد فتح نافذة التعديل.'); return; }
+        if (!(await requireAdminSensitiveAction(`تعديل معلومات المعلم ${t.name || ''}`))) return;
+        const name = String(document.getElementById('editTeacherInfoName')?.value || '').trim();
+        const phone = String(document.getElementById('editTeacherInfoPhone')?.value || '').trim();
+        const age = String(document.getElementById('editTeacherInfoAge')?.value || '').trim();
+        if (!name) { alert('يرجى إدخال اسم المعلم.'); return; }
+        const duplicate = teachersData.findIndex((x, i) => i !== index && String(x.name || '').trim().toLocaleLowerCase() === name.toLocaleLowerCase());
+        if (duplicate !== -1) { alert('يوجد معلم آخر مسجل بهذا الاسم. اختر اسماً مميزاً.'); return; }
+
+        const oldName = String(t.name || '');
+        const teacherId = String(t.id || '');
+        t.name = name;
+        t.phone = phone || 'غير متوفر';
+        t.age = age || '-';
+        t.updatedAt = new Date().toISOString();
+        t.updatedBy = String(currentUser?.name || 'مدير النظام');
+
+        // مزامنة الاسم في السجلات المرتبطة بالمعلم حتى لا يبقى الاسم القديم في بقية أجزاء النظام.
+        const linkedArrays = [subjectsData, homeworkData, teacherAttendanceRequestsData, parentTeacherMessagesData, complaintsData];
+        linkedArrays.forEach(arr => {
+            if (!Array.isArray(arr)) return;
+            arr.forEach(record => {
+                if (!record || typeof record !== 'object') return;
+                const linked = (teacherId && [record.teacherId, record.teacherKey, record.teacher_id].some(v => String(v || '') === teacherId))
+                    || String(record.teacherName || '') === oldName;
+                if (linked && Object.prototype.hasOwnProperty.call(record, 'teacherName')) record.teacherName = name;
+            });
+        });
+        saveData();
+        closeModal('editTeacherInfoModal');
+        renderTeachersTable();
+        if (typeof openTeacherDetails === 'function') openTeacherDetails(index);
+        alert('تم حفظ معلومات المعلم في بيانات النظام. سيُزامن الحفظ مع قاعدة البيانات السحابية حسب اتصال النظام.');
+    }
+
     function closeTeacherDetails() {
         const panel = document.getElementById('teacherDetailsPanel');
         const list = document.getElementById('teachersTableBody');
