@@ -2511,7 +2511,7 @@ tbody tr:hover{background:#eef6fc}
         <div id="loginCloudStatus" style="font-size:12px;text-align:center;color:#777;margin:8px 0 4px;">جاري الاتصال بالسحابة...</div>
         <button id="loginButton" onclick="performLogin()" disabled style="width: 100%; background: var(--success); padding: 10px; font-weight: bold; margin-top: 10px;">دخول للنظام</button>
         <button type="button" id="showAdminEmailLoginButton" onclick="toggleAdminEmailLogin(true)" style="width:100%;background:#263b53;padding:10px;font-weight:bold;margin-top:8px;">👑 دخول المدير بالإيميل</button>
-        <button type="button" id="showAlternateAdminLoginButton" onclick="toggleAlternateAdminLogin(true)" style="display:block;margin:4px auto 0;background:#d62828;color:#fff;border:0;border-radius:4px;padding:2px 7px;font-size:9px;line-height:1.2;min-height:16px;width:auto;cursor:pointer;">دخول بديل</button>
+        <button type="button" id="showAlternateAdminLoginButton" onclick="toggleAlternateAdminLogin(true)" style="display:block;margin:4px auto 0;background:#d62828;color:#fff;border:0;border-radius:4px;padding:2px 7px;font-size:9px;line-height:1.2;min-height:16px;width:auto;cursor:pointer;">****</button>
         <div id="alternateAdminLoginPanel" style="display:none;text-align:right;margin-top:12px;padding:12px;border:1px solid #f0b8b8;border-radius:10px;background:#fff8f8;">
           <div style="font-weight:900;color:#b91c1c;margin-bottom:8px;text-align:center;">دخول مدير معتمد</div>
           <label for="alternateAdminEmailInput" style="display:block;font-size:12px;margin:7px 0 4px;">الإيميل المسجّل في Firebase Authentication</label>
@@ -14607,7 +14607,7 @@ body.manager-dark-mode.manager-sidebar-active #managerSideNav { background: line
 body.manager-dark-mode.manager-sidebar-active #managerSideNav button { background: linear-gradient(145deg,#26364c,#1b293d) !important; color: #f0f4fa !important; border-color: #52627a !important; }
 @media (max-width: 900px) { body.manager-sidebar-active { padding-right: 0 !important; } }
 </style>
-<div id="managerSideNav" aria-label="خدمات الإدارة المدرسية"><div class="msn-title">✦ خدمات الإدارة المدرسية</div></div>
+<div id="managerSideNav" aria-label="خدمات الإدارة المدرسية"><div class="msn-title"> خدمات الإدارة المدرسية</div></div>
 <div id="tafanyMobileServicesOverlay" aria-hidden="true"></div>
 <script id="manager-sidebar-and-attendance-rings">
 (function(){
@@ -14635,7 +14635,7 @@ body.manager-dark-mode.manager-sidebar-active #managerSideNav button { backgroun
    document.body.classList.add('manager-sidebar-active');
    [...actions.querySelectorAll(':scope > button')].forEach(btn=>{if(['btnManagerWhatsApp','btnAnnouncementsNav','btnComplaintsNav','btnAddClassNav','btnTeacherComplaintsNav','btnTeacherMonthlyReportNav','btnTeachersNav','btnTeachersAbsenceNav','btnTeacherAttendanceFingerprint','btnHomeworkNav','btnTeacherParentMessagesNav','btnTransferNav','btnManagerNotesNav','btnSystemResetNav'].includes(btn.id)&&btn.parentElement===actions&&btn.style.display!=='none'){btn.dataset.movedByManagerNav='1';nav.appendChild(btn)}});
    document.querySelectorAll('#staffAdminBar button').forEach(btn=>{if(btn.parentElement&&btn.dataset.movedByManagerNav!=='1'){btn.dataset.managerNavOrigin='staff';btn.dataset.movedByManagerNav='1';nav.appendChild(btn)}});
-   const title=nav.querySelector('.msn-title');if(title)title.textContent='✦ خدمات الإدارة المدرسية';
+   const title=nav.querySelector('.msn-title');if(title)title.textContent=' خدمات الإدارة المدرسية';
  }
  function buildRings(){const box=$('adminDailySchoolReportBox');if(!box||box.dataset.rings==='1')return;const header=box.firstElementChild;if(!header)return;const wrap=document.createElement('div');wrap.className='daily-circles';const defs=[['present','الحضور','#239b56'],['absent','الغياب','#d64545'],['leave','المجاز','#d6a126'],['late','المتأخرون','#3977c5']];wrap.innerHTML=defs.map(d=>'<div class="daily-circle-card" style="--card-accent:'+d[2]+'"><div class="daily-circle" id="dailyRing_'+d[0]+'" style="--p:0;--c:'+d[2]+'"><strong id="dailyRingPct_'+d[0]+'">0%</strong></div><b>'+d[1]+'</b><small id="dailyRingCount_'+d[0]+'">0 طالب</small></div>').join('');header.insertAdjacentElement('afterend',wrap);
    const live=document.createElement('div');live.id='tafanyAttendanceLiveStatus';live.innerHTML='<span><i class="live-dot"></i><b id="tafanyAttendanceLiveLabel">تحديث مباشر</b></span><span id="tafanyAttendanceLiveDetail">تتم قراءة سجلات اليوم المحفوظة في النظام</span>';wrap.insertAdjacentElement('afterend',live);box.dataset.rings='1';}
