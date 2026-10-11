@@ -14183,43 +14183,32 @@ body.parent-only-mode header { display:none !important; }
 <script id="managerLightDarkThemeLogic">
 (function(){
   const KEY='tafany_manager_theme_preference_v1';
-  function isManager(){try{return typeof currentUser!=='undefined' && !!(currentUser && currentUser.role==='admin');}catch(e){return false;}}
+  function isAdmin(){
+    try { const u=window.currentUser || (typeof currentUser!=='undefined'?currentUser:null); return !!u && String(u.role||'').toLowerCase()==='admin'; }
+    catch(e){ return false; }
+  }
   function applyTheme(theme){
     const dark=theme==='dark';
-    document.body.classList.toggle('manager-dark-mode',dark);
+    document.body.classList.toggle('manager-dark-mode',dark && isAdmin());
     const btn=document.getElementById('managerThemeToggle');
     const icon=document.getElementById('managerThemeIcon');
     const label=document.getElementById('managerThemeLabel');
-    if(btn){btn.className=dark?'theme-dark':'theme-light';btn.setAttribute('aria-pressed',dark?'true':'false');}
+    if(btn){btn.className=dark?'theme-dark':'theme-light';btn.setAttribute('aria-pressed',dark?'true':'false');btn.style.display=isAdmin()?'inline-flex':'none';}
     if(icon)icon.textContent='🌙';
     if(label)label.textContent=dark?'الوضع النهاري':'الوضع الليلي';
-    if(btn)btn.title=dark?'🌙 الوضع الليلي مفعّل — اضغط للعودة للوضع النهاري':'🌙 تفعيل الوضع الليلي';
+    if(btn)btn.title=dark?'الوضع الليلي مفعّل — اضغط للعودة للوضع النهاري':'تفعيل الوضع الليلي';
   }
   function sync(){
-    const btn=document.getElementById('managerThemeToggle');
-    if(!btn)return;
-    const active=isManager();
-    btn.style.display=active?'inline-flex':'none';
+    const btn=document.getElementById('managerThemeToggle'); if(!btn)return;
+    const active=isAdmin(); btn.style.display=active?'inline-flex':'none';
     if(!active){document.body.classList.remove('manager-dark-mode');return;}
-    let saved='light';try{saved=localStorage.getItem(KEY)||'light';}catch(e){}
-    applyTheme(saved);
+    let theme='light'; try{theme=localStorage.getItem(KEY)||'light';}catch(e){}
+    applyTheme(theme);
   }
-  function init(){
-    const btn=document.getElementById('managerThemeToggle');
-    if(btn && !btn.dataset.themeBound){
-      btn.dataset.themeBound='1';
-      btn.addEventListener('click',function(){
-        if(!isManager())return;
-        const next=document.body.classList.contains('manager-dark-mode')?'light':'dark';
-        try{localStorage.setItem(KEY,next);}catch(e){}
-        applyTheme(next);
-      });
-    }
-    sync();
-    if(!window.__managerThemeSyncTimer)window.__managerThemeSyncTimer=setInterval(sync,900);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
-  else init();
+  const btn=document.getElementById('managerThemeToggle');
+  if(btn)btn.addEventListener('click',function(){if(!isAdmin())return;let next='light';try{next=(localStorage.getItem(KEY)==='dark')?'light':'dark';localStorage.setItem(KEY,next);}catch(e){}applyTheme(next);});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync);else sync();
+  setInterval(sync,1000);
 })();
 </script>
 
@@ -14558,6 +14547,26 @@ body.manager-dark-mode #adminDailySchoolReportBox .daily-circle:before{backgroun
 body.manager-dark-mode #adminDailySchoolReportBox .daily-circle strong{color:#f5d982!important}
 body.manager-dark-mode #adminDailySchoolReportBox .daily-circle-card small{background:#293b53;color:#d7e1ee}
 body.manager-dark-mode #tafanyAttendanceLiveStatus{background:linear-gradient(110deg,#16243a,#1b2b42);border-color:#34465e;color:#d9e4f2}
+
+/* إصلاح تخطيط المدير: حجز مساحة ثابتة للشريط الجانبي بدل تداخله مع المحتوى */
+@media (min-width: 901px) {
+  body.manager-sidebar-active { padding-right: 258px !important; box-sizing: border-box; }
+  body.manager-sidebar-active #managerSideNav {
+    position: fixed !important; right: 12px !important; top: 12px !important; bottom: 12px !important;
+    width: 232px !important; height: auto !important; box-sizing: border-box !important;
+    border-radius: 16px !important; overflow-y: auto !important;
+  }
+  body.manager-sidebar-active > header,
+  body.manager-sidebar-active > main,
+  body.manager-sidebar-active > .container,
+  body.manager-sidebar-active > #app {
+    max-width: 100%; min-width: 0; box-sizing: border-box;
+  }
+}
+body.manager-dark-mode.manager-sidebar-active { background: #0e1726 !important; color: #e8edf5 !important; }
+body.manager-dark-mode.manager-sidebar-active #managerSideNav { background: linear-gradient(160deg,#081326,#14243c 58%,#07101f) !important; border-color: #b99745 !important; }
+body.manager-dark-mode.manager-sidebar-active #managerSideNav button { background: linear-gradient(145deg,#26364c,#1b293d) !important; color: #f0f4fa !important; border-color: #52627a !important; }
+@media (max-width: 900px) { body.manager-sidebar-active { padding-right: 0 !important; } }
 </style>
 <div id="managerSideNav" aria-label="خدمات الإدارة المدرسية"><div class="msn-title">✦ خدمات الإدارة المدرسية</div></div>
 <div id="tafanyMobileServicesOverlay" aria-hidden="true"></div>
@@ -14731,6 +14740,68 @@ body.manager-dark-mode #tafanyAttendanceLiveStatus{background:linear-gradient(11
   body.manager-sidebar-active #systemHeaderTitle { font-size: 15px !important; }
   #tafanyMobileServicesToggle { min-height: 42px !important; margin-top: 7px !important; margin-bottom: 7px !important; }
   #managerSideNav { width: min(78vw, 330px) !important; }
+}
+</style>
+
+
+<style id="manager-sidebar-blended-palette">
+/* لوحة ألوان موحّدة: تدرّج هادئ بين ألوان الواجهة الرئيسية والشريط الجانبي */
+body.manager-sidebar-active #managerSideNav {
+  background: linear-gradient(155deg, #f8faff 0%, #eef3fb 48%, #e5ecf7 100%) !important;
+  color: #1d3150 !important;
+  border: 1px solid #c9d5e7 !important;
+  box-shadow: 0 12px 34px rgba(22, 42, 73, .14), inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+body.manager-sidebar-active #managerSideNav .msn-title {
+  color: #203b62 !important;
+  background: linear-gradient(110deg, rgba(216,180,90,.18), rgba(45,82,128,.07)) !important;
+  border-bottom: 1px solid rgba(179,145,69,.42) !important;
+  border-radius: 11px 11px 0 0 !important;
+}
+body.manager-sidebar-active #managerSideNav button {
+  background: linear-gradient(115deg, #ffffff 0%, #f0f4fa 58%, #e8eef7 100%) !important;
+  color: #243c60 !important;
+  border: 1px solid #cbd6e6 !important;
+  box-shadow: 0 3px 9px rgba(28,49,80,.08), inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+body.manager-sidebar-active #managerSideNav button:hover,
+body.manager-sidebar-active #managerSideNav button:focus-visible {
+  background: linear-gradient(115deg, #e8eff9 0%, #dce6f4 100%) !important;
+  color: #142c4d !important;
+  border-color: #b89a55 !important;
+  box-shadow: 0 5px 13px rgba(28,49,80,.14) !important;
+}
+/* الشريط والعنوان العلوي يستخدمان عائلة ألوان واحدة */
+body.manager-sidebar-active header {
+  border-color: #c4a45d !important;
+  box-shadow: 0 5px 18px rgba(22,42,73,.08) !important;
+}
+/* الوضع الليلي: نفس درجات الشاشة الرئيسية الداكنة مع لمسة ذهبية هادئة */
+body.manager-dark-mode.manager-sidebar-active #managerSideNav {
+  background: linear-gradient(155deg, #111f34 0%, #172a44 52%, #1d3552 100%) !important;
+  color: #edf3fb !important;
+  border-color: #8f7948 !important;
+  box-shadow: 0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+body.manager-dark-mode.manager-sidebar-active #managerSideNav .msn-title {
+  color: #f0d99b !important;
+  background: linear-gradient(110deg, rgba(216,180,90,.13), rgba(110,145,190,.09)) !important;
+  border-bottom-color: rgba(216,180,90,.32) !important;
+}
+body.manager-dark-mode.manager-sidebar-active #managerSideNav button {
+  background: linear-gradient(115deg, #263b56 0%, #20334c 58%, #1b2d45 100%) !important;
+  color: #f0f4fb !important;
+  border-color: #435873 !important;
+  box-shadow: 0 3px 9px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+body.manager-dark-mode.manager-sidebar-active #managerSideNav button:hover,
+body.manager-dark-mode.manager-sidebar-active #managerSideNav button:focus-visible {
+  background: linear-gradient(115deg, #304965 0%, #263d59 100%) !important;
+  border-color: #b89a55 !important;
+  color: #fff8e7 !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body.manager-sidebar-active #managerSideNav button { transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease !important; }
 }
 </style>
 
