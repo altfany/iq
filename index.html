@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>نظام إدارة مدرسة التفاني الابتدائية</title>
     <style>
         :root {
@@ -14637,6 +14637,101 @@ body.manager-dark-mode #tafanyAttendanceLiveStatus{background:linear-gradient(11
  #adminDailySchoolReportBox .daily-circles{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 @media(prefers-reduced-motion:reduce){#managerSideNav,#tafanyMobileServicesToggle{transition:none!important}}
+</style>
+
+
+<style id="tafany-mobile-fullscreen-layout-fix">
+/* الهاتف: تخطيط تطبيق كامل الشاشة، حتى عند تدوير الجهاز أفقياً */
+@media screen and (max-width: 900px), screen and (pointer: coarse) and (max-width: 1100px) {
+  html, body {
+    width: 100% !important; min-width: 0 !important; max-width: 100% !important;
+    margin: 0 !important; padding: 0 !important; overflow-x: clip !important;
+    -webkit-text-size-adjust: 100%;
+  }
+  body.manager-sidebar-active { padding: 0 0 calc(12px + env(safe-area-inset-bottom)) !important; }
+  body > .container, .container {
+    width: 100% !important; max-width: none !important; min-width: 0 !important;
+    margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
+  }
+  body.manager-sidebar-active header {
+    width: 100% !important; max-width: none !important; box-sizing: border-box !important;
+    margin: 0 !important; border-radius: 0 0 16px 16px !important;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 12px !important;
+    display: flex !important; flex-direction: column !important; align-items: stretch !important;
+    gap: 10px !important;
+  }
+  body.manager-sidebar-active header > div:first-child {
+    width: 100% !important; min-width: 0 !important; flex-wrap: wrap !important; gap: 6px !important;
+  }
+  body.manager-sidebar-active #systemHeaderTitle {
+    font-size: clamp(15px, 4.2vw, 19px) !important; line-height: 1.45 !important;
+    margin: 0 !important; max-width: 100% !important; overflow-wrap: anywhere !important;
+  }
+  body.manager-sidebar-active .header-actions {
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+    box-sizing: border-box !important; display: flex !important; flex-wrap: wrap !important;
+    align-items: stretch !important; gap: 7px !important; margin: 0 !important;
+  }
+  body.manager-sidebar-active #globalSearchWrapper {
+    display: flex !important; width: 100% !important; min-width: 0 !important;
+    box-sizing: border-box !important; gap: 6px !important;
+  }
+  body.manager-sidebar-active #globalStudentSearchInput {
+    flex: 1 1 0 !important; width: 0 !important; min-width: 0 !important;
+    max-width: none !important; box-sizing: border-box !important; height: 42px !important;
+    font-size: 16px !important;
+  }
+  body.manager-sidebar-active #globalSearchWrapper button,
+  body.manager-sidebar-active .header-actions > button:not([style*="display: none"]):not([style*="display:none"]) {
+    min-height: 40px !important; max-width: 100% !important; box-sizing: border-box !important;
+  }
+  #tafanyMobileServicesToggle {
+    width: calc(100% - 24px) !important; max-width: none !important; min-width: 0 !important;
+    margin: 12px 12px 10px !important; box-sizing: border-box !important;
+  }
+  #adminDailySchoolReportBox {
+    width: 100% !important; max-width: none !important; min-width: 0 !important;
+    box-sizing: border-box !important; margin: 10px 0 14px !important; padding: 0 10px !important;
+  }
+  #adminDailySchoolReportBox > div:first-child {
+    width: 100% !important; max-width: none !important; box-sizing: border-box !important;
+    padding: 13px !important; border-radius: 15px !important;
+  }
+  #adminDailySchoolReportBox .daily-circles {
+    width: 100% !important; max-width: none !important; box-sizing: border-box !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 9px !important;
+  }
+  #adminDailySchoolReportBox .daily-circle-card { min-width: 0 !important; box-sizing: border-box !important; }
+  #staffAdminBar { display: none !important; width: 0 !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
+  /* كل أقسام النظام المرئية تبقى ضمن عرض الهاتف ولا تفرض عرض الكمبيوتر */
+  body.manager-sidebar-active main, body.manager-sidebar-active section,
+  body.manager-sidebar-active .content, body.manager-sidebar-active .main-content,
+  body.manager-sidebar-active .dashboard, body.manager-sidebar-active .dashboard-content,
+  body.manager-sidebar-active .tab-content, body.manager-sidebar-active .page-content {
+    max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important;
+  }
+  body.manager-sidebar-active table { max-width: 100% !important; }
+  #managerSideNav {
+    position: fixed !important; z-index: 1201 !important; top: 0 !important; bottom: 0 !important;
+    right: 0 !important; left: auto !important; height: 100vh !important; height: 100dvh !important;
+    width: min(88vw, 360px) !important; max-width: 100vw !important; box-sizing: border-box !important;
+    overflow-x: hidden !important; overflow-y: auto !important;
+    padding: calc(12px + env(safe-area-inset-top)) 13px calc(16px + env(safe-area-inset-bottom)) !important;
+    border-radius: 18px 0 0 18px !important;
+  }
+  #managerSideNav:not(.mobile-open) { visibility: hidden !important; pointer-events: none !important; }
+  body.manager-sidebar-active #managerSideNav.mobile-open { visibility: visible !important; pointer-events: auto !important; }
+  #tafanyMobileServicesOverlay.open { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important; }
+  .modal, .modal-content { max-width: calc(100vw - 20px) !important; box-sizing: border-box !important; }
+}
+/* في الوضع الأفقي على الهاتف، لا نستخدم نقاط التحول الخاصة بالكمبيوتر */
+@media screen and (orientation: landscape) and (pointer: coarse) and (max-height: 600px) {
+  body.manager-sidebar-active header { gap: 6px !important; padding: calc(5px + env(safe-area-inset-top)) 10px 8px !important; }
+  body.manager-sidebar-active header > div:first-child { align-items: center !important; }
+  body.manager-sidebar-active #systemHeaderTitle { font-size: 15px !important; }
+  #tafanyMobileServicesToggle { min-height: 42px !important; margin-top: 7px !important; margin-bottom: 7px !important; }
+  #managerSideNav { width: min(78vw, 330px) !important; }
+}
 </style>
 
 </body>
