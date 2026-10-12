@@ -14403,17 +14403,21 @@ window.sdDesignerLogin=async function(){const entered=$('sdCodeInput')?.value||'
 window.sdAuthenticateDesignerCode=async function(entered){try{await ensureDesignerCode();const snap=await designerRef('accessCode').once('value');if(String(entered||'')!==String(snap.val()||''))return false;await showDesignerInbox();return true}catch(e){console.warn('تعذر فحص رمز المصمم:',e);return false}}
 async function showDesignerInbox(){makeOverlay(`<div class="sd-card sd-chat-card"><div class="sd-head"><h2>🛠️ مصمم النظام — المحادثات</h2><div class="sd-row"><button class="sd-gold" onclick="sdChangeCode()">تغيير رمز الدخول</button><button class="sd-red" onclick="document.getElementById('sdOverlay')?.remove()">خروج</button></div></div><p class="sd-note">هنا تظهر المحادثات المباشرة مع المدير. يمكنك إرسال رسائل متتابعة داخل كل محادثة. تُحذف المحادثة بعد يومين من تاريخ الرسالة الأصلية.</p>
 <section class="sd-usage-panel" aria-label="استهلاك Firebase Realtime Database">
-  <div class="sd-usage-heading"><span class="sd-usage-icon">☁️</span><div><h3>استهلاك السحابة المجاني — Realtime Database</h3><p>حد الخطة المجانية القياسي للتخزين: 1 GB (تقريبًا 1024 MB).</p></div></div>
+  <div class="sd-usage-heading"><span class="sd-usage-icon">☁️</span><div><h3>استهلاك المساحة المجانية — Firebase</h3><p>قراءة آخر صورة أرسلتها من صفحة Project quotas. افتح القياس الرسمي لمعرفة التحديثات الجديدة.</p></div></div>
   <div class="sd-usage-metrics">
-    <div class="sd-usage-metric"><small>الحد المجاني القياسي</small><strong>1 GB</strong></div>
-    <div class="sd-usage-metric"><small>المستخدم</small><strong id="sdUsageUsed">—</strong></div>
-    <div class="sd-usage-metric"><small>المتبقي التقريبي</small><strong id="sdUsageRemain">—</strong></div>
+    <div class="sd-usage-metric"><small>تخزين Realtime Database المستخدم</small><strong>3.4 MB</strong></div>
+    <div class="sd-usage-metric"><small>المتبقي من 1 GB</small><strong>1020.6 MB</strong></div>
+    <div class="sd-usage-metric"><small>نسبة التخزين المستهلك</small><strong>0.3%</strong></div>
   </div>
-  <label class="sd-usage-label" for="sdUsageInput">أدخل حجم التخزين المستخدم كما يظهر في لوحة Firebase (MB)</label>
-  <div class="sd-usage-controls"><input id="sdUsageInput" type="number" min="0" max="1024" step="0.01" inputmode="decimal" placeholder="مثلاً: 125.5"><button type="button" class="sd-gold" onclick="sdCalculateRealtimeUsage()">حساب المتبقي</button><button type="button" class="sd-usage-open" onclick="sdOpenFirebaseUsage()">فتح قياس Firebase الرسمي ↗</button></div>
-  <div class="sd-usage-track"><div id="sdUsageBar" class="sd-usage-bar" style="width:0%"></div></div>
-  <p id="sdUsageStatus" class="sd-usage-status">لا يمكن لملف HTML وحده قراءة عداد التخزين الرسمي من Firebase مباشرة. افتح القياس الرسمي، وانقل قيمة التخزين المستخدم هنا ليُحسب المتبقي دون تخمين.</p>
-  <p class="sd-usage-footnote">هذه حاسبة مبنية على القيمة التي تدخلها، وليست اتصالاً تلقائياً بقياس Google Cloud. قد تختلف الحدود حسب خطة مشروعك وإعداداته. لا تُدخل بيانات سرية هنا.</p>
+  <div class="sd-usage-track"><div class="sd-usage-bar" style="width:0.3%"></div></div>
+  <div class="sd-usage-metrics" style="margin-top:16px">
+    <div class="sd-usage-metric"><small>التنزيلات المستخدمة هذا الشهر</small><strong>135.3 MB</strong></div>
+    <div class="sd-usage-metric"><small>المتبقي من 10 GB / شهر</small><strong>10104.7 MB</strong></div>
+    <div class="sd-usage-metric"><small>نسبة التنزيلات المستهلكة</small><strong>1.3%</strong></div>
+  </div>
+  <div class="sd-usage-track"><div class="sd-usage-bar" style="width:1.3%"></div></div>
+  <div class="sd-usage-controls"><button type="button" class="sd-usage-open" onclick="sdOpenFirebaseUsage()">فتح قياس Firebase الرسمي ↗</button></div>
+  <p class="sd-usage-status">الأرقام أعلاه مأخوذة من الصورة المرفقة وليست قراءة حية تتحدث تلقائياً. لا يستطيع ملف HTML وحده الوصول إلى عدادات Project quotas الرسمية بشكل آمن؛ التحديث التلقائي يحتاج ربطاً خلفياً آمناً مع Google Cloud Monitoring.</p>
 </section>
 <div id="sdInbox"><p class="sd-note">جارٍ تحميل المحادثات...</p></div></div>`);try{await purgeExpired();const snap=await designerRef('messages').once('value');const all=snap.val()||{};const list=Object.values(all).filter(m=>m&&m.from==='manager'&&Number(m.createdAt||0)+2*DAY>Date.now()).sort((a,b)=>b.createdAt-a.createdAt);const updates={};list.forEach(m=>{const chat=sdChatItems(m);let changed=false;chat.forEach((x,i)=>{if(x.from==='manager'&&!x.seenByOtherAt){x.seenByOtherAt=Date.now();changed=true}});if(changed)updates[m.id+'/chat']=chat;if(!m.designerSeenAt)updates[m.id+'/designerSeenAt']=Date.now()});if(Object.keys(updates).length)await designerRef('messages').update(updates);$('sdInbox').innerHTML=list.length?list.map(m=>`<article class="sd-msg sd-conversation"><div class="sd-conversation-head"><b>${esc(m.title||'محادثة مع المدير')}</b><small>بدأت: ${esc(date(m.createdAt))} — تنتهي: ${esc(date(m.expiresAt))}</small></div>${sdRenderBubbles({...m,chat:sdChatItems(m).map(x=>x.from==='manager'?{...x,seenByOtherAt:x.seenByOtherAt||Date.now()}:x)},'designer')}${sdChatComposer(m.id,'designer')}</article>`).join(''):'<p class="sd-note">لا توجد محادثات فعالة حالياً.</p>'}catch(e){$('sdInbox').textContent='تعذر تحميل المحادثات: '+e.message}}
 window.sdSendChatMessage=async function(id,viewer){const field=$('sdChatInput_'+id),body=field?.value.trim();if(!body){alert('اكتب الرسالة أولاً.');return}try{const ref=designerRef('messages/'+id),snap=await ref.once('value'),m=snap.val();if(!m||Number(m.createdAt||0)+2*DAY<=Date.now()){alert('انتهت صلاحية هذه المحادثة.');return}const chat=sdChatItems(m),now=Date.now();chat.forEach(x=>{if(x.from!==viewer&&!x.seenByOtherAt)x.seenByOtherAt=now});chat.push({from:viewer,body,createdAt:now,seenByOtherAt:null});const patch={chat};if(viewer==='designer'){patch.reply=body;patch.replyAt=now;patch.replyExpiresAt=Number(m.createdAt||now)+2*DAY;patch.designerSeenAt=now;}else{patch.managerLastMessageAt=now;patch.managerSeenAt=now;}await ref.update(patch);if(viewer==='designer')await showDesignerInbox();else await sdShowManagerMessages()}catch(e){alert('تعذر إرسال الرسالة: '+(e.message||e))}};
@@ -15090,27 +15094,5 @@ body.manager-dark-mode .sd-new-topic,body.manager-dark-mode .sd-conversation{bac
 
 window.sdOpenFirebaseUsage=function(){
   window.open('https://console.firebase.google.com/project/school-7d86c/usage','_blank','noopener');
-};
-window.sdCalculateRealtimeUsage=function(){
-  const input=document.getElementById('sdUsageInput');
-  const usedEl=document.getElementById('sdUsageUsed');
-  const remainEl=document.getElementById('sdUsageRemain');
-  const bar=document.getElementById('sdUsageBar');
-  const status=document.getElementById('sdUsageStatus');
-  if(!input||!usedEl||!remainEl||!bar||!status)return;
-  const raw=input.value;
-  if(raw===''||!Number.isFinite(Number(raw))||Number(raw)<0){
-    usedEl.textContent='—';remainEl.textContent='—';bar.style.width='0%';
-    status.textContent='أدخل قيمة صحيحة من خانة التخزين المستخدم في لوحة Firebase.';
-    return;
-  }
-  const used=Number(raw), limit=1024, remaining=Math.max(0,limit-used), pct=Math.min(100,(used/limit)*100);
-  usedEl.textContent=used.toLocaleString('ar-IQ',{maximumFractionDigits:2})+' MB';
-  remainEl.textContent=remaining.toLocaleString('ar-IQ',{maximumFractionDigits:2})+' MB';
-  bar.style.width=pct+'%';
-  bar.style.background=pct>=90?'linear-gradient(90deg,#ff8a65,#e53935)':pct>=75?'linear-gradient(90deg,#ffd166,#f08c00)':'linear-gradient(90deg,#49c58a,#f0cb65)';
-  status.textContent=used>limit
-    ?'القيمة المدخلة تتجاوز الحد المجاني القياسي البالغ 1024 MB. تحقق من خطة مشروعك والقياس المعروض في Firebase.'
-    :'الاستخدام المحسوب '+pct.toLocaleString('ar-IQ',{maximumFractionDigits:1})+'% من الحد المجاني القياسي. هذا حساب تقريبي اعتماداً على القيمة التي أدخلتها، وليس قراءة مباشرة.';
 };
 </script>
